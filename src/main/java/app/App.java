@@ -9,12 +9,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationContext;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -26,8 +29,21 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
+import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
+
+class AppState {
+  public long countSoFar = 0;
+  public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
+  public AppState(long countSoFar) {
+    this.countSoFar = countSoFar;
+  }
+  public AppState(long countSoFar, List<Map<String, AttributeValue>> exclusiveStartKeys) {
+    this(countSoFar);
+    this.exclusiveStartKeys.addAll(exclusiveStartKeys);
+  }
+}
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
@@ -42,10 +58,14 @@ public class App implements ApplicationRunner {
 
   private final AmazonDynamoDB dynamo = AmazonDynamoDBClientBuilder.defaultClient();
   private final List<Thread> threads = Lists.newArrayList();
-  private final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newCopyOnWriteArrayList();
-  private final AtomicLong totalCount = new AtomicLong();
+
+  private AppState appState = new AppState(0);
+
+  // private final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newCopyOnWriteArrayList();
+  // private final AtomicLong totalCount = new AtomicLong();
 
   // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+  private final int withTotalSegments = 5;
   private final RateLimiter rateLimiter = RateLimiter.create(128.0);
 
   /**
@@ -71,9 +91,25 @@ public class App implements ApplicationRunner {
     if (args.getOptionValues("rcu-limit")!=null)
       rateLimiter.setRate(Double.parseDouble(args.getOptionValues("rcu-limit").iterator().next()));
 
-    final int withTotalSegments = 5;
+    // --total-segments
+
+    // --state
+    if (args.getOptionValues("state")==null) {
+      //###TODO can't differentiate between starting and finished
+      //###TODO can't differentiate between starting and finished
+      //###TODO can't differentiate between starting and finished
+      for (int segment = 0; segment < withTotalSegments; ++segment)
+        appState.exclusiveStartKeys.add(null);
+      //###TODO can't differentiate between starting and finished
+      //###TODO can't differentiate between starting and finished
+      //###TODO can't differentiate between starting and finished
+    } else {
+      // restore state
+      appState = parseState(args.getOptionValues("state").iterator().next());
+      log(appState);
+    }
+
     for (int segment = 0; segment < withTotalSegments; ++segment) {
-      exclusiveStartKeys.add(null);
       final int withSegment = segment;
       threads.add(new Thread() {
         @Override
@@ -94,7 +130,7 @@ public class App implements ApplicationRunner {
                   //
                   .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
                   //
-                  .withExclusiveStartKey(exclusiveStartKeys.get(withSegment))
+                  .withExclusiveStartKey(appState.exclusiveStartKeys.get(withSegment))
                   //
                   .withSegment(withSegment)
                   //
@@ -104,7 +140,7 @@ public class App implements ApplicationRunner {
 
               ScanResult result = dynamo.scan(scan);
 
-              exclusiveStartKeys.set(withSegment, result.getLastEvaluatedKey());
+              appState.exclusiveStartKeys.set(withSegment, result.getLastEvaluatedKey());
 
               // double consumedCapacity = result.getConsumedCapacity().getCapacityUnits();
               // permitsToConsume = (int) (consumedCapacity - 1.0);
@@ -112,9 +148,11 @@ public class App implements ApplicationRunner {
               //   permitsToConsume = 1;
               // }
 
-              log(totalCount.addAndGet(result.getCount()), renderExclusiveStartKeys(exclusiveStartKeys));
+              appState.countSoFar += result.getCount();
 
-            } while (exclusiveStartKeys.get(withSegment) != null);
+              log(renderState(appState));
+
+            } while (appState.exclusiveStartKeys.get(withSegment) != null);
 
           } catch (Exception e) {
             throw new RuntimeException(e);
@@ -132,11 +170,19 @@ public class App implements ApplicationRunner {
 
   }
 
-  private String renderExclusiveStartKeys(List<Map<String, AttributeValue>> exclusiveStartKeys) throws Exception {
+  private static AppState parseState(String base64) throws Exception {
+    byte[] bytes = BaseEncoding.base64().decode(base64);
+    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+    InputStream in = new GZIPInputStream(bais);
+    String json = CharStreams.toString(new InputStreamReader(in));
+    return new Gson().fromJson(json, AppState.class);
+  }
+
+  private static String renderState(AppState state) throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    OutputStream out = new GZIPOutputStream(baos, true);
-    out.write(new Gson().toJson(exclusiveStartKeys).getBytes());
-    out.flush();
+    try (OutputStream out = new GZIPOutputStream(baos, true)) {
+      out.write(new Gson().toJson(state).getBytes());
+    }
     return BaseEncoding.base64().encode(baos.toByteArray());
   }
 
