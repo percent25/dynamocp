@@ -1,0 +1,35 @@
+plugins {
+	id "org.springframework.boot" version "2.2.0.RELEASE"
+}
+
+apply plugin: "java"
+apply plugin: "io.spring.dependency-management"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+	jcenter()
+}
+
+dependencies {
+	implementation "com.google.code.gson:gson:+"
+	implementation "com.google.guava:guava:+"
+	implementation "org.springframework.boot:spring-boot-starter"
+
+// aws sdk
+	implementation platform("com.amazonaws:aws-java-sdk-bom:+")
+  implementation "com.amazonaws:aws-java-sdk-dynamodb"
+}
+
+springBoot {
+	buildInfo()
+}
+
+bootJar {
+	archiveName="dynamocp.jar"
+	destinationDir = file(".")
+	launchScript {
+		script = file("custom.script")
+	}
+}
