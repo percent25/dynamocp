@@ -14,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,12 +37,15 @@ import com.google.gson.Gson;
 class AppState {
   public long countSoFar = 0;
   public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
-  public AppState(long countSoFar) {
-    this.countSoFar = countSoFar;
-  }
-  public AppState(long countSoFar, List<Map<String, AttributeValue>> exclusiveStartKeys) {
-    this(countSoFar);
-    this.exclusiveStartKeys.addAll(exclusiveStartKeys);
+  // public AppState(long countSoFar) {
+  //   this.countSoFar = countSoFar;
+  // }
+  // public AppState(long countSoFar, List<Map<String, AttributeValue>> exclusiveStartKeys) {
+  //   this(countSoFar);
+  //   this.exclusiveStartKeys.addAll(exclusiveStartKeys);
+  // }
+  public String toString() {
+    return new Gson().toJson(this);
   }
 }
 
@@ -59,14 +63,21 @@ public class App implements ApplicationRunner {
   private final AmazonDynamoDB dynamo = AmazonDynamoDBClientBuilder.defaultClient();
   private final List<Thread> threads = Lists.newArrayList();
 
-  private AppState appState = new AppState(0);
+  private AppState appState = new AppState();
 
   // private final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newCopyOnWriteArrayList();
   // private final AtomicLong totalCount = new AtomicLong();
 
+  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
+  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
+  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-  private final int withTotalSegments = 5;
-  private final RateLimiter rateLimiter = RateLimiter.create(128.0);
+  private final int withTotalSegments = 20;
+  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
+  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
+  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
+
+  private final RateLimiter rateLimiter = RateLimiter.create(128.0, Duration.ofSeconds(30));
 
   /**
    * ctor
@@ -84,8 +95,6 @@ public class App implements ApplicationRunner {
 
     // source dynamo table name
     final String tableName = args.getNonOptionArgs().get(0);
-    // private final String tableName = "dev-metrics-test";
-    // private final String tableName = "dev-MetricsTable2972A477-X02V6T2YSF22";
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (args.getOptionValues("rcu-limit")!=null)
@@ -150,7 +159,7 @@ public class App implements ApplicationRunner {
 
               appState.countSoFar += result.getCount();
 
-              log(renderState(appState));
+              log(appState.countSoFar, renderState(appState));
 
             } while (appState.exclusiveStartKeys.get(withSegment) != null);
 
