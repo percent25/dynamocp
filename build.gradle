@@ -27,7 +27,7 @@ springBoot {
 }
 
 bootJar {
-	archiveName="dynamocp.jar"
+	archiveName="dynamocat.jar"
 	destinationDir = file(".")
 	launchScript {
 		script = file("custom.script")
