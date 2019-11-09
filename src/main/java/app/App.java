@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,7 +36,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 
 class AppState {
-  public long countSoFar = 0;
+  public final AtomicLong count = new AtomicLong();
   public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
   // public AppState(long countSoFar) {
   //   this.countSoFar = countSoFar;
@@ -104,11 +105,13 @@ public class App implements ApplicationRunner {
 
     // --state
     if (args.getOptionValues("state")==null) {
+
       //###TODO can't differentiate between starting and finished
       //###TODO can't differentiate between starting and finished
       //###TODO can't differentiate between starting and finished
-      for (int segment = 0; segment < withTotalSegments; ++segment)
-        appState.exclusiveStartKeys.add(null);
+      appState.exclusiveStartKeys.addAll(Collections.nCopies(withTotalSegments, null));
+      // for (int segment = 0; segment < withTotalSegments; ++segment)
+      //   appState.exclusiveStartKeys.add(null);
       //###TODO can't differentiate between starting and finished
       //###TODO can't differentiate between starting and finished
       //###TODO can't differentiate between starting and finished
@@ -124,7 +127,7 @@ public class App implements ApplicationRunner {
         @Override
         public void run() {
 
-          log("run");
+          log("run", withSegment);
 
           try {
 
@@ -157,9 +160,9 @@ public class App implements ApplicationRunner {
               //   permitsToConsume = 1;
               // }
 
-              appState.countSoFar += result.getCount();
+              appState.count.addAndGet(result.getCount());
 
-              log(appState.countSoFar, renderState(appState));
+              log(appState.count.get(), renderState(appState));
 
             } while (appState.exclusiveStartKeys.get(withSegment) != null);
 
