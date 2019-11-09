@@ -72,13 +72,14 @@ public class App implements ApplicationRunner {
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
-  // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
   private final int withTotalSegments = 20;
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
 
-  private final RateLimiter rateLimiter = RateLimiter.create(128.0, Duration.ofSeconds(30));
+  // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+  // private final double default_rcu_limit = 128.0;
+  private final RateLimiter rateLimiter = RateLimiter.create(128.0/*, Duration.ofSeconds(30)*/);
 
   /**
    * ctor
@@ -97,9 +98,14 @@ public class App implements ApplicationRunner {
     // source dynamo table name
     final String tableName = args.getNonOptionArgs().get(0);
 
-    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    if (args.getOptionValues("rcu-limit")!=null)
-      rateLimiter.setRate(Double.parseDouble(args.getOptionValues("rcu-limit").iterator().next()));
+    if (args.getOptionValues("rcu-limit")!=null) {
+      double rcu_limit = Double.parseDouble(args.getOptionValues("rcu-limit").iterator().next());
+      log("rcu-limit", rcu_limit);
+
+      // rateLimiter = RateLimiter.create(rcu_limit);
+
+      rateLimiter.setRate(rcu_limit);
+    }
 
     // --total-segments
 
@@ -131,9 +137,11 @@ public class App implements ApplicationRunner {
 
           try {
 
+            // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+            int permits = 128;
+
             do {
-              // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-              rateLimiter.acquire(128);
+              rateLimiter.acquire(permits);
 
               // Do the scan
               ScanRequest scan = new ScanRequest()
@@ -159,7 +167,9 @@ public class App implements ApplicationRunner {
               // if (permitsToConsume <= 0) {
               //   permitsToConsume = 1;
               // }
+              permits = new Double(result.getConsumedCapacity().getCapacityUnits()).intValue();
 
+              // Process results here
               appState.count.addAndGet(result.getCount());
 
               log(appState.count.get(), renderState(appState));
