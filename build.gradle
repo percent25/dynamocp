@@ -20,6 +20,10 @@ dependencies {
 // aws sdk
 	implementation platform("com.amazonaws:aws-java-sdk-bom:+")
   implementation "com.amazonaws:aws-java-sdk-dynamodb"
+
+// aws sdk 2
+	implementation platform("software.amazon.awssdk:bom:+")
+	implementation "software.amazon.awssdk:dynamodb"
 }
 
 springBoot {
