@@ -44,10 +44,13 @@ import software.amazon.awssdk.utils.ImmutableMap;
 
 class AppState {
   public final AtomicLong count = new AtomicLong();
-  public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
-  // public AppState(long countSoFar) {
-  //   this.countSoFar = countSoFar;
-  // }
+  //###TODO COPYONWRITEARRAYLIST??
+  //###TODO COPYONWRITEARRAYLIST??
+  //###TODO COPYONWRITEARRAYLIST??
+  public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList(); // exclusiveStartKeys len *is* totalSegments
+  //###TODO COPYONWRITEARRAYLIST??
+  //###TODO COPYONWRITEARRAYLIST??
+  //###TODO COPYONWRITEARRAYLIST??
   // public AppState(long countSoFar, List<Map<String, AttributeValue>> exclusiveStartKeys) {
   //   this(countSoFar);
   //   this.exclusiveStartKeys.addAll(exclusiveStartKeys);
@@ -58,10 +61,11 @@ class AppState {
 }
 
 class AppOptions {
-  public int rcuLimit = 128;
-  public int wcuLimit = 128;
-  public int totalSegments = 4;
+  public boolean debug;
+  public double rcuLimit = 128.0;
+  public double wcuLimit = 128.0;
   public int scanLimit = -1;
+  public int totalSegments = 4;
   public String resume; // base64 encoded
   public String toString() {
     return new Gson().toJson(this);
@@ -79,20 +83,14 @@ public class App implements ApplicationRunner {
   private final ApplicationContext context;
   private final Optional<BuildProperties> buildProperties;
 
-  // aws sdk
-  // private final AmazonDynamoDB dynamo = AmazonDynamoDBClientBuilder.defaultClient();
+  private AppState appState = new AppState();
 
   // aws sdk 2
   private final DynamoDbClient dynamo = DynamoDbClient.create();
   private final DynamoDbAsyncClient dynamo2 = DynamoDbAsyncClient.builder().build();
 
+  // @see totalSegments
   private final List<Thread> threads = Lists.newArrayList();
-
-  // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-  private final RateLimiter rateLimiter = RateLimiter.create(128.0);
-  private final RateLimiter writeLimiter = RateLimiter.create(128.0);
-
-  private AppState appState = new AppState();
 
   /**
    * ctor
@@ -126,43 +124,45 @@ public class App implements ApplicationRunner {
     // source dynamo table name
     final String tableName = args.getNonOptionArgs().get(0);
 
-    rateLimiter.setRate(options.rcuLimit);
-    writeLimiter.setRate(options.wcuLimit);
+    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+    final RateLimiter rateLimiter = RateLimiter.create(options.rcuLimit);
+    final RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit);
 
-    // --total-segments
-    // final int totalSegments = options.resume==null?options.totalSegments:options.
+    // final AppState appState = options.resume!=null?parseState(options.resume):new AppState(options.totalSegments);
 
-    // --state
-    if (args.getOptionValues("state")==null) {
-
-      //###TODO can't differentiate between starting and finished
-      //###TODO can't differentiate between starting and finished
-      //###TODO can't differentiate between starting and finished
-      appState.exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments, null));
-      //###TODO can't differentiate between starting and finished
-      //###TODO can't differentiate between starting and finished
-      //###TODO can't differentiate between starting and finished
-    
-    } else {
-      // restore state
-      appState = parseState(args.getOptionValues("state").iterator().next());
+    if (options.resume!=null) {
+      log("totalSegments ignored");
+      appState = parseState(options.resume);
       log(appState);
+    } else {
+      appState.exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments, null));
     }
+ 
+          // // --state
+          // if (args.getOptionValues("state")==null) {
+
+          //   //###TODO can't differentiate between starting and finished
+          //   //###TODO can't differentiate between starting and finished
+          //   //###TODO can't differentiate between starting and finished
+          //   appState.exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments, null));
+          //   //###TODO can't differentiate between starting and finished
+          //   //###TODO can't differentiate between starting and finished
+          //   //###TODO can't differentiate between starting and finished
+          
+          // } else {
+          //   // restore state
+          //   appState = parseState(args.getOptionValues("state").iterator().next());
+          //   log(appState);
+          // }
 
     for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment) {
       final int withSegment = segment;
       threads.add(new Thread() {
-        @Override
-        public void run() {
-
-          log("run", withSegment);
-
-          try {
 
             // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
             int permits = 128; // worst-case unbounded scan read capacity units (initial estimate)
 
-            //###TODO doesn't need to be AtomicInteger
+                        //###TODO doesn't need to be AtomicInteger
             //###TODO doesn't need to be AtomicInteger
             //###TODO doesn't need to be AtomicInteger
             // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
@@ -171,10 +171,18 @@ public class App implements ApplicationRunner {
             //###TODO how about 10000 - wcu_limit?
             //###TODO how about 10000 - wcu_limit?
 
-            final AtomicInteger writePermits = new AtomicInteger(25); // worst-case batch write capacity units (initial estimate)
+            int writePermits = 25; // worst-case batch write capacity units (initial estimate)
             //###TODO doesn't need to be AtomicInteger
             //###TODO doesn't need to be AtomicInteger
             //###TODO doesn't need to be AtomicInteger
+
+        @Override
+        public void run() {
+
+          log("run", withSegment);
+
+          try {
+
 
             do {
               rateLimiter.acquire(permits);
@@ -228,7 +236,7 @@ public class App implements ApplicationRunner {
                     .build();
 
                 // rate limit
-                writeLimiter.acquire(writePermits.get());
+                writeLimiter.acquire(writePermits);
 
                 batchWriteItemResponses.add(dynamo2.batchWriteItem(batchWriteItemRequest));
               }
@@ -236,8 +244,8 @@ public class App implements ApplicationRunner {
               CompletableFuture.allOf(batchWriteItemResponses.toArray(new CompletableFuture[0])).get();
 
               for (CompletableFuture<BatchWriteItemResponse> batchWriteItemResponse : batchWriteItemResponses) {
-                // log("writePermits", writePermits.get());
-                writePermits.set(Math.max(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue(), 1));
+                // log("writePermits", writePermits;
+                writePermits = Math.max(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue(), 1);
               }
           
               appState.count.addAndGet(result.count());
