@@ -1,6 +1,27 @@
 package app;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import com.google.common.base.CaseFormat;
+import com.google.common.collect.Lists;
+import com.google.common.io.BaseEncoding;
+import com.google.common.io.CharStreams;
+import com.google.common.util.concurrent.RateLimiter;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -19,41 +40,7 @@ import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
-import software.amazon.awssdk.utils.CompletableFutureUtils;
 import software.amazon.awssdk.utils.ImmutableMap;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-
-// import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-// import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-// import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-// import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
-// import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
-// import com.amazonaws.services.dynamodbv2.model.PutRequest;
-// import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
-// import com.amazonaws.services.dynamodbv2.model.ScanRequest;
-// import com.amazonaws.services.dynamodbv2.model.ScanResult;
-// import com.amazonaws.services.dynamodbv2.model.WriteRequest;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.io.BaseEncoding;
-import com.google.common.io.CharStreams;
-import com.google.common.util.concurrent.AtomicDouble;
-import com.google.common.util.concurrent.RateLimiter;
-import com.google.gson.Gson;
 
 class AppState {
   public final AtomicLong count = new AtomicLong();
@@ -65,6 +52,17 @@ class AppState {
   //   this(countSoFar);
   //   this.exclusiveStartKeys.addAll(exclusiveStartKeys);
   // }
+  public String toString() {
+    return new Gson().toJson(this);
+  }
+}
+
+class AppOptions {
+  public int rcuLimit = 128;
+  public int wcuLimit = 128;
+  public int totalSegments = 4;
+  public int scanLimit = -1;
+  public String resume; // base64 encoded
   public String toString() {
     return new Gson().toJson(this);
   }
@@ -86,23 +84,15 @@ public class App implements ApplicationRunner {
 
   // aws sdk 2
   private final DynamoDbClient dynamo = DynamoDbClient.create();
-  private final DynamoDbAsyncClient dynamo2 = DynamoDbAsyncClient.create();
+  private final DynamoDbAsyncClient dynamo2 = DynamoDbAsyncClient.builder().build();
 
   private final List<Thread> threads = Lists.newArrayList();
-
-  private AppState appState = new AppState();
-
-  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
-  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
-  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
-  private final int withTotalSegments = 4;
-  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
-  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
-  //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
 
   // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
   private final RateLimiter rateLimiter = RateLimiter.create(128.0);
   private final RateLimiter writeLimiter = RateLimiter.create(128.0);
+
+  private AppState appState = new AppState();
 
   /**
    * ctor
@@ -112,28 +102,35 @@ public class App implements ApplicationRunner {
     this.buildProperties = buildProperties;
   }
 
+  private AppOptions getOptions(ApplicationArguments args) {
+    JsonObject options = new JsonObject();
+    for (String name : args.getOptionNames()) {
+      String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);
+      options.addProperty(lowerCamel, true);
+      for (String value : args.getOptionValues(name))
+        options.addProperty(lowerCamel, value);
+    }
+    return new Gson().fromJson(options, AppOptions.class);
+  }
+
   /**
    * run
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
 
+    AppOptions options = getOptions(args);
+
+    log(options);
+
     // source dynamo table name
     final String tableName = args.getNonOptionArgs().get(0);
 
-    if (args.getOptionValues("rcu-limit") != null) {
-      double rcu_limit = Double.parseDouble(args.getOptionValues("rcu-limit").iterator().next());
-      log("rcu-limit", rcu_limit);
-      rateLimiter.setRate(rcu_limit);
-    }
-
-    if (args.getOptionValues("wcu-limit") != null) {
-      double wcu_limit = Double.parseDouble(args.getOptionValues("wcu-limit").iterator().next());
-      log("wcu-limit", wcu_limit);
-      writeLimiter.setRate(wcu_limit);
-    }
+    rateLimiter.setRate(options.rcuLimit);
+    writeLimiter.setRate(options.wcuLimit);
 
     // --total-segments
+    // final int totalSegments = options.resume==null?options.totalSegments:options.
 
     // --state
     if (args.getOptionValues("state")==null) {
@@ -141,17 +138,18 @@ public class App implements ApplicationRunner {
       //###TODO can't differentiate between starting and finished
       //###TODO can't differentiate between starting and finished
       //###TODO can't differentiate between starting and finished
-      appState.exclusiveStartKeys.addAll(Collections.nCopies(withTotalSegments, null));
+      appState.exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments, null));
       //###TODO can't differentiate between starting and finished
       //###TODO can't differentiate between starting and finished
       //###TODO can't differentiate between starting and finished
+    
     } else {
       // restore state
       appState = parseState(args.getOptionValues("state").iterator().next());
       log(appState);
     }
 
-    for (int segment = 0; segment < withTotalSegments; ++segment) {
+    for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment) {
       final int withSegment = segment;
       threads.add(new Thread() {
         @Override
@@ -192,7 +190,9 @@ public class App implements ApplicationRunner {
                   //
                   .segment(withSegment)
                   //
-                  .totalSegments(withTotalSegments)
+                  .totalSegments(appState.exclusiveStartKeys.size())
+                  //
+                  .limit(options.scanLimit > 0 ? options.scanLimit : null)
                   //
                   .build();
 
@@ -200,7 +200,7 @@ public class App implements ApplicationRunner {
 
               appState.exclusiveStartKeys.set(withSegment, result.lastEvaluatedKey());
 
-              permits = new Double(result.consumedCapacity().capacityUnits()).intValue();
+              permits = Math.max(new Double(result.consumedCapacity().capacityUnits()).intValue(), 1);
 
               // Process results here
 
@@ -220,9 +220,6 @@ public class App implements ApplicationRunner {
           
                 // log(fromIndex, toIndex, subList.size());
 
-                // Map<String, Collection<WriteRequest>> requestItems = Maps.newHashMap();
-                // requestItems.put();
-
                 BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
                     .requestItems(ImmutableMap.of(tableName, subList))
                     //
@@ -230,24 +227,23 @@ public class App implements ApplicationRunner {
                     //
                     .build();
 
-                // batchWriteItemRequest.addRequestItemsEntry(tableName, subList);
-
                 // rate limit
                 writeLimiter.acquire(writePermits.get());
+
                 batchWriteItemResponses.add(dynamo2.batchWriteItem(batchWriteItemRequest));
               }
 
               CompletableFuture.allOf(batchWriteItemResponses.toArray(new CompletableFuture[0])).get();
 
               for (CompletableFuture<BatchWriteItemResponse> batchWriteItemResponse : batchWriteItemResponses) {
-                writePermits.set(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue());
                 // log("writePermits", writePermits.get());
+                writePermits.set(Math.max(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue(), 1));
               }
           
               appState.count.addAndGet(result.count());
               log(appState.count.get(), renderState(appState));
 
-            } while (appState.exclusiveStartKeys.get(withSegment) != null);
+            } while (!appState.exclusiveStartKeys.get(withSegment).isEmpty());
 
           } catch (Exception e) {
             throw new RuntimeException(e);
