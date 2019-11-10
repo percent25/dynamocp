@@ -12,36 +12,46 @@ import org.springframework.context.ApplicationContext;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
+import software.amazon.awssdk.utils.CompletableFutureUtils;
+import software.amazon.awssdk.utils.ImmutableMap;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-  // import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-  // import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-  // import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-  // import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
-  // import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
-  // import com.amazonaws.services.dynamodbv2.model.PutRequest;
-  // import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
-  // import com.amazonaws.services.dynamodbv2.model.ScanRequest;
-  // import com.amazonaws.services.dynamodbv2.model.ScanResult;
-  // import com.amazonaws.services.dynamodbv2.model.WriteRequest;
+// import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+// import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+// import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+// import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
+// import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
+// import com.amazonaws.services.dynamodbv2.model.PutRequest;
+// import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
+// import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+// import com.amazonaws.services.dynamodbv2.model.ScanResult;
+// import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.CharStreams;
+import com.google.common.util.concurrent.AtomicDouble;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 
@@ -85,7 +95,7 @@ public class App implements ApplicationRunner {
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
-  private final int withTotalSegments = 20;
+  private final int withTotalSegments = 4;
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
   //###TODO REPLACE THIS W/EXCLUSIVESTARTKEYS.SIZE()??
@@ -152,12 +162,21 @@ public class App implements ApplicationRunner {
           try {
 
             // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-            int permits = 128; // worst-case unbounded scan
+            int permits = 128; // worst-case unbounded scan read capacity units (initial estimate)
 
-            // max item size=400KB -> 400 write capacity units per item -> x25 write requests per batch write -> 10000
+            //###TODO doesn't need to be AtomicInteger
+            //###TODO doesn't need to be AtomicInteger
+            //###TODO doesn't need to be AtomicInteger
+            // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
 
-            // 10000? 4000?
-            int writePermits = 2000; // ### TODO set to worst-case write capacity units
+            //###TODO how about 10000 - wcu_limit?
+            //###TODO how about 10000 - wcu_limit?
+            //###TODO how about 10000 - wcu_limit?
+
+            final AtomicInteger writePermits = new AtomicInteger(25); // worst-case batch write capacity units (initial estimate)
+            //###TODO doesn't need to be AtomicInteger
+            //###TODO doesn't need to be AtomicInteger
+            //###TODO doesn't need to be AtomicInteger
 
             do {
               rateLimiter.acquire(permits);
@@ -177,7 +196,6 @@ public class App implements ApplicationRunner {
                   //
                   .build();
 
-              // dynamo.sc
               ScanResponse result = dynamo.scan(scan);
 
               appState.exclusiveStartKeys.set(withSegment, result.lastEvaluatedKey());
@@ -186,32 +204,45 @@ public class App implements ApplicationRunner {
 
               // Process results here
 
-                        // List<WriteRequest> writeRequests = Lists.newArrayList();
-                        // for (Map<String, AttributeValue> item : result.getItems())
-                        //   writeRequests.add(new WriteRequest(new PutRequest(item)));
+              List<WriteRequest> writeRequests = Lists.newArrayList();
+              for (Map<String, AttributeValue> item : result.items())
+                writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
 
-                        // final int batch = 25;
-                        // for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
-                        //   // log(i);
-                        //   int toIndex = fromIndex + batch;
-                        //   if (writeRequests.size() < toIndex)
-                        //     toIndex = writeRequests.size();
-                    
-                        //   List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
-                    
-                        //   // log(fromIndex, toIndex, subList.size());
-                          
-                        //   BatchWriteItemRequest batchWriteItemRequest = new BatchWriteItemRequest().withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-                        //   batchWriteItemRequest.addRequestItemsEntry(tableName, subList);
+              final int batch = 25;
+              List<CompletableFuture<BatchWriteItemResponse>> batchWriteItemResponses = Lists.newArrayList();
+              for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
+                // log(i);
+                int toIndex = fromIndex + batch;
+                if (writeRequests.size() < toIndex)
+                  toIndex = writeRequests.size();
+          
+                List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
+          
+                // log(fromIndex, toIndex, subList.size());
 
-                        //   // rate limit
-                        //   writeLimiter.acquire(writePermits);
+                // Map<String, Collection<WriteRequest>> requestItems = Maps.newHashMap();
+                // requestItems.put();
 
-                        //   BatchWriteItemResult batchWriteItemResult = dynamo.batchWriteItem(batchWriteItemRequest);
-                        //   writePermits = new Double(batchWriteItemResult.getConsumedCapacity().iterator().next().getCapacityUnits()).intValue();
-                        //   // log("writePermits", writePermits);
-                        //   // dynamo2.batchWriteItem(BatchWriteItemRequest);
-                        // }
+                BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+                    .requestItems(ImmutableMap.of(tableName, subList))
+                    //
+                    .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+                    //
+                    .build();
+
+                // batchWriteItemRequest.addRequestItemsEntry(tableName, subList);
+
+                // rate limit
+                writeLimiter.acquire(writePermits.get());
+                batchWriteItemResponses.add(dynamo2.batchWriteItem(batchWriteItemRequest));
+              }
+
+              CompletableFuture.allOf(batchWriteItemResponses.toArray(new CompletableFuture[0])).get();
+
+              for (CompletableFuture<BatchWriteItemResponse> batchWriteItemResponse : batchWriteItemResponses) {
+                writePermits.set(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue());
+                // log("writePermits", writePermits.get());
+              }
           
               appState.count.addAndGet(result.count());
               log(appState.count.get(), renderState(appState));
