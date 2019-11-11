@@ -84,6 +84,10 @@ class AppOptions {
 //###TODO STATE RESTORE DOESN'T WORK??
 //###TODO STATE RESTORE DOESN'T WORK??
 
+//###TODO need to somehow calc totalSegments based on wcu too
+//###TODO need to somehow calc totalSegments based on wcu too
+//###TODO need to somehow calc totalSegments based on wcu too
+
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
 public class App implements ApplicationRunner {
@@ -227,46 +231,8 @@ public class App implements ApplicationRunner {
 
               } else {
 
-                doWrite(result.items(), writePermits);
-
-                      // List<WriteRequest> writeRequests = Lists.newArrayList();
-                      // for (Map<String, AttributeValue> item : result.items())
-                      //   writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
-        
-                      // final int batch = 25;
-                      // List<CompletableFuture<BatchWriteItemResponse>> batchWriteItemResponses = Lists.newArrayList();
-                      // for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
-                      //   // log(i);
-                      //   int toIndex = fromIndex + batch;
-                      //   if (writeRequests.size() < toIndex)
-                      //     toIndex = writeRequests.size();
-                  
-                      //   List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
-                  
-                      //   // log(fromIndex, toIndex, subList.size());
-        
-                      //   BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
-                      //       .requestItems(ImmutableMap.of(targetTable, subList))
-                      //       //
-                      //       .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-                      //       //
-                      //       .build();
-        
-                      //   // rate limit
-                      //   writeLimiter.acquire(writePermits);
-        
-                      //   batchWriteItemResponses.add(dynamo2.batchWriteItem(batchWriteItemRequest));
-                      // }
-        
-                      // CompletableFuture.allOf(batchWriteItemResponses.toArray(new CompletableFuture[0])).get();
-        
-                      // for (CompletableFuture<BatchWriteItemResponse> batchWriteItemResponse : batchWriteItemResponses) {
-                      //   // log("writePermits", writePermits;
-                      //   writePermits = Math.max(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue(), 1);
-                      // }
-                  
-                      // appState.count.addAndGet(result.count());
-                      // log(appState.count.get(), renderState(appState));
+                doWrite(result.items());
+                // doWriteAsync(result.items(), writePermits);
 
               }
 
@@ -288,7 +254,51 @@ public class App implements ApplicationRunner {
 
   }
 
-  private void doWrite(List<Map<String, AttributeValue>> items, final int[] writePermits) throws Exception {
+  private void doWrite(List<Map<String, AttributeValue>> items) throws Exception {
+    // log("doWrite", items.size());
+    List<WriteRequest> writeRequests = Lists.newArrayList();
+    for (Map<String, AttributeValue> item : items)
+      writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
+
+    final int batch = 25;
+    for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
+      // log(i);
+      int toIndex = fromIndex + batch;
+      if (writeRequests.size() < toIndex)
+        toIndex = writeRequests.size();
+
+      List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
+
+      BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+          .requestItems(ImmutableMap.of(targetTable, subList))
+          //
+          .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+          //
+          .build();
+
+      // log("batchWriteItem", fromIndex, toIndex);
+
+      BatchWriteItemResponse batchWriteItemResponse = dynamo.batchWriteItem(batchWriteItemRequest);
+      double consumedCapacityUnits = batchWriteItemResponse.consumedCapacity().iterator().next().capacityUnits();
+      wcuMeter.mark(new Double(consumedCapacityUnits).longValue());
+
+      int writePermits = new Double(consumedCapacityUnits).intValue();
+      if (writePermits > 0)
+        writeLimiter.acquire(writePermits);
+    }
+
+    appState.count.addAndGet(items.size());
+
+    log(appState.count.get(),
+        //
+        new Double(rcuMeter.getMeanRate()).intValue(),
+        //
+        new Double(wcuMeter.getMeanRate()).intValue(),
+        //
+        renderState(appState));
+  }
+
+  private void doWriteAsync(List<Map<String, AttributeValue>> items, final int[] writePermits) throws Exception {
     // log("doWrite", items.size());
     List<WriteRequest> writeRequests = Lists.newArrayList();
     for (Map<String, AttributeValue> item : items)
