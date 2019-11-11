@@ -152,7 +152,7 @@ public class App implements ApplicationRunner {
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.rcuLimit == -1)
-      options.rcuLimit = options.wcuLimit/8;
+      options.rcuLimit = options.wcuLimit/4;
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     rateLimiter = RateLimiter.create(options.rcuLimit);
