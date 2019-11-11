@@ -158,16 +158,18 @@ public class App implements ApplicationRunner {
       threads.add(new Thread() {
 
         // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-        int permits = 128; // worst-case unbounded scan read capacity units (initial estimate)
+        int permits = 128; // worst-case unbounded scan read capacity units consumed (initial estimate)
 
         @Override
         public void run() {
           try {
             log("run", withSegment);
             do {
-              rateLimiter.acquire(permits);
+  
+              if (permits > 0)
+                rateLimiter.acquire(permits);
 
-              // Do the scan
+              // STEP 1 Do the scan
               ScanRequest scan = ScanRequest.builder()
                   //
                   .tableName(sourceTable)
@@ -189,12 +191,12 @@ public class App implements ApplicationRunner {
               appState.exclusiveStartKeys.set(withSegment, result.lastEvaluatedKey());
 
               double consumedCapacityUnits = result.consumedCapacity().capacityUnits();
-              // log("consumedCapacityUnits", consumedCapacityUnits);
+
               rcuMeter.mark(new Double(consumedCapacityUnits).longValue());
 
-              permits = Math.max(new Double(consumedCapacityUnits).intValue(), 1);
+              permits = new Double(consumedCapacityUnits).intValue();
 
-              // Process results here
+              // STEP 2 Process results here
 
               if (targetTable == null) {
                 
