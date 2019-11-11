@@ -62,7 +62,7 @@ class AppState {
 class AppOptions {
   //
   public boolean debug;
-  public String resume; // base64 encoded
+  public String resume; // base64 encoded gzipped app state
   // reading
   public int scanLimit = -1;
   public int totalSegments = 4;
@@ -103,7 +103,7 @@ public class App implements ApplicationRunner {
     this.buildProperties = buildProperties;
   }
 
-  private AppOptions getOptions(ApplicationArguments args) {
+  private AppOptions parseOptions(ApplicationArguments args) {
     JsonObject options = new JsonObject();
     for (String name : args.getOptionNames()) {
       String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);
@@ -120,7 +120,7 @@ public class App implements ApplicationRunner {
   @Override
   public void run(ApplicationArguments args) throws Exception {
 
-    AppOptions options = getOptions(args);
+    AppOptions options = parseOptions(args);
 
     log(options);
 
@@ -140,23 +140,6 @@ public class App implements ApplicationRunner {
     } else {
       appState.exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments, null));
     }
- 
-          // // --state
-          // if (args.getOptionValues("state")==null) {
-
-          //   //###TODO can't differentiate between starting and finished
-          //   //###TODO can't differentiate between starting and finished
-          //   //###TODO can't differentiate between starting and finished
-          //   appState.exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments, null));
-          //   //###TODO can't differentiate between starting and finished
-          //   //###TODO can't differentiate between starting and finished
-          //   //###TODO can't differentiate between starting and finished
-          
-          // } else {
-          //   // restore state
-          //   appState = parseState(args.getOptionValues("state").iterator().next());
-          //   log(appState);
-          // }
 
     for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment) {
       final int withSegment = segment;
@@ -289,13 +272,6 @@ public class App implements ApplicationRunner {
   }
 
 }
-
-
-
-
-
-
-
 
 // Exception in thread "Thread-4" java.lang.RuntimeException: java.util.concurrent.ExecutionException: software.amazon.awssdk.services.dynamodb.model.InternalServerErrorException: Internal server error (Service: DynamoDb, Status Code: 500, Request ID: 4ELN733JMCHQ4MPUD4RLI67KE3VV4KQNSO5AEMVJF66Q9ASUAAJG)
 // 	at app.App$1.run(App.java:249)
