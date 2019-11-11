@@ -2,8 +2,6 @@ package app;
 
 import java.util.*;
 
-import com.google.common.base.*;
-
 /**
  * LogHelper
  */
@@ -16,10 +14,19 @@ public class LogHelper {
 
   public void log(Object... args) {
     List<String> parts = new ArrayList<>();
-//    parts.add(new Date());
-//    parts.add(object);
+    // parts.add(new Date());
+    // parts.add(object);
     for (Object arg : args)
-      parts.add(MoreObjects.firstNonNull(arg, "null").toString());
+      parts.add("" + arg);
     System.err.println(String.join(" ", parts));
+  }
+
+  public void out(Object... args) {
+    List<String> parts = new ArrayList<>();
+    // parts.add(new Date());
+    // parts.add(object);
+    for (Object arg : args)
+      parts.add("" + arg);
+    System.out.println(String.join(" ", parts));
   }
 }

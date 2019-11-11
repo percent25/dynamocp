@@ -284,6 +284,10 @@ public class App implements ApplicationRunner {
     new LogHelper(this).log(args);
   }
 
+  private void out(Object... args) {
+    new LogHelper(this).out(args);
+  }
+
 }
 
 
