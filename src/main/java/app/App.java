@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -61,12 +60,16 @@ class AppState {
 }
 
 class AppOptions {
+  //
   public boolean debug;
-  public double rcuLimit = 128.0;
-  public double wcuLimit = 128.0;
+  public String resume; // base64 encoded
+  // reading
   public int scanLimit = -1;
   public int totalSegments = 4;
-  public String resume; // base64 encoded
+  public double rcuLimit = 128.0;
+  // writing
+  public double wcuLimit = 128.0;
+  //
   public String toString() {
     return new Gson().toJson(this);
   }
@@ -162,19 +165,11 @@ public class App implements ApplicationRunner {
             // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
             int permits = 128; // worst-case unbounded scan read capacity units (initial estimate)
 
-                        //###TODO doesn't need to be AtomicInteger
-            //###TODO doesn't need to be AtomicInteger
-            //###TODO doesn't need to be AtomicInteger
             // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html
-
             //###TODO how about 10000 - wcu_limit?
             //###TODO how about 10000 - wcu_limit?
             //###TODO how about 10000 - wcu_limit?
-
             int writePermits = 25; // worst-case batch write capacity units (initial estimate)
-            //###TODO doesn't need to be AtomicInteger
-            //###TODO doesn't need to be AtomicInteger
-            //###TODO doesn't need to be AtomicInteger
 
         @Override
         public void run() {
@@ -290,3 +285,43 @@ public class App implements ApplicationRunner {
   }
 
 }
+
+
+
+
+
+
+
+
+// Exception in thread "Thread-4" java.lang.RuntimeException: java.util.concurrent.ExecutionException: software.amazon.awssdk.services.dynamodb.model.InternalServerErrorException: Internal server error (Service: DynamoDb, Status Code: 500, Request ID: 4ELN733JMCHQ4MPUD4RLI67KE3VV4KQNSO5AEMVJF66Q9ASUAAJG)
+// 	at app.App$1.run(App.java:249)
+// Caused by: java.util.concurrent.ExecutionException: software.amazon.awssdk.services.dynamodb.model.InternalServerErrorException: Internal server error (Service: DynamoDb, Status Code: 500, Request ID: 4ELN733JMCHQ4MPUD4RLI67KE3VV4KQNSO5AEMVJF66Q9ASUAAJG)
+// 	at java.util.concurrent.CompletableFuture.reportGet(CompletableFuture.java:357)
+// 	at java.util.concurrent.CompletableFuture.get(CompletableFuture.java:1895)
+// 	at app.App$1.run(App.java:236)
+// Caused by: software.amazon.awssdk.services.dynamodb.model.InternalServerErrorException: Internal server error (Service: DynamoDb, Status Code: 500, Request ID: 4ELN733JMCHQ4MPUD4RLI67KE3VV4KQNSO5AEMVJF66Q9ASUAAJG)
+// 	at software.amazon.awssdk.services.dynamodb.model.InternalServerErrorException$BuilderImpl.build(InternalServerErrorException.java:117)
+// 	at software.amazon.awssdk.services.dynamodb.model.InternalServerErrorException$BuilderImpl.build(InternalServerErrorException.java:77)
+// 	at software.amazon.awssdk.protocols.json.internal.unmarshall.AwsJsonProtocolErrorUnmarshaller.unmarshall(AwsJsonProtocolErrorUnmarshaller.java:88)
+// 	at software.amazon.awssdk.protocols.json.internal.unmarshall.AwsJsonProtocolErrorUnmarshaller.handle(AwsJsonProtocolErrorUnmarshaller.java:63)
+// 	at software.amazon.awssdk.protocols.json.internal.unmarshall.AwsJsonProtocolErrorUnmarshaller.handle(AwsJsonProtocolErrorUnmarshaller.java:42)
+// 	at software.amazon.awssdk.core.internal.http.async.AsyncResponseHandler.lambda$prepare$0(AsyncResponseHandler.java:88)
+// 	at java.util.concurrent.CompletableFuture.uniCompose(CompletableFuture.java:952)
+// 	at java.util.concurrent.CompletableFuture$UniCompose.tryFire(CompletableFuture.java:926)
+// 	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:474)
+// 	at java.util.concurrent.CompletableFuture.complete(CompletableFuture.java:1962)
+// 	at software.amazon.awssdk.core.internal.http.async.AsyncResponseHandler$BaosSubscriber.onComplete(AsyncResponseHandler.java:129)
+// 	at software.amazon.awssdk.http.nio.netty.internal.ResponseHandler.runAndLogError(ResponseHandler.java:171)
+// 	at software.amazon.awssdk.http.nio.netty.internal.ResponseHandler.access$500(ResponseHandler.java:68)
+// 	at software.amazon.awssdk.http.nio.netty.internal.ResponseHandler$PublisherAdapter$1.onComplete(ResponseHandler.java:287)
+// 	at com.typesafe.netty.HandlerPublisher.publishMessage(HandlerPublisher.java:362)
+// 	at com.typesafe.netty.HandlerPublisher.flushBuffer(HandlerPublisher.java:304)
+// 	at com.typesafe.netty.HandlerPublisher.receivedDemand(HandlerPublisher.java:258)
+// 	at com.typesafe.netty.HandlerPublisher.access$200(HandlerPublisher.java:41)
+// 	at com.typesafe.netty.HandlerPublisher$ChannelSubscription$1.run(HandlerPublisher.java:452)
+// 	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:163)
+// 	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:510)
+// 	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:518)
+// 	at io.netty.util.concurrent.SingleThreadEventExecutor$6.run(SingleThreadEventExecutor.java:1044)
+// 	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+// 	at java.lang.Thread.run(Thread.java:748)
