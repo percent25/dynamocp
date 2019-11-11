@@ -78,6 +78,12 @@ class AppOptions {
   }
 }
 
+//###TODO STATE RESTORE DOESN'T WORK??
+//###TODO STATE RESTORE DOESN'T WORK??
+//###TODO STATE RESTORE DOESN'T WORK??
+//###TODO STATE RESTORE DOESN'T WORK??
+//###TODO STATE RESTORE DOESN'T WORK??
+
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
 public class App implements ApplicationRunner {
@@ -218,8 +224,8 @@ public class App implements ApplicationRunner {
 
               if (targetTable == null) {
                 
-                // for (Map<String, AttributeValue> item : result.items())
-                //   log(item);
+                for (Map<String, AttributeValue> item : result.items())
+                  out(item);
 
               } else {
 
@@ -285,6 +291,7 @@ public class App implements ApplicationRunner {
   }
 
   private void doWrite(List<Map<String, AttributeValue>> items, final int[] writePermits) throws Exception {
+    log("doWrite", items.size());
     List<WriteRequest> writeRequests = Lists.newArrayList();
     for (Map<String, AttributeValue> item : items)
       writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
@@ -310,6 +317,8 @@ public class App implements ApplicationRunner {
 
       // rate limit
       writeLimiter.acquire(writePermits[0]);
+
+      // log("batchWriteItem", fromIndex, toIndex);
 
       batchWriteItemResponses.add(dynamo2.batchWriteItem(batchWriteItemRequest));
     }
@@ -344,6 +353,11 @@ public class App implements ApplicationRunner {
 
   private void log(Object... args) {
     new LogHelper(this).log(args);
+  }
+
+  private void out(Object... args) {
+    for (Object arg : args)
+      System.out.println(arg);
   }
 
 }
