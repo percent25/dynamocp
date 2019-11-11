@@ -18,6 +18,7 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.RateLimiter;
@@ -290,7 +291,20 @@ public class App implements ApplicationRunner {
     ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
     InputStream in = new GZIPInputStream(bais);
     String json = CharStreams.toString(new InputStreamReader(in));
-    return new Gson().fromJson(json, AppState.class);
+
+    AppState state = new Gson().fromJson(json, AppState.class);
+
+    // sigh.
+    for (Map<String, AttributeValue> exclusiveStartKey : state.exclusiveStartKeys) {
+      exclusiveStartKey.putAll(Maps.transformValues(exclusiveStartKey, (value) -> {
+        //###TODO handle all types
+        //###TODO handle all types
+        //###TODO handle all types
+        return AttributeValue.builder().s(value.s()).build();
+      }));
+    }
+
+    return state;
   }
 
   private static String renderState(AppState state) throws Exception {
