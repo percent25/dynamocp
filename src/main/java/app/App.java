@@ -45,17 +45,7 @@ import software.amazon.awssdk.utils.ImmutableMap;
 
 class AppState {
   public final AtomicLong count = new AtomicLong();
-  //###TODO COPYONWRITEARRAYLIST??
-  //###TODO COPYONWRITEARRAYLIST??
-  //###TODO COPYONWRITEARRAYLIST??
   public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList(); // exclusiveStartKeys len *is* totalSegments
-  //###TODO COPYONWRITEARRAYLIST??
-  //###TODO COPYONWRITEARRAYLIST??
-  //###TODO COPYONWRITEARRAYLIST??
-  // public AppState(long countSoFar, List<Map<String, AttributeValue>> exclusiveStartKeys) {
-  //   this(countSoFar);
-  //   this.exclusiveStartKeys.addAll(exclusiveStartKeys);
-  // }
   public String toString() {
     return new Gson().toJson(this);
   }
@@ -76,12 +66,6 @@ class AppOptions {
     return new Gson().toJson(this);
   }
 }
-
-//###TODO STATE RESTORE DOESN'T WORK??
-//###TODO STATE RESTORE DOESN'T WORK??
-//###TODO STATE RESTORE DOESN'T WORK??
-//###TODO STATE RESTORE DOESN'T WORK??
-//###TODO STATE RESTORE DOESN'T WORK??
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
