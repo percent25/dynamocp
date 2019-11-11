@@ -14,8 +14,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Queues;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.RateLimiter;
@@ -65,7 +68,7 @@ class AppOptions {
   public String resume; // base64 encoded gzipped app state
   // reading
   public int scanLimit = -1;
-  public int totalSegments = 4;
+  public int totalSegments = -1;
   public double rcuLimit = 128.0;
   // writing
   public double wcuLimit = 128.0;
@@ -85,6 +88,9 @@ public class App implements ApplicationRunner {
 
   private final ApplicationContext context;
   private final Optional<BuildProperties> buildProperties;
+
+  private String sourceTable;
+  private String targetTable;
 
   private AppState appState = new AppState();
 
@@ -114,6 +120,19 @@ public class App implements ApplicationRunner {
     return new Gson().fromJson(options, AppOptions.class);
   }
 
+  private RateLimiter rateLimiter;
+  private RateLimiter writeLimiter;
+
+  // private long rcu_consumed;
+  // private long wcu_consumed;
+
+  private final MetricRegistry metrics = new MetricRegistry();
+  
+  private final Meter rcuMeter = metrics.meter("rcu");
+  private final Meter wcuMeter = metrics.meter("wcu");
+  
+  private final long t0 = System.currentTimeMillis();
+
   /**
    * run
    */
@@ -122,16 +141,19 @@ public class App implements ApplicationRunner {
 
     AppOptions options = parseOptions(args);
 
-    log(options);
+    log("desired", options);
 
     // source dynamo table name
-    final String tableName = args.getNonOptionArgs().get(0);
+    sourceTable = args.getNonOptionArgs().get(0);
+    // targate dynamo table name
+    if (args.getNonOptionArgs().size()>1)
+      targetTable = args.getNonOptionArgs().get(1);
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    final RateLimiter rateLimiter = RateLimiter.create(options.rcuLimit);
-    final RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit);
+    rateLimiter = RateLimiter.create(options.rcuLimit);
+    writeLimiter = RateLimiter.create(options.wcuLimit);
 
-    // final AppState appState = options.resume!=null?parseState(options.resume):new AppState(options.totalSegments);
+    options.totalSegments = Math.max(new Double(options.rcuLimit/128).intValue(), 1);
 
     if (options.resume!=null) {
       log("totalSegments ignored");
@@ -140,6 +162,8 @@ public class App implements ApplicationRunner {
     } else {
       appState.exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments, null));
     }
+
+    log("reported", options);
 
     for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment) {
       final int withSegment = segment;
@@ -152,23 +176,19 @@ public class App implements ApplicationRunner {
             //###TODO how about 10000 - wcu_limit?
             //###TODO how about 10000 - wcu_limit?
             //###TODO how about 10000 - wcu_limit?
-            int writePermits = 25; // worst-case batch write capacity units (initial estimate)
+            int[] writePermits = new int[]{25}; // worst-case batch write capacity units (initial estimate)
 
         @Override
         public void run() {
-
-          log("run", withSegment);
-
           try {
-
-
+            log("run", withSegment);
             do {
               rateLimiter.acquire(permits);
 
               // Do the scan
               ScanRequest scan = ScanRequest.builder()
                   //
-                  .tableName(tableName)
+                  .tableName(sourceTable)
                   //
                   .exclusiveStartKey(appState.exclusiveStartKeys.get(withSegment))
                   //
@@ -186,48 +206,65 @@ public class App implements ApplicationRunner {
 
               appState.exclusiveStartKeys.set(withSegment, result.lastEvaluatedKey());
 
-              permits = Math.max(new Double(result.consumedCapacity().capacityUnits()).intValue(), 1);
+              double consumedCapacityUnits = result.consumedCapacity().capacityUnits();
+              // log("consumedCapacityUnits", consumedCapacityUnits);
+              rcuMeter.mark(new Double(consumedCapacityUnits).longValue());
+
+              log("rcu", new Double(rcuMeter.getMeanRate()).intValue());
+
+              permits = Math.max(new Double(consumedCapacityUnits).intValue(), 1);
 
               // Process results here
 
-              List<WriteRequest> writeRequests = Lists.newArrayList();
-              for (Map<String, AttributeValue> item : result.items())
-                writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
+              if (targetTable == null) {
+                
+                // for (Map<String, AttributeValue> item : result.items())
+                //   log(item);
 
-              final int batch = 25;
-              List<CompletableFuture<BatchWriteItemResponse>> batchWriteItemResponses = Lists.newArrayList();
-              for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
-                // log(i);
-                int toIndex = fromIndex + batch;
-                if (writeRequests.size() < toIndex)
-                  toIndex = writeRequests.size();
-          
-                List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
-          
-                // log(fromIndex, toIndex, subList.size());
+              } else {
 
-                BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
-                    .requestItems(ImmutableMap.of(tableName, subList))
-                    //
-                    .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-                    //
-                    .build();
+                doWrite(result.items(), writePermits);
 
-                // rate limit
-                writeLimiter.acquire(writePermits);
+                      // List<WriteRequest> writeRequests = Lists.newArrayList();
+                      // for (Map<String, AttributeValue> item : result.items())
+                      //   writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
+        
+                      // final int batch = 25;
+                      // List<CompletableFuture<BatchWriteItemResponse>> batchWriteItemResponses = Lists.newArrayList();
+                      // for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
+                      //   // log(i);
+                      //   int toIndex = fromIndex + batch;
+                      //   if (writeRequests.size() < toIndex)
+                      //     toIndex = writeRequests.size();
+                  
+                      //   List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
+                  
+                      //   // log(fromIndex, toIndex, subList.size());
+        
+                      //   BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+                      //       .requestItems(ImmutableMap.of(targetTable, subList))
+                      //       //
+                      //       .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+                      //       //
+                      //       .build();
+        
+                      //   // rate limit
+                      //   writeLimiter.acquire(writePermits);
+        
+                      //   batchWriteItemResponses.add(dynamo2.batchWriteItem(batchWriteItemRequest));
+                      // }
+        
+                      // CompletableFuture.allOf(batchWriteItemResponses.toArray(new CompletableFuture[0])).get();
+        
+                      // for (CompletableFuture<BatchWriteItemResponse> batchWriteItemResponse : batchWriteItemResponses) {
+                      //   // log("writePermits", writePermits;
+                      //   writePermits = Math.max(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue(), 1);
+                      // }
+                  
+                      // appState.count.addAndGet(result.count());
+                      // log(appState.count.get(), renderState(appState));
 
-                batchWriteItemResponses.add(dynamo2.batchWriteItem(batchWriteItemRequest));
               }
-
-              CompletableFuture.allOf(batchWriteItemResponses.toArray(new CompletableFuture[0])).get();
-
-              for (CompletableFuture<BatchWriteItemResponse> batchWriteItemResponse : batchWriteItemResponses) {
-                // log("writePermits", writePermits;
-                writePermits = Math.max(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue(), 1);
-              }
-          
-              appState.count.addAndGet(result.count());
-              log(appState.count.get(), renderState(appState));
 
             } while (!appState.exclusiveStartKeys.get(withSegment).isEmpty());
 
@@ -245,6 +282,48 @@ public class App implements ApplicationRunner {
     for (Thread thread : threads)
       thread.join();
 
+  }
+
+  private void doWrite(List<Map<String, AttributeValue>> items, final int[] writePermits) throws Exception {
+    List<WriteRequest> writeRequests = Lists.newArrayList();
+    for (Map<String, AttributeValue> item : items)
+      writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
+
+    final int batch = 25;
+    List<CompletableFuture<BatchWriteItemResponse>> batchWriteItemResponses = Lists.newArrayList();
+    for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
+      // log(i);
+      int toIndex = fromIndex + batch;
+      if (writeRequests.size() < toIndex)
+        toIndex = writeRequests.size();
+
+      List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
+
+      // log(fromIndex, toIndex, subList.size());
+
+      BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+          .requestItems(ImmutableMap.of(targetTable, subList))
+          //
+          .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+          //
+          .build();
+
+      // rate limit
+      writeLimiter.acquire(writePermits[0]);
+
+      batchWriteItemResponses.add(dynamo2.batchWriteItem(batchWriteItemRequest));
+    }
+
+    CompletableFuture.allOf(batchWriteItemResponses.toArray(new CompletableFuture[0])).get();
+
+    for (CompletableFuture<BatchWriteItemResponse> batchWriteItemResponse : batchWriteItemResponses) {
+      // log("writePermits", writePermits;
+      writePermits[0] = Math.max(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue(), 1);
+    }
+
+    appState.count.addAndGet(items.size());
+
+    log(appState.count.get(), renderState(appState));
   }
 
   private static AppState parseState(String base64) throws Exception {
@@ -265,10 +344,6 @@ public class App implements ApplicationRunner {
 
   private void log(Object... args) {
     new LogHelper(this).log(args);
-  }
-
-  private void out(Object... args) {
-    new LogHelper(this).out(args);
   }
 
 }

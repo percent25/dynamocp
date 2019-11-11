@@ -18,15 +18,7 @@ public class LogHelper {
     // parts.add(object);
     for (Object arg : args)
       parts.add("" + arg);
-    System.err.println(String.join(" ", parts));
-  }
-
-  public void out(Object... args) {
-    List<String> parts = new ArrayList<>();
-    // parts.add(new Date());
-    // parts.add(object);
-    for (Object arg : args)
-      parts.add("" + arg);
     System.out.println(String.join(" ", parts));
   }
+
 }
