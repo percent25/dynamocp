@@ -13,6 +13,7 @@ repositories {
 }
 
 dependencies {
+	implementation 'com.codahale.metrics:metrics-core:+'
 	implementation "com.google.code.gson:gson:+"
 	implementation "com.google.guava:guava:+"
 	implementation "org.springframework.boot:spring-boot-starter"
