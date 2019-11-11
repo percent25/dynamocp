@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +19,6 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.RateLimiter;
@@ -216,8 +216,6 @@ public class App implements ApplicationRunner {
               // log("consumedCapacityUnits", consumedCapacityUnits);
               rcuMeter.mark(new Double(consumedCapacityUnits).longValue());
 
-              log("rcu", new Double(rcuMeter.getMeanRate()).intValue());
-
               permits = Math.max(new Double(consumedCapacityUnits).intValue(), 1);
 
               // Process results here
@@ -291,7 +289,7 @@ public class App implements ApplicationRunner {
   }
 
   private void doWrite(List<Map<String, AttributeValue>> items, final int[] writePermits) throws Exception {
-    log("doWrite", items.size());
+    // log("doWrite", items.size());
     List<WriteRequest> writeRequests = Lists.newArrayList();
     for (Map<String, AttributeValue> item : items)
       writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
@@ -327,12 +325,20 @@ public class App implements ApplicationRunner {
 
     for (CompletableFuture<BatchWriteItemResponse> batchWriteItemResponse : batchWriteItemResponses) {
       // log("writePermits", writePermits;
-      writePermits[0] = Math.max(new Double(batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits()).intValue(), 1);
+      double consumedCapacityUnits = batchWriteItemResponse.get().consumedCapacity().iterator().next().capacityUnits();
+      wcuMeter.mark(new Double(consumedCapacityUnits).longValue());
+      writePermits[0] = Math.max(new Double(consumedCapacityUnits).intValue(), 1);
     }
 
     appState.count.addAndGet(items.size());
 
-    log(appState.count.get(), renderState(appState));
+    log(appState.count.get(),
+        //
+        new Double(rcuMeter.getMeanRate()).intValue(),
+        //
+        new Double(wcuMeter.getMeanRate()).intValue(),
+        //
+        renderState(appState));
   }
 
   private static AppState parseState(String base64) throws Exception {
@@ -356,8 +362,10 @@ public class App implements ApplicationRunner {
   }
 
   private void out(Object... args) {
+    List<String> parts = new ArrayList<>();
     for (Object arg : args)
-      System.out.println(arg);
+      parts.add("" + arg);
+    System.out.println(String.join(" ", parts));
   }
 
 }
