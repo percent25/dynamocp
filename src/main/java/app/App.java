@@ -69,9 +69,9 @@ class AppOptions {
   // reading
   public int scanLimit = -1;
   public int totalSegments = -1;
-  public double rcuLimit = 128.0;
+  public int rcuLimit = -1;
   // writing
-  public double wcuLimit = 128.0;
+  public int wcuLimit = 128;
   //
   public String toString() {
     return new Gson().toJson(this);
@@ -83,10 +83,6 @@ class AppOptions {
 //###TODO STATE RESTORE DOESN'T WORK??
 //###TODO STATE RESTORE DOESN'T WORK??
 //###TODO STATE RESTORE DOESN'T WORK??
-
-//###TODO need to somehow calc totalSegments based on wcu too
-//###TODO need to somehow calc totalSegments based on wcu too
-//###TODO need to somehow calc totalSegments based on wcu too
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
@@ -133,16 +129,11 @@ public class App implements ApplicationRunner {
   private RateLimiter rateLimiter;
   private RateLimiter writeLimiter;
 
-  // private long rcu_consumed;
-  // private long wcu_consumed;
-
   private final MetricRegistry metrics = new MetricRegistry();
   
   private final Meter rcuMeter = metrics.meter("rcu");
   private final Meter wcuMeter = metrics.meter("wcu");
   
-  private final long t0 = System.currentTimeMillis();
-
   /**
    * run
    */
@@ -160,10 +151,14 @@ public class App implements ApplicationRunner {
       targetTable = args.getNonOptionArgs().get(1);
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+    if (options.rcuLimit == -1)
+      options.rcuLimit = options.wcuLimit/8;
+
+    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     rateLimiter = RateLimiter.create(options.rcuLimit);
     writeLimiter = RateLimiter.create(options.wcuLimit);
 
-    options.totalSegments = Math.max(new Double(options.rcuLimit/128).intValue(), 1);
+    options.totalSegments = Math.max(options.rcuLimit/128, 1);
 
     if (options.resume!=null) {
       log("totalSegments ignored");
