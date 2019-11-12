@@ -113,8 +113,8 @@ public class App implements ApplicationRunner {
 
   private final MetricRegistry metrics = new MetricRegistry();
   
-  private final Meter rcuMeter = metrics.meter("rcu");
-  private final Meter wcuMeter = metrics.meter("wcu");
+  private Meter rcuMeter() { return metrics.meter("rcu"); }
+  private Meter wcuMeter() { return metrics.meter("wcu"); }
   
   /**
    * run
@@ -192,7 +192,7 @@ public class App implements ApplicationRunner {
 
               double consumedCapacityUnits = result.consumedCapacity().capacityUnits();
 
-              rcuMeter.mark(new Double(consumedCapacityUnits).longValue());
+              rcuMeter().mark(new Double(consumedCapacityUnits).longValue());
 
               permits = new Double(consumedCapacityUnits).intValue();
 
@@ -209,6 +209,14 @@ public class App implements ApplicationRunner {
                 // doWriteAsync(result.items(), writePermits);
 
               }
+
+              // log(appState.count.get(),
+              // //
+              // new Double(rcuMeter().getMeanRate()).intValue(),
+              // //
+              // new Double(wcuMeter().getMeanRate()).intValue(),
+              // //
+              // renderState(appState));
 
             } while (!appState.exclusiveStartKeys.get(withSegment).isEmpty());
 
@@ -254,7 +262,7 @@ public class App implements ApplicationRunner {
 
       BatchWriteItemResponse batchWriteItemResponse = dynamo.batchWriteItem(batchWriteItemRequest);
       double consumedCapacityUnits = batchWriteItemResponse.consumedCapacity().iterator().next().capacityUnits();
-      wcuMeter.mark(new Double(consumedCapacityUnits).longValue());
+      wcuMeter().mark(new Double(consumedCapacityUnits).longValue());
 
       int writePermits = new Double(consumedCapacityUnits).intValue();
       if (writePermits > 0)
@@ -265,9 +273,9 @@ public class App implements ApplicationRunner {
 
     log(appState.count.get(),
         //
-        new Double(rcuMeter.getMeanRate()).intValue(),
+        new Double(rcuMeter().getMeanRate()).intValue(),
         //
-        new Double(wcuMeter.getMeanRate()).intValue(),
+        new Double(wcuMeter().getMeanRate()).intValue(),
         //
         renderState(appState));
   }
