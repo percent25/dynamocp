@@ -67,7 +67,7 @@ class AppOptions {
   public boolean debug;
   public String resume; // base64 encoded gzipped app state
   // reading
-  public int scanLimit = -1; //###TODO deprecate?
+  // public int scanLimit = -1; //###TODO deprecate?
   public int totalSegments = -1; //###TODO deprecate?
   public int rcuLimit = -1;
   // writing
@@ -193,8 +193,8 @@ public class App implements ApplicationRunner {
                   .segment(finalSegment)
                   //
                   .totalSegments(appState.exclusiveStartKeys.size())
-                  //
-                  .limit(options.scanLimit > 0 ? options.scanLimit : null)
+                  // //
+                  // .limit(options.scanLimit > 0 ? options.scanLimit : null)
                   //
                   .build();
 
