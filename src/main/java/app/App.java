@@ -166,7 +166,7 @@ public class App implements ApplicationRunner {
     writeLimiter = RateLimiter.create(options.wcuLimit);
 
     for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment) {
-      final int withSegment = segment;
+      final int finalSegment = segment;
       threads.add(new Thread() {
 
         // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
@@ -175,7 +175,7 @@ public class App implements ApplicationRunner {
         @Override
         public void run() {
           try {
-            log("run", withSegment);
+            log("run", finalSegment);
             do {
   
               if (permits > 0)
@@ -186,11 +186,11 @@ public class App implements ApplicationRunner {
                   //
                   .tableName(sourceTable)
                   //
-                  .exclusiveStartKey(appState.exclusiveStartKeys.get(withSegment))
+                  .exclusiveStartKey(appState.exclusiveStartKeys.get(finalSegment))
                   //
                   .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
                   //
-                  .segment(withSegment)
+                  .segment(finalSegment)
                   //
                   .totalSegments(appState.exclusiveStartKeys.size())
                   //
@@ -200,7 +200,7 @@ public class App implements ApplicationRunner {
 
               ScanResponse result = dynamo.scan(scan);
 
-              appState.exclusiveStartKeys.set(withSegment, result.lastEvaluatedKey());
+              appState.exclusiveStartKeys.set(finalSegment, result.lastEvaluatedKey());
 
               double consumedCapacityUnits = result.consumedCapacity().capacityUnits();
 
@@ -230,7 +230,7 @@ public class App implements ApplicationRunner {
               // //
               // renderState(appState));
 
-            } while (!appState.exclusiveStartKeys.get(withSegment).isEmpty());
+            } while (!appState.exclusiveStartKeys.get(finalSegment).isEmpty());
 
           } catch (Exception e) {
             throw new RuntimeException(e);
