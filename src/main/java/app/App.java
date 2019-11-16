@@ -43,6 +43,17 @@ import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 import software.amazon.awssdk.utils.ImmutableMap;
 
+///###TODO --hash=Metric/
+///###TODO --hash=Metric/
+///###TODO --hash=Metric/
+
+///###TODO --warmup-period=300
+///###TODO --warmup-period=300
+///###TODO --warmup-period=300
+
+//###TODO --filter{javascript snippet??} (similar to --hash)
+//###TODO --transform={javascript snippet??} (transform is a generalization of --filter)
+
 class AppState {
   public final AtomicLong count = new AtomicLong();
   public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList(); // exclusiveStartKeys len *is* totalSegments
@@ -136,6 +147,7 @@ public class App implements ApplicationRunner {
     if (options.rcuLimit == -1)
       options.rcuLimit = options.wcuLimit/4;
 
+    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.totalSegments == -1)
       options.totalSegments = Math.max(options.rcuLimit/128, 1);
 
@@ -242,6 +254,8 @@ public class App implements ApplicationRunner {
     for (Map<String, AttributeValue> item : items)
       writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
 
+    // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem requests.
+    // The total size of all the items written cannot exceed 16 MB.
     final int batch = 25;
     for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
       // log(i);
@@ -252,6 +266,7 @@ public class App implements ApplicationRunner {
       List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
 
       BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+          //
           .requestItems(ImmutableMap.of(targetTable, subList))
           //
           .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
