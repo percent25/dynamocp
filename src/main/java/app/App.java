@@ -65,13 +65,12 @@ class AppState {
 class AppOptions {
   //
   public boolean debug;
-  public String resume; // base64 encoded gzipped app state
   // reading
-  // public int scanLimit = -1; //###TODO deprecate?
-  public int totalSegments = -1; //###TODO deprecate?
   public int rcuLimit = -1;
   // writing
   public int wcuLimit = 128;
+  //
+  public String resume; // base64 encoded gzipped app state
   //
   public String toString() {
     return new Gson().toJson(this);
@@ -148,16 +147,10 @@ public class App implements ApplicationRunner {
       options.rcuLimit = options.wcuLimit/4;
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    if (options.totalSegments == -1)
-      options.totalSegments = Math.max(options.rcuLimit/128, 1);
+    appState.exclusiveStartKeys.addAll(Collections.nCopies(Math.max(options.rcuLimit/128, 1), null));
 
-    if (options.resume!=null) {
-      log("totalSegments ignored");
+    if (options.resume!=null)
       appState = parseState(options.resume);
-      log(appState);
-    } else {
-      appState.exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments, null));
-    }
 
     log("reported", options);
 
