@@ -195,11 +195,11 @@ public class App implements ApplicationRunner {
 
               appState.exclusiveStartKeys.set(finalSegment, result.lastEvaluatedKey());
 
-              double consumedCapacityUnits = result.consumedCapacity().capacityUnits();
+              Double consumedCapacityUnits = result.consumedCapacity().capacityUnits();
 
-              rcuMeter().mark(new Double(consumedCapacityUnits).longValue());
+              rcuMeter().mark(consumedCapacityUnits.longValue());
 
-              permits = new Double(consumedCapacityUnits).intValue();
+              permits = consumedCapacityUnits.intValue();
 
               // STEP 2 Process results here
 
@@ -269,10 +269,10 @@ public class App implements ApplicationRunner {
       // log("batchWriteItem", fromIndex, toIndex);
 
       BatchWriteItemResponse batchWriteItemResponse = dynamo.batchWriteItem(batchWriteItemRequest);
-      double consumedCapacityUnits = batchWriteItemResponse.consumedCapacity().iterator().next().capacityUnits();
-      wcuMeter().mark(new Double(consumedCapacityUnits).longValue());
+      Double consumedCapacityUnits = batchWriteItemResponse.consumedCapacity().iterator().next().capacityUnits();
+      wcuMeter().mark(consumedCapacityUnits.longValue());
 
-      int writePermits = new Double(consumedCapacityUnits).intValue();
+      int writePermits = consumedCapacityUnits.intValue();
       if (writePermits > 0)
         writeLimiter.acquire(writePermits);
     }
@@ -281,9 +281,9 @@ public class App implements ApplicationRunner {
 
     log(appState.count.get(),
         //
-        new Double(rcuMeter().getMeanRate()).intValue(),
+        Double.valueOf(rcuMeter().getMeanRate()).intValue(),
         //
-        new Double(wcuMeter().getMeanRate()).intValue(),
+        Double.valueOf(wcuMeter().getMeanRate()).intValue(),
         //
         renderState(appState));
   }
