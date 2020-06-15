@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -35,6 +36,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationContext;
 
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
@@ -103,6 +105,7 @@ public class App implements ApplicationRunner {
 
   // aws sdk 2
   private final DynamoDbClient dynamo = DynamoDbClient.create();
+  private final DynamoDbAsyncClient dynamoAsync = DynamoDbAsyncClient.create();
 
   // @see totalSegments
   private final List<Thread> threads = Lists.newArrayList();
@@ -126,13 +129,16 @@ public class App implements ApplicationRunner {
     return new Gson().fromJson(options, AppOptions.class);
   }
 
-  private RateLimiter rateLimiter;
+  private RateLimiter readLimiter;
   private RateLimiter writeLimiter;
 
   private final MetricRegistry metrics = new MetricRegistry();
   
   private Meter rcuMeter() { return metrics.meter("rcu"); }
   private Meter wcuMeter() { return metrics.meter("wcu"); }
+
+  private final AtomicLong readCount = new AtomicLong();
+  private final AtomicLong writeCount = new AtomicLong();
   
   /**
    * run
@@ -152,7 +158,7 @@ public class App implements ApplicationRunner {
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.rcuLimit == -1)
-      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 8;
+      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 2;
     if (options.wcuLimit == -1)
       options.wcuLimit = options.rcuLimit * 8;
 
@@ -165,9 +171,10 @@ public class App implements ApplicationRunner {
     log("effective", options);
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    rateLimiter = RateLimiter.create(options.rcuLimit);
+    readLimiter = RateLimiter.create(options.rcuLimit);
     writeLimiter = RateLimiter.create(options.wcuLimit);
 
+    // log thread count
     log(Range.closedOpen(0, appState.totalSegments()));
     
     for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment) {
@@ -179,12 +186,13 @@ public class App implements ApplicationRunner {
 
         @Override
         public void run() {
+          rcuMeter().mark(0);
           try {
             // log("run", finalSegment);
             do {
-  
+
               if (permits > 0)
-                rateLimiter.acquire(permits);
+                readLimiter.acquire(permits);
 
               // STEP 1 Do the scan
               ScanRequest scan = ScanRequest.builder()
@@ -216,9 +224,19 @@ public class App implements ApplicationRunner {
               // STEP 2 Process results here
 
               if (targetTable == null) {
-                
-                for (Map<String, AttributeValue> item : result.items())
-                  out(item);
+
+                readCount.addAndGet(result.items().size());
+
+                log(readCount.get(),
+                    //
+                    String.format("%s/%s",
+                        Double.valueOf(rcuMeter().getMeanRate()).intValue(),
+                        Double.valueOf(wcuMeter().getMeanRate()).intValue()),
+                    //
+                    renderState(appState));
+
+                  // for (Map<String, AttributeValue> item : result.items())
+                  //   out(item);
 
               } else {
 
@@ -275,6 +293,9 @@ public class App implements ApplicationRunner {
     // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem requests.
     // The total size of all the items written cannot exceed 16 MB.
     final int batch = 25;
+
+    // scatter
+    List<CompletableFuture<BatchWriteItemResponse>> futures = new ArrayList<>();
     for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
       // log(i);
       int toIndex = fromIndex + batch;
@@ -292,8 +313,13 @@ public class App implements ApplicationRunner {
           .build();
 
       // log("batchWriteItem", fromIndex, toIndex);
+      futures.add(dynamoAsync.batchWriteItem(batchWriteItemRequest));
+    }
 
-      BatchWriteItemResponse batchWriteItemResponse = dynamo.batchWriteItem(batchWriteItemRequest);
+    // gather
+    for (CompletableFuture<BatchWriteItemResponse> future : futures) {
+      BatchWriteItemResponse batchWriteItemResponse = future.get();
+
       Double consumedCapacityUnits = batchWriteItemResponse.consumedCapacity().iterator().next().capacityUnits();
       wcuMeter().mark(consumedCapacityUnits.longValue());
 
