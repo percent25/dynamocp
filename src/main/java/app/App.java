@@ -21,6 +21,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Range;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.RateLimiter;
@@ -59,6 +60,9 @@ import software.amazon.awssdk.utils.ImmutableMap;
 class AppState {
   public final AtomicLong count = new AtomicLong();
   public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList(); // exclusiveStartKeys len *is* totalSegments
+  public int totalSegments() {
+    return exclusiveStartKeys.size();
+  }
   public String toString() {
     return new Gson().toJson(this);
   }
@@ -148,9 +152,9 @@ public class App implements ApplicationRunner {
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.rcuLimit == -1)
-      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit * 8;
+      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 8;
     if (options.wcuLimit == -1)
-      options.wcuLimit = options.rcuLimit / 8;
+      options.wcuLimit = options.rcuLimit * 8;
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     appState.exclusiveStartKeys.addAll(Collections.nCopies(Math.max(options.rcuLimit/128, 1), null));
@@ -164,6 +168,8 @@ public class App implements ApplicationRunner {
     rateLimiter = RateLimiter.create(options.rcuLimit);
     writeLimiter = RateLimiter.create(options.wcuLimit);
 
+    log(Range.closedOpen(0, appState.totalSegments()));
+    
     for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment) {
       final int finalSegment = segment;
       threads.add(new Thread() {
@@ -174,7 +180,7 @@ public class App implements ApplicationRunner {
         @Override
         public void run() {
           try {
-            log("run", finalSegment);
+            // log("run", finalSegment);
             do {
   
               if (permits > 0)
@@ -224,7 +230,7 @@ public class App implements ApplicationRunner {
                   //###TODO
                   //###TODO
                     // transform
-                    // item.put("id", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
+                    // item.put("key", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
                   //###TODO
                   //###TODO
                   //###TODO
@@ -300,9 +306,7 @@ public class App implements ApplicationRunner {
 
     log(appState.count.get(),
         //
-        Double.valueOf(rcuMeter().getMeanRate()).intValue(),
-        //
-        Double.valueOf(wcuMeter().getMeanRate()).intValue(),
+        String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(), Double.valueOf(wcuMeter().getMeanRate()).intValue()),
         //
         renderState(appState));
   }
