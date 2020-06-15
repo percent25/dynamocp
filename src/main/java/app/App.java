@@ -7,9 +7,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -68,9 +70,11 @@ class AppOptions {
   // reading
   public int rcuLimit = -1;
   // writing
-  public int wcuLimit = 128;
+  public int wcuLimit = -1;
   //
   public String resume; // base64 encoded gzipped app state
+  //
+  public String transform_expression;
   //
   public String toString() {
     return new Gson().toJson(this);
@@ -144,7 +148,9 @@ public class App implements ApplicationRunner {
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.rcuLimit == -1)
-      options.rcuLimit = options.wcuLimit/4;
+      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit * 8;
+    if (options.wcuLimit == -1)
+      options.wcuLimit = options.rcuLimit / 8;
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     appState.exclusiveStartKeys.addAll(Collections.nCopies(Math.max(options.rcuLimit/128, 1), null));
@@ -152,7 +158,7 @@ public class App implements ApplicationRunner {
     if (options.resume!=null)
       appState = parseState(options.resume);
 
-    log("reported", options);
+    log("effective", options);
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     rateLimiter = RateLimiter.create(options.rcuLimit);
@@ -210,8 +216,21 @@ public class App implements ApplicationRunner {
 
               } else {
 
-                doWrite(result.items());
-                // doWriteAsync(result.items(), writePermits);
+                List<Map<String, AttributeValue>> items = new ArrayList<>();
+                for (Map<String, AttributeValue> item : result.items()) {
+                  item = new HashMap<>(item); // deep copy
+                  items.add(item);
+                  //###TODO
+                  //###TODO
+                  //###TODO
+                    // transform
+                    // item.put("id", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
+                  //###TODO
+                  //###TODO
+                  //###TODO
+              }
+
+                doWrite(items);
 
               }
 
