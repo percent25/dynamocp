@@ -110,8 +110,8 @@ public class App implements ApplicationRunner {
   private final ApplicationContext context;
   private final Optional<BuildProperties> buildProperties;
 
-  private String sourceTable;
-  private String targetTable;
+  // private String sourceTable;
+  // private String targetTable;
 
   private AppState appState = new AppState();
   
@@ -120,10 +120,15 @@ public class App implements ApplicationRunner {
   /**
    * ctor
    */
-  public App(ApplicationContext context, Optional<BuildProperties> buildProperties) {
+  public App(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
     this.context = context;
     this.buildProperties = buildProperties;
+    this.inputPluginProviders.addAll(inputPluginProviders);
+    this.outputPluginProviders.addAll(outputPluginProviders);
   }
+
+  private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
+  private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
   private AppOptions parseOptions(ApplicationArguments args) {
     JsonObject options = new JsonObject();
@@ -157,11 +162,11 @@ public class App implements ApplicationRunner {
 
     log("desired", options);
 
-    // source dynamo table name
-    sourceTable = args.getNonOptionArgs().get(0);
-    // targate dynamo table name
-    if (args.getNonOptionArgs().size()>1)
-      targetTable = args.getNonOptionArgs().get(1);
+    // // source dynamo table name
+    // sourceTable = args.getNonOptionArgs().get(0);
+    // // targate dynamo table name
+    // if (args.getNonOptionArgs().size()>1)
+    //   targetTable = args.getNonOptionArgs().get(1);
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.rcuLimit == -1)
@@ -175,7 +180,7 @@ public class App implements ApplicationRunner {
     if (options.resume!=null)
       appState = parseState(options.resume);
 
-    log("effective", options);
+    log("reported", options);
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     readLimiter = RateLimiter.create(options.rcuLimit);
@@ -184,82 +189,131 @@ public class App implements ApplicationRunner {
     // log thread count
     log(Range.closedOpen(0, appState.totalSegments()));
 
-    new FutureRunner() {
-      {
-        for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment)
-          doSegment(segment, 128);
+
+    List<InputPlugin> inputPlugins = new ArrayList<>();
+    for (InputPluginProvider provider : inputPluginProviders) {
+      System.err.println(provider);
+      try {
+        InputPlugin inputPlugin = provider.get(args);
+        if (inputPlugin!=null)
+          inputPlugins.add(inputPlugin);
+      } catch (Exception e) {
+        System.err.println(e);
       }
+    }
 
-      void doSegment(int segment, int permits) {
-        run(() -> {
-          if (permits > 0)
-            readLimiter.acquire(permits);
+    if (inputPlugins.size() == 0)
+      throw new Exception("no input plugin!");
+    if (inputPlugins.size() != 1)
+      throw new Exception("multiple input plugins!");
 
-          // STEP 1 Do the scan
-          ScanRequest scanRequest = ScanRequest.builder()
-              //
-              .tableName(sourceTable)
-              //
-              .exclusiveStartKey(appState.exclusiveStartKeys.get(segment))
-              //
-              .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-              //
-              .segment(segment)
-              //
-              .totalSegments(appState.exclusiveStartKeys.size())
-              // //
-              // .limit(options.scanLimit > 0 ? options.scanLimit : null)
-              //
-              .build();
-          return lf(dynamoAsync.scan(scanRequest));
-        }, scanResponse -> {
-          try {
+    InputPlugin input = inputPlugins.get(0);
+    // InputPlugin input = new InputPluginSystemIn();
+    // input = new InputPluginDynamo(dynamoAsync, sourceTable, 1, 128);
 
-            appState.exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
-
-            // STEP 2 Process results here
-
-            if (targetTable == null) {
-
-              readCount.addAndGet(scanResponse.items().size());
-
-              for (Map<String, AttributeValue> item : scanResponse.items()) {
-                System.out.println(render(item));
-              }
-
-                    // log(readCount.get(),
-                    //     //
-                    //     String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(),
-                    //         Double.valueOf(wcuMeter().getMeanRate()).intValue()),
-                    //     //
-                    //     renderState(appState));
-
-                  System.err.println(renderState(appState));
-
-
-              // for (Map<String, AttributeValue> item : scanResponse.items())
-              //   out(item);
-
-            } else {
-
-              List<Map<String, AttributeValue>> items = new ArrayList<>();
-              for (Map<String, AttributeValue> item : scanResponse.items()) {
-                item = new HashMap<>(item); // deep copy
-                items.add(item);
-                System.out.println(item);
-              }
-              doWrite(items);
-            }
-
-            if (!appState.exclusiveStartKeys.get(segment).isEmpty())
-              doSegment(segment, scanResponse.consumedCapacity().capacityUnits().intValue());
-
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        });
+    // OutputPlugin[] = new output = new OutputPluginSystemOut();
+    List<OutputPlugin> outputPlugins = new ArrayList<>();
+    for (OutputPluginProvider provider : outputPluginProviders) {
+      System.err.println(provider);
+      try {
+        OutputPlugin outputPlugin = provider.get(args);
+        if (outputPlugin!=null)
+          outputPlugins.add(outputPlugin);
+      } catch (Exception e) {
+        System.err.println(e);
       }
-    }.get().get();
+    }
+    if (outputPlugins.size() == 0)
+      throw new Exception("no output plugin!");
+    if (outputPlugins.size() != 1)
+      throw new Exception("multiple output plugins!");
+
+    OutputPlugin output = outputPlugins.get(0);
+
+    input.setListener(jsonElement->{
+      return output.write(jsonElement);
+    });
+
+    // % dynamocat MyTable MyQueue
+    input.read().get();
+
+          // if (false)
+          // new FutureRunner() {
+          //   {
+          //     for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment)
+          //       doSegment(segment, 128);
+          //   }
+
+          //   void doSegment(int segment, int permits) {
+          //     run(() -> {
+          //       if (permits > 0)
+          //         readLimiter.acquire(permits);
+
+          //       // STEP 1 Do the scan
+          //       ScanRequest scanRequest = ScanRequest.builder()
+          //           //
+          //           .tableName(sourceTable)
+          //           //
+          //           .exclusiveStartKey(appState.exclusiveStartKeys.get(segment))
+          //           //
+          //           .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+          //           //
+          //           .segment(segment)
+          //           //
+          //           .totalSegments(appState.exclusiveStartKeys.size())
+          //           // //
+          //           // .limit(options.scanLimit > 0 ? options.scanLimit : null)
+          //           //
+          //           .build();
+          //       return lf(dynamoAsync.scan(scanRequest));
+          //     }, scanResponse -> {
+          //       try {
+
+          //         appState.exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
+
+          //         // STEP 2 Process results here
+
+          //         if (targetTable == null) {
+
+          //           readCount.addAndGet(scanResponse.items().size());
+
+          //           for (Map<String, AttributeValue> item : scanResponse.items()) {
+          //             System.out.println(render(item));
+          //           }
+
+          //                 // log(readCount.get(),
+          //                 //     //
+          //                 //     String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(),
+          //                 //         Double.valueOf(wcuMeter().getMeanRate()).intValue()),
+          //                 //     //
+          //                 //     renderState(appState));
+
+          //               System.err.println(renderState(appState));
+
+
+          //           // for (Map<String, AttributeValue> item : scanResponse.items())
+          //           //   out(item);
+
+          //         } else {
+
+          //           List<Map<String, AttributeValue>> items = new ArrayList<>();
+          //           for (Map<String, AttributeValue> item : scanResponse.items()) {
+          //             item = new HashMap<>(item); // deep copy
+          //             items.add(item);
+          //             System.out.println(item);
+          //           }
+          //           doWrite(items);
+          //         }
+
+          //         if (!appState.exclusiveStartKeys.get(segment).isEmpty())
+          //           doSegment(segment, scanResponse.consumedCapacity().capacityUnits().intValue());
+
+          //       } catch (Exception e) {
+          //         throw new RuntimeException(e);
+          //       }
+          //     });
+          //   }
+          // }.get().get();
   }
 
   private Map<String, AttributeValue> parse() {
@@ -298,7 +352,7 @@ public class App implements ApplicationRunner {
 
       BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
           //
-          .requestItems(ImmutableMap.of(targetTable, subList))
+          .requestItems(ImmutableMap.of("targetTable", subList))
           //
           .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
           //
