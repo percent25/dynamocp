@@ -1,5 +1,5 @@
 plugins {
-	id "org.springframework.boot" version "2.3.0.RELEASE"
+	id "org.springframework.boot" version "2.3.3.RELEASE"
 }
 
 apply plugin: "java"
@@ -16,6 +16,7 @@ dependencies {
 	implementation 'com.codahale.metrics:metrics-core:+'
 	implementation "com.google.code.gson:gson:+"
 	implementation "com.google.guava:guava:+"
+	implementation "com.spotify:futures-extra:+"
 	implementation "org.springframework.boot:spring-boot-starter"
 
 // aws sdk 2
