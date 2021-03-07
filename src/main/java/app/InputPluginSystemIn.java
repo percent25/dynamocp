@@ -2,10 +2,13 @@ package app;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.function.Function;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
@@ -27,13 +30,13 @@ class InputPluginSystemInProvider implements InputPluginProvider {
 
 public class InputPluginSystemIn implements InputPlugin {
 
-  private Function<JsonElement, ListenableFuture<?>> listener;
+  private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   public InputPluginSystemIn() {
   }
 
   @Override
-  public void setListener(Function<JsonElement, ListenableFuture<?>> listener) {
+  public void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener) {
     this.listener = listener;
   }
 
@@ -43,12 +46,20 @@ public class InputPluginSystemIn implements InputPlugin {
     try {
       JsonStreamParser parser = new JsonStreamParser(br);
       while (parser.hasNext()) {
-        listener.apply(parser.next()).get();
-      }
+        ListenableFuture<?> lf = listener.apply(ImmutableList.of(parser.next()));        
+        try {
+          lf.get();
+        } catch (Exception e) {
+          log(e);
+        }
+    }
     } finally {
       br.close();
     }
     return Futures.immediateVoidFuture();
   }
 
+  private void log(Object... args) {
+    System.err.println(getClass().getSimpleName()+Arrays.asList(args));
+  }
 }

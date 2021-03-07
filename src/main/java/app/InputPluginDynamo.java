@@ -73,7 +73,7 @@ public class InputPluginDynamo implements InputPlugin {
 
   public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
 
-  private Function<JsonElement, ListenableFuture<?>> listener;
+  private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   // public static InputPlugin create(ApplicationArguments args, List<InputPlugin> plugins) throws Exception {
   //   String tableName = args.getNonOptionArgs().get(0);
@@ -104,8 +104,8 @@ public class InputPluginDynamo implements InputPlugin {
   }
 
   @Override
-  public void setListener(Function<JsonElement, ListenableFuture<?>> listener) {
-    this.listener =listener;
+  public void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener) {
+    this.listener = listener;
   }
 
   @Override
@@ -150,11 +150,12 @@ public class InputPluginDynamo implements InputPlugin {
             {
 
 
+              List<JsonElement> list = new ArrayList<>();
               for (Map<String, AttributeValue> item : scanResponse.items()) {
+                list.add(render(item));
                 // System.out.println(render(item));
-
-                listener.apply(render(item)).get();
               }
+              listener.apply(list).get();
 
                     // log(readCount.get(),
                     //     //

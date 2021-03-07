@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -31,6 +32,8 @@ import com.google.common.collect.Range;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.CharStreams;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -230,104 +233,26 @@ public class App implements ApplicationRunner {
 
     OutputPlugin output = outputPlugins.get(0);
 
-    input.setListener(jsonElement->{
-      return output.write(jsonElement);
+    input.setListener(jsonElements->{
+      // log(jsonElements);
+      for (JsonElement jsonElement : jsonElements) {
+        // log(jsonElement);
+        ListenableFuture<?> lf = output.write(jsonElement);
+        lf.addListener(()->{
+          try {
+            lf.get();
+          } catch (Exception e) {
+            log(e);
+          }
+        }, MoreExecutors.directExecutor());
+      }
+      return output.flush();
     });
 
     // % dynamocat MyTable MyQueue
     input.read().get();
+    output.flush().get();
 
-          // if (false)
-          // new FutureRunner() {
-          //   {
-          //     for (int segment = 0; segment < appState.exclusiveStartKeys.size(); ++segment)
-          //       doSegment(segment, 128);
-          //   }
-
-          //   void doSegment(int segment, int permits) {
-          //     run(() -> {
-          //       if (permits > 0)
-          //         readLimiter.acquire(permits);
-
-          //       // STEP 1 Do the scan
-          //       ScanRequest scanRequest = ScanRequest.builder()
-          //           //
-          //           .tableName(sourceTable)
-          //           //
-          //           .exclusiveStartKey(appState.exclusiveStartKeys.get(segment))
-          //           //
-          //           .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-          //           //
-          //           .segment(segment)
-          //           //
-          //           .totalSegments(appState.exclusiveStartKeys.size())
-          //           // //
-          //           // .limit(options.scanLimit > 0 ? options.scanLimit : null)
-          //           //
-          //           .build();
-          //       return lf(dynamoAsync.scan(scanRequest));
-          //     }, scanResponse -> {
-          //       try {
-
-          //         appState.exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
-
-          //         // STEP 2 Process results here
-
-          //         if (targetTable == null) {
-
-          //           readCount.addAndGet(scanResponse.items().size());
-
-          //           for (Map<String, AttributeValue> item : scanResponse.items()) {
-          //             System.out.println(render(item));
-          //           }
-
-          //                 // log(readCount.get(),
-          //                 //     //
-          //                 //     String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(),
-          //                 //         Double.valueOf(wcuMeter().getMeanRate()).intValue()),
-          //                 //     //
-          //                 //     renderState(appState));
-
-          //               System.err.println(renderState(appState));
-
-
-          //           // for (Map<String, AttributeValue> item : scanResponse.items())
-          //           //   out(item);
-
-          //         } else {
-
-          //           List<Map<String, AttributeValue>> items = new ArrayList<>();
-          //           for (Map<String, AttributeValue> item : scanResponse.items()) {
-          //             item = new HashMap<>(item); // deep copy
-          //             items.add(item);
-          //             System.out.println(item);
-          //           }
-          //           doWrite(items);
-          //         }
-
-          //         if (!appState.exclusiveStartKeys.get(segment).isEmpty())
-          //           doSegment(segment, scanResponse.consumedCapacity().capacityUnits().intValue());
-
-          //       } catch (Exception e) {
-          //         throw new RuntimeException(e);
-          //       }
-          //     });
-          //   }
-          // }.get().get();
-  }
-
-  private Map<String, AttributeValue> parse() {
-    return null;
-  }
-
-  private String render(Map<String, AttributeValue> item) throws Exception {
-    return new Gson().toJson(Maps.transformValues(item, value -> {
-      try {
-        return new Gson().fromJson(new ObjectMapper().writeValueAsString(value.toBuilder()), JsonElement.class);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }));
   }
 
   private void doWrite(List<Map<String, AttributeValue>> items) throws Exception {
@@ -413,14 +338,7 @@ public class App implements ApplicationRunner {
   }
 
   private void log(Object... args) {
-    new LogHelper(this).log(args);
-  }
-
-  private void out(Object... args) {
-    List<String> parts = new ArrayList<>();
-    for (Object arg : args)
-      parts.add("" + arg);
-    System.out.println(String.join(" ", parts));
+    System.err.println(getClass().getSimpleName()+Arrays.asList(args));
   }
 
 }

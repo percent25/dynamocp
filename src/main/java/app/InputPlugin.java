@@ -7,10 +7,8 @@ import com.google.gson.JsonElement;
 
 public interface InputPlugin {
 
-  
-
-  void setListener(Function<JsonElement, ListenableFuture<?>> listener);
-
   ListenableFuture<?> read() throws Exception;
+
+  void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener);
   
 }

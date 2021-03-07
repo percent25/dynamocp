@@ -17,6 +17,7 @@ public class OutputPluginSystemOut implements OutputPlugin {
 
   @Override
   public ListenableFuture<?> flush() {
+    System.out.flush();
     return Futures.immediateVoidFuture();
   }
 
