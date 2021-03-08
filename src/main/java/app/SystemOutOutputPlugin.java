@@ -1,5 +1,7 @@
 package app;
 
+import java.util.function.Supplier;
+
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
@@ -27,10 +29,10 @@ public class SystemOutOutputPlugin implements OutputPlugin {
 class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
   @Override
-  public OutputPlugin get(ApplicationArguments args) throws Exception {
+  public Supplier<OutputPlugin> get(ApplicationArguments args) throws Exception {
     String arg = args.getNonOptionArgs().get(1);
     if ("-".equals(arg))
-      return new SystemOutOutputPlugin();
+      return () -> new SystemOutOutputPlugin();
     return null;
   }
 

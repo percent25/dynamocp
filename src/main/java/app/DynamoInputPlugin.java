@@ -1,6 +1,7 @@
 package app;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -82,18 +83,19 @@ public class DynamoInputPlugin implements InputPlugin {
           doSegment(segment);
       }
       void doSegment(int segment) {
+        
+        log(segment, "doSegment");
+
         int[] permits = new int[1];
         List<JsonElement> list = new ArrayList<>();
         run(() -> {
 
-          log("permitsQueue.take");
           permits[0] = permitsQueue.take().intValue();
-          log("permits:"+permits);
+          log(segment, "permits:"+permits[0]);
 
-          log("acquire");
           if (permits[0] > 0)
             readLimiter.acquire(permits[0]);
-          log("acquire done");
+          log(segment, "acquired:"+permits[0]);
 
           // STEP 1 Do the scan
           ScanRequest scanRequest = ScanRequest.builder()
@@ -108,16 +110,16 @@ public class DynamoInputPlugin implements InputPlugin {
               //
               .totalSegments(totalSegments)
               //
-              // .limit(250)
+              .limit(250)
               //
               .build();
 
-          log(scanRequest);
+          log(segment, "scanRequest", scanRequest);
 
           return lf(client.scan(scanRequest));
         }, scanResponse -> {
 
-          log(scanResponse.items().size());
+          log(segment, "scanResponse", scanResponse.items().size());
 
           exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
 
@@ -131,13 +133,6 @@ public class DynamoInputPlugin implements InputPlugin {
             list.add(parse(item));
             // System.out.println(render(item));
           }
-
-          // run(()->{
-          //   return listener.apply(list);
-          // }, ()->{ // finally
-          //   if (!exclusiveStartKeys.get(segment).isEmpty())
-          //     doSegment(segment);
-          // });
 
                 // log(readCount.get(),
                 //     //
@@ -153,20 +148,18 @@ public class DynamoInputPlugin implements InputPlugin {
           e.printStackTrace();
         }, ()->{
           try {
-            permitsQueue.put(permits[0]); // replenish permits
+            permitsQueue.put(permits[0]); // produce permits
           } catch (Exception e) {
-            log(e);
+            log(segment, e);
             e.printStackTrace();
             throw new RuntimeException(e);
           } finally {
-
             run(()->{
               return listener.apply(list);
             }, ()->{ // finally
               if (!exclusiveStartKeys.get(segment).isEmpty())
-                doSegment(segment); // consumes permits
+                doSegment(segment); // consume permits
             });
-  
           }
         });
       }
@@ -184,7 +177,8 @@ public class DynamoInputPlugin implements InputPlugin {
   }
 
   private void log(Object... args) {
-    System.err.println(getClass().getSimpleName()+Lists.newArrayList(args));
+    String threadName = "["+Thread.currentThread().getName()+"]";
+    System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
   }
 
 }
@@ -237,7 +231,8 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   }
   
   private void log(Object... args) {
-    System.err.println(getClass().getSimpleName()+Lists.newArrayList(args));
+    String threadName = "["+Thread.currentThread().getName()+"]";
+    System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
   }
 
 }

@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -107,6 +108,7 @@ class AppOptions {
 public class App implements ApplicationRunner {
 
   public static void main(String[] args) throws Exception {
+    // args= new String[]{"Dlcm-qa_MetaStore","Dlcm-dev_MetaStore","--rcu-limit=1024"};
     SpringApplication.run(App.class, args);
   }
 
@@ -207,23 +209,23 @@ public class App implements ApplicationRunner {
 
     // output plugin
 
-    List<OutputPlugin> outputPlugins = new ArrayList<>();
+    List<Supplier<OutputPlugin>> outputPluginSuppliers = new ArrayList<>();
     for (OutputPluginProvider provider : outputPluginProviders) {
       System.err.println(provider);
       try {
-        OutputPlugin outputPlugin = provider.get(args);
-        if (outputPlugin!=null)
-          outputPlugins.add(outputPlugin);
+        Supplier<OutputPlugin> outputPluginSupplier = provider.get(args);
+        if (outputPluginSupplier!=null)
+          outputPluginSuppliers.add(outputPluginSupplier);
       } catch (Exception e) {
         System.err.println(e);
       }
     }
-    if (outputPlugins.size() == 0)
+    if (outputPluginSuppliers.size() == 0)
       throw new Exception("no target!");
-    if (outputPlugins.size() != 1)
+    if (outputPluginSuppliers.size() != 1)
       throw new Exception("ambiguous targets!");
 
-    OutputPlugin outputPlugin = outputPlugins.get(0);
+    Supplier<OutputPlugin> outputPluginSupplier = outputPluginSuppliers.get(0);
 
     // ----------------------------------------------------------------------
     // main loop
@@ -231,6 +233,7 @@ public class App implements ApplicationRunner {
 
     inputPlugin.setListener(jsonElements->{
       // log(jsonElements);
+      OutputPlugin outputPlugin = outputPluginSupplier.get();
       for (JsonElement jsonElement : jsonElements) {
         // log(jsonElement);
         ListenableFuture<?> lf = outputPlugin.write(jsonElement);
@@ -250,9 +253,9 @@ public class App implements ApplicationRunner {
     inputPlugin.read().get();
     log("input.read().get();222");
 
-    log("output.flush().get();111");
-    outputPlugin.flush().get();
-    log("output.flush().get();222");
+    // log("output.flush().get();111");
+    // outputPlugin.flush().get();
+    // log("output.flush().get();222");
 
   }
 

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
@@ -216,7 +217,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public OutputPlugin get(ApplicationArguments args) throws Exception {
+  public Supplier<OutputPlugin> get(ApplicationArguments args) throws Exception {
     String tableName = args.getNonOptionArgs().get(1);
 
     Options options = OptionArgs.parseOptions(args, Options.class);
@@ -233,7 +234,9 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
     // describeTableResponse.table().
-    return new DynamoOutputPlugin(client, tableName, options.wcuLimit);
+    return ()->{
+      return new DynamoOutputPlugin(client, tableName, options.wcuLimit);
+    };
   }
 
   private void log(Object... args) {
