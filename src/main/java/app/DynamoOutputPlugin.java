@@ -62,7 +62,7 @@ public class DynamoOutputPlugin implements OutputPlugin {
   private final BlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(1);
 
   public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, int wcuLimit) {
-    log("ctor", client, tableName, wcuLimit);
+    log("ctor", tableName, wcuLimit);
     this.client = client;
     this.tableName = tableName;
     this.wcuLimit = wcuLimit;
@@ -201,18 +201,47 @@ public class DynamoOutputPlugin implements OutputPlugin {
 @Service
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
+  static class Options {
+    //
+    public boolean debug;
+    // reading
+    public int rcuLimit = -1;
+    // writing
+    public int wcuLimit = -1;
+    //
+    public String resume; // base64 encoded gzipped app state
+    //
+    public String transform_expression;
+  
+    //
+    public String toString() {
+      return new Gson().toJson(this);
+    }
+  }
+
   @Override
   public OutputPlugin get(ApplicationArguments args) throws Exception {
     String tableName = args.getNonOptionArgs().get(1);
+
+    Options options = OptionArgs.parseOptions(args, Options.class);
+
+    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+    if (options.rcuLimit == -1)
+      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 2;
+    if (options.wcuLimit == -1)
+      options.wcuLimit = options.rcuLimit * 8;
+
+    log("options", options);
+  
     DynamoDbAsyncClient client = DynamoDbAsyncClient.create();
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
     // describeTableResponse.table().
-    return new DynamoOutputPlugin(client, tableName, 128);
+    return new DynamoOutputPlugin(client, tableName, options.wcuLimit);
   }
 
-  // private void log(Object... args) {
-  //   System.err.println(getClass().getSimpleName()+Lists.newArrayList(args));
-  // }
+  private void log(Object... args) {
+    System.err.println(getClass().getSimpleName()+Lists.newArrayList(args));
+  }
 
 }

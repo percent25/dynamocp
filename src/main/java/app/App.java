@@ -113,13 +113,8 @@ public class App implements ApplicationRunner {
   private final ApplicationContext context;
   private final Optional<BuildProperties> buildProperties;
 
-  // private String sourceTable;
-  // private String targetTable;
-
   private AppState appState = new AppState();
   
-  private final DynamoDbAsyncClient dynamoAsync = DynamoDbAsyncClient.builder().build();
-
   /**
    * ctor
    */
@@ -144,16 +139,13 @@ public class App implements ApplicationRunner {
     return new Gson().fromJson(options, AppOptions.class);
   }
 
-  private RateLimiter readLimiter;
-  private RateLimiter writeLimiter;
-
-  private final MetricRegistry metrics = new MetricRegistry();
+  // private final MetricRegistry metrics = new MetricRegistry();
   
-  private Meter rcuMeter() { return metrics.meter("rcu"); }
-  private Meter wcuMeter() { return metrics.meter("wcu"); }
+      // private Meter rcuMeter() { return metrics.meter("rcu"); }
+      // private Meter wcuMeter() { return metrics.meter("wcu"); }
 
-  private final AtomicLong readCount = new AtomicLong();
-  private final AtomicLong writeCount = new AtomicLong();
+      // private final AtomicLong readCount = new AtomicLong();
+      // private final AtomicLong writeCount = new AtomicLong();
   
   /**
    * run
@@ -185,13 +177,14 @@ public class App implements ApplicationRunner {
 
     log("reported", options);
 
-    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    readLimiter = RateLimiter.create(options.rcuLimit);
-    writeLimiter = RateLimiter.create(options.wcuLimit);
+        // // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+        // readLimiter = RateLimiter.create(options.rcuLimit);
+        // writeLimiter = RateLimiter.create(options.wcuLimit);
 
-    // log thread count
-    log(Range.closedOpen(0, appState.totalSegments()));
+        // // log thread count
+        // log(Range.closedOpen(0, appState.totalSegments()));
 
+    // input plugin
 
     List<InputPlugin> inputPlugins = new ArrayList<>();
     for (InputPluginProvider provider : inputPluginProviders) {
@@ -210,11 +203,10 @@ public class App implements ApplicationRunner {
     if (inputPlugins.size() != 1)
       throw new Exception("ambiguous sources!");
 
-    InputPlugin input = inputPlugins.get(0);
-    // InputPlugin input = new InputPluginSystemIn();
-    // input = new InputPluginDynamo(dynamoAsync, sourceTable, 1, 128);
+    InputPlugin inputPlugin = inputPlugins.get(0);
 
-    // OutputPlugin[] = new output = new OutputPluginSystemOut();
+    // output plugin
+
     List<OutputPlugin> outputPlugins = new ArrayList<>();
     for (OutputPluginProvider provider : outputPluginProviders) {
       System.err.println(provider);
@@ -231,17 +223,17 @@ public class App implements ApplicationRunner {
     if (outputPlugins.size() != 1)
       throw new Exception("ambiguous targets!");
 
-    OutputPlugin output = outputPlugins.get(0);
+    OutputPlugin outputPlugin = outputPlugins.get(0);
 
     // ----------------------------------------------------------------------
     // main loop
     // ----------------------------------------------------------------------
 
-    input.setListener(jsonElements->{
+    inputPlugin.setListener(jsonElements->{
       // log(jsonElements);
       for (JsonElement jsonElement : jsonElements) {
         // log(jsonElement);
-        ListenableFuture<?> lf = output.write(jsonElement);
+        ListenableFuture<?> lf = outputPlugin.write(jsonElement);
         lf.addListener(()->{
           try {
             lf.get();
@@ -250,16 +242,16 @@ public class App implements ApplicationRunner {
           }
         }, MoreExecutors.directExecutor());
       }
-      return output.flush();
+      return outputPlugin.flush();
     });
 
     // % dynamocat MyTable MyQueue
     log("input.read().get();111");
-    input.read().get();
+    inputPlugin.read().get();
     log("input.read().get();222");
 
     log("output.flush().get();111");
-    output.flush().get();
+    outputPlugin.flush().get();
     log("output.flush().get();222");
 
   }
