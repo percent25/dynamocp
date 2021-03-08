@@ -100,7 +100,7 @@ public class InputPluginDynamo implements InputPlugin {
               //
               .totalSegments(totalSegments)
               //
-              .limit(250)
+              // .limit(250)
               //
               .build();
 
