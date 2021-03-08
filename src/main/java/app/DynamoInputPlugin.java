@@ -30,12 +30,13 @@ public class DynamoInputPlugin implements InputPlugin {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
+  private final int rcuLimit;
   private final int totalSegments;
   private final RateLimiter readLimiter;
 
-  public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
-
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
+
+  public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
 
   // thundering herd
   private final BlockingQueue<Number> permitsQueue;
@@ -48,11 +49,12 @@ public class DynamoInputPlugin implements InputPlugin {
    * @param totalSegments
    * @param rcuLimit
    */
-  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int totalSegments, int rcuLimit) {
-    log("ctor", tableName, totalSegments, rcuLimit);
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int rcuLimit, int totalSegments) {
+    log("ctor", tableName, rcuLimit, totalSegments);
 
     this.client = client;
     this.tableName = tableName;
+    this.rcuLimit = rcuLimit;
     this.totalSegments = totalSegments;
   
     this.readLimiter = RateLimiter.create(rcuLimit);
@@ -231,7 +233,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
     // describeTableResponse.table().
-    return new DynamoInputPlugin(client, tableName, options.totalSegments, options.rcuLimit);
+    return new DynamoInputPlugin(client, tableName, options.rcuLimit, options.totalSegments);
   }
   
   private void log(Object... args) {
