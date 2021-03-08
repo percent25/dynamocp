@@ -209,23 +209,23 @@ public class App implements ApplicationRunner {
 
     // output plugin
 
-    List<Supplier<OutputPlugin>> outputPluginSuppliers = new ArrayList<>();
+    List<OutputPlugin> outputPlugins = new ArrayList<>();
     for (OutputPluginProvider provider : outputPluginProviders) {
       System.err.println(provider);
       try {
-        Supplier<OutputPlugin> outputPluginSupplier = provider.get(args);
-        if (outputPluginSupplier!=null)
-          outputPluginSuppliers.add(outputPluginSupplier);
+        OutputPlugin outputPlugin = provider.get(args);
+        if (outputPlugin!=null)
+          outputPlugins.add(outputPlugin);
       } catch (Exception e) {
         System.err.println(e);
       }
     }
-    if (outputPluginSuppliers.size() == 0)
+    if (outputPlugins.size() == 0)
       throw new Exception("no target!");
-    if (outputPluginSuppliers.size() != 1)
+    if (outputPlugins.size() != 1)
       throw new Exception("ambiguous targets!");
 
-    Supplier<OutputPlugin> outputPluginSupplier = outputPluginSuppliers.get(0);
+    OutputPlugin outputPlugin = outputPlugins.get(0);
 
     // ----------------------------------------------------------------------
     // main loop
@@ -233,7 +233,6 @@ public class App implements ApplicationRunner {
 
     inputPlugin.setListener(jsonElements->{
       // log(jsonElements);
-      OutputPlugin outputPlugin = outputPluginSupplier.get();
       return outputPlugin.write(jsonElements);
           // for (JsonElement jsonElement : jsonElements) {
           //   // log(jsonElement);

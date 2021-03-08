@@ -92,7 +92,7 @@ public class DynamoInputPlugin implements InputPlugin {
         log(segment, "doSegment");
 
         int[] permits = new int[1];
-        List<JsonElement> list = new ArrayList<>();
+        List<JsonElement> jsonElements = new ArrayList<>();
 
         run(()->{
           return Futures.submit(()->{
@@ -143,7 +143,7 @@ public class DynamoInputPlugin implements InputPlugin {
             // readCount.addAndGet(scanResponse.items().size());
   
             for (Map<String, AttributeValue> item : scanResponse.items()) {
-              list.add(parse(item));
+              jsonElements.add(parse(item));
               // System.out.println(render(item));
             }
   
@@ -159,6 +159,7 @@ public class DynamoInputPlugin implements InputPlugin {
           }, e->{
             log(e);
             e.printStackTrace();
+            throw new RuntimeException(e);
           }, ()->{
             try {
               permitsQueue.put(permits[0]); // produce permits
@@ -168,7 +169,7 @@ public class DynamoInputPlugin implements InputPlugin {
               throw new RuntimeException(e);
             } finally {
               run(()->{
-                return listener.apply(list);
+                return listener.apply(jsonElements);
               }, ()->{ // finally
                 if (!exclusiveStartKeys.get(segment).isEmpty())
                   doSegment(segment); // consume permits
