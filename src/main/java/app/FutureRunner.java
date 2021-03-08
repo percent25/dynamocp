@@ -152,7 +152,7 @@ public class FutureRunner {
     }
 
     // convenience
-    protected void onFinally() {
+    protected void onListen() {
         // do nothing
     }
 
@@ -172,7 +172,7 @@ public class FutureRunner {
         if (running == 0) {
             --running; // once
             try {
-                onFinally();
+                onListen();
             } catch (Exception e) {
                 doException(e);
             } finally {
