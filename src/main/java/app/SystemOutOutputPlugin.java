@@ -12,16 +12,17 @@ import org.springframework.stereotype.Service;
 public class SystemOutOutputPlugin implements OutputPlugin {
 
   @Override
-  public ListenableFuture<?> write(JsonElement jsonElement) {
-    System.out.println(jsonElement);
+  public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
+    for (JsonElement jsonElement : jsonElements)
+      System.out.println(jsonElement);
     return Futures.immediateVoidFuture();
   }
 
-  @Override
-  public ListenableFuture<?> flush() {
-    System.out.flush();
-    return Futures.immediateVoidFuture();
-  }
+  // @Override
+  // public ListenableFuture<?> flush() {
+  //   System.out.flush();
+  //   return Futures.immediateVoidFuture();
+  // }
 
 }
 

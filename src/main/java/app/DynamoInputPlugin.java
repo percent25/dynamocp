@@ -6,12 +6,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
@@ -41,6 +44,8 @@ public class DynamoInputPlugin implements InputPlugin {
 
   // thundering herd
   private final BlockingQueue<Number> permitsQueue;
+
+  private static ExecutorService executor = Executors.newCachedThreadPool();
 
   /**
    * ctor
@@ -88,80 +93,91 @@ public class DynamoInputPlugin implements InputPlugin {
 
         int[] permits = new int[1];
         List<JsonElement> list = new ArrayList<>();
-        run(() -> {
 
-          permits[0] = permitsQueue.take().intValue();
-          log(segment, "permits:"+permits[0]);
+        run(()->{
+          return Futures.submit(()->{
+            return permitsQueue.take();
+          }, executor);
+        }, number->{
 
-          if (permits[0] > 0)
-            readLimiter.acquire(permits[0]);
-          log(segment, "acquired:"+permits[0]);
+          permits[0]=number.intValue();
 
-          // STEP 1 Do the scan
-          ScanRequest scanRequest = ScanRequest.builder()
-              //
-              .tableName(tableName)
-              //
-              .exclusiveStartKey(exclusiveStartKeys.get(segment))
-              //
-              .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-              //
-              .segment(segment)
-              //
-              .totalSegments(totalSegments)
-              //
-              // .limit(250)
-              //
-              .build();
-
-          log(segment, "scanRequest", scanRequest);
-
-          return lf(client.scan(scanRequest));
-        }, scanResponse -> {
-
-          log(segment, "scanResponse", scanResponse.items().size());
-
-          exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
-
-          permits[0] = scanResponse.consumedCapacity().capacityUnits().intValue();
-
-          // STEP 2 Process results here
-
-          // readCount.addAndGet(scanResponse.items().size());
-
-          for (Map<String, AttributeValue> item : scanResponse.items()) {
-            list.add(parse(item));
-            // System.out.println(render(item));
-          }
-
-                // log(readCount.get(),
-                //     //
-                //     String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(),
-                //         Double.valueOf(wcuMeter().getMeanRate()).intValue()),
-                //     //
-                //     renderState(appState));
-
-              // System.err.println(renderState(appState));
-
-        }, e->{
-          log(e);
-          e.printStackTrace();
-        }, ()->{
-          try {
-            permitsQueue.put(permits[0]); // produce permits
-          } catch (Exception e) {
-            log(segment, e);
+          run(() -> {
+            // permits[0] = permitsQueue.take().intValue();
+            log(segment, "permits:"+permits[0]);
+  
+            if (permits[0] > 0)
+              readLimiter.acquire(permits[0]);
+            log(segment, "acquired:"+permits[0]);
+  
+            // STEP 1 Do the scan
+            ScanRequest scanRequest = ScanRequest.builder()
+                //
+                .tableName(tableName)
+                //
+                .exclusiveStartKey(exclusiveStartKeys.get(segment))
+                //
+                .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+                //
+                .segment(segment)
+                //
+                .totalSegments(totalSegments)
+                //
+                // .limit(256)
+                //
+                .build();
+  
+            log(segment, "scanRequest", scanRequest);
+  
+            return lf(client.scan(scanRequest));
+          }, scanResponse -> {
+  
+            log(segment, "scanResponse", scanResponse.items().size());
+  
+            exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
+  
+            permits[0] = scanResponse.consumedCapacity().capacityUnits().intValue();
+  
+            // STEP 2 Process results here
+  
+            // readCount.addAndGet(scanResponse.items().size());
+  
+            for (Map<String, AttributeValue> item : scanResponse.items()) {
+              list.add(parse(item));
+              // System.out.println(render(item));
+            }
+  
+                  // log(readCount.get(),
+                  //     //
+                  //     String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(),
+                  //         Double.valueOf(wcuMeter().getMeanRate()).intValue()),
+                  //     //
+                  //     renderState(appState));
+  
+                // System.err.println(renderState(appState));
+  
+          }, e->{
+            log(e);
             e.printStackTrace();
-            throw new RuntimeException(e);
-          } finally {
-            run(()->{
-              return listener.apply(list);
-            }, ()->{ // finally
-              if (!exclusiveStartKeys.get(segment).isEmpty())
-                doSegment(segment); // consume permits
-            });
-          }
+          }, ()->{
+            try {
+              permitsQueue.put(permits[0]); // produce permits
+            } catch (Exception e) {
+              log(segment, e);
+              e.printStackTrace();
+              throw new RuntimeException(e);
+            } finally {
+              run(()->{
+                return listener.apply(list);
+              }, ()->{ // finally
+                if (!exclusiveStartKeys.get(segment).isEmpty())
+                  doSegment(segment); // consume permits
+              });
+            }
+          });
+  
         });
+
       }
     }.get();
   }

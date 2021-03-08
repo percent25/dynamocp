@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 
 public interface OutputPlugin {
 
-  ListenableFuture<?> write(JsonElement jsonElement);
+  ListenableFuture<?> write(Iterable<JsonElement> jsonElements);
 
-  ListenableFuture<?> flush();
+  // ListenableFuture<?> flush();
   
 }

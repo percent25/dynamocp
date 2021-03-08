@@ -10,11 +10,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -42,22 +45,12 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 public class DynamoOutputPlugin implements OutputPlugin {
 
-  private class VoidFuture extends AbstractFuture<Void> {
-    public boolean setVoid() {
-        return super.set(null);
-    }
-
-    public boolean setException(Throwable throwable) {
-        return super.setException(throwable);
-    }
-  }
-
   private final DynamoDbAsyncClient client;
   private final String tableName;
   private final RateLimiter writeLimiter;
   private final BlockingQueue<Number> permitsQueue; // thundering herd
 
-  private Multimap<WriteRequest, VoidFuture> partition = ArrayListMultimap.create();
+  private static ExecutorService executor = Executors.newCachedThreadPool();
 
   public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue) {
     log("ctor", tableName);
@@ -68,44 +61,50 @@ public class DynamoOutputPlugin implements OutputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> write(JsonElement jsonElement) {
+  public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
     // log("write", jsonElement);
     return new FutureRunner() {
+      int num;
+      List<ListenableFuture<?>> futures = new ArrayList<>();
       {
         run(() -> {
-
           // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem requests.
           // The total size of all the items written cannot exceed 16 MB.
-          
-          if (partition.size() == 25) // dynamo batch write limit
-             partition = flush(partition);
-
-          Map<String, AttributeValue> item = render(jsonElement);
-          PutRequest putRequest = PutRequest.builder().item(item).build();
-          WriteRequest writeRequest = WriteRequest.builder().putRequest(putRequest).build();
-
-          VoidFuture lf = new VoidFuture();
-          partition.put(writeRequest, lf);
-          return lf;
+          for (Iterable<JsonElement> partition : Iterables.partition(jsonElements, 25)) {
+            run(()->{
+              List<WriteRequest> requestItems = new ArrayList<>();
+              for (JsonElement jsonElement : partition) {
+                Map<String, AttributeValue> item = render(jsonElement);
+                PutRequest putRequest = PutRequest.builder().item(item).build();
+                WriteRequest writeRequest = WriteRequest.builder().putRequest(putRequest).build();
+                requestItems.add(writeRequest);
+              }
+              ListenableFuture<?> lf = flush(++num, requestItems);
+              futures.add(lf);
+              return lf;
+            });
+          }
+          return Futures.immediateVoidFuture();
+          // return Futures.successfulAsList(futures);
         });
       }
     }.get();
   }
 
-  @Override
-  public ListenableFuture<?> flush() {
-    // log("flush");
-    return new FutureRunner() {
-      {
-        run(() -> {
-          ListenableFuture<?> lf = Futures.successfulAsList(partition.values());
-          if (partition.size() > 0)
-            partition = flush(partition);
-          return lf;
-        });
-      }
-    }.get();
-  }
+      // @Override
+      // public ListenableFuture<?> flush() {
+      //   // log("flush");
+      //   return new FutureRunner() {
+      //     {
+      //       run(() -> {
+      //         ListenableFuture<?> lf = Futures.successfulAsList(partition.values());
+      //         if (partition.size() > 0)
+      //           partition = flush(partition);
+      //         return lf;
+      //       });
+      //     }
+      //   }.get();
+      // }
 
   class FlushRecord {
     public boolean success;
@@ -115,67 +114,74 @@ public class DynamoOutputPlugin implements OutputPlugin {
     }
   }
 
-  private Multimap<WriteRequest, VoidFuture> flush(Multimap<WriteRequest, VoidFuture> partition) {
-    log("flush", partition.size());
-    new FutureRunner() { //###TODO REALLY FIRE/FORGET ?!?
-      int permits;
+  private ListenableFuture<?> flush(int num, List<WriteRequest> partition) {
+    // log(num, "flush", partition.size());
+    return new FutureRunner() {
+      int consumedCapacityUnits;
       {
-        run(() -> {
-          
-          // throttle
-          int permits = permitsQueue.take().intValue();
-          if (permits > 0)
-            writeLimiter.acquire(permits);
+        run(()->{
+          return Futures.submit(()->{
+            // log(num, "take permits");
+            Number permits = permitsQueue.take();
+            // log(num, "permits taken ", permits);
+            return permits;
+          }, executor);
+        }, permits->{
 
-          BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
-              //
-              .requestItems(ImmutableMap.of(tableName, partition.keySet()))
-              //
-              .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-              //
-              .build();
+          run(() -> {
 
-          return lf(client.batchWriteItem(batchWriteItemRequest));
-          
-        }, batchWriteItemResponse -> {
+            // permits = number.intValue();
 
-          for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
-            permits += consumedCapacity.capacityUnits().intValue();
-            // writeLimiter.acquire(consumedCapacity.capacityUnits().intValue());
-          }
-
-            // failure 500
-          if (batchWriteItemResponse.hasUnprocessedItems()) {
-            for (List<WriteRequest> unprocessedItems : batchWriteItemResponse.unprocessedItems().values()) {
-              for (WriteRequest writeRequest : unprocessedItems) {
-                partition.removeAll(writeRequest).forEach(lf -> {
-                  lf.setException(new Exception("unprocessedItem"));
-                });
+            // throttle
+            // log(num, "acquire", permits);
+            if (permits.intValue() > 0)
+              writeLimiter.acquire(permits.intValue()); // consume permits
+            // log(num, "acquired", permits);
+  
+            BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+                //
+                .requestItems(ImmutableMap.of(tableName, partition))
+                //
+                .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+                //
+                .build();
+  
+            return lf(client.batchWriteItem(batchWriteItemRequest));
+            
+          }, batchWriteItemResponse -> {
+  
+            for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
+              consumedCapacityUnits += consumedCapacity.capacityUnits().intValue();
+            }
+  
+            if (batchWriteItemResponse.hasUnprocessedItems()) {
+              for (List<WriteRequest> unprocessedItems : batchWriteItemResponse.unprocessedItems().values()) {
+                for (WriteRequest writeRequest : unprocessedItems) {
+                  log("###unprocessedItem###", writeRequest);
+                }
               }
             }
-          }
-          // success 200
-          partition.values().forEach(lf -> {
-            lf.setVoid();
-          });
-
-        }, e->{
-          log(e);
-          e.printStackTrace();
-          partition.values().forEach(lf -> {
-            lf.setException(e);
-          });
-        }, ()->{
-          // log(record);
-          try {
-            permitsQueue.put(permits);
-          } catch (Exception e) {
+  
+          }, e->{ // catch
+            log(e);
+            e.printStackTrace();
             throw new RuntimeException(e);
-          }
+          }, ()->{ // finally
+            // log(record);
+            log(num, "flushed", partition.size());
+            try {
+              // log(num, "put permits", consumedCapacityUnits);
+              permitsQueue.put(consumedCapacityUnits); // guaranteed produce permits
+              // log(num, "permits put", consumedCapacityUnits);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          });
+  
         });
+
       }
-    };
-    return ArrayListMultimap.create();
+    }.get();
   }
   
   private Map<String, AttributeValue> render(JsonElement jsonElement) throws Exception {
@@ -219,7 +225,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     //###TODO get some sort of inputPlugin concurrency hint here
     //###TODO get some sort of inputPlugin concurrency hint here
     //###TODO get some sort of inputPlugin concurrency hint here
-    ArrayBlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(8); //###TODO get some sort of inputPlugin concurrency hint here
+    ArrayBlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(20); //###TODO get some sort of inputPlugin concurrency hint here
     while (permitsQueue.remainingCapacity()>0)
       permitsQueue.add(options.wcuLimit);
     //###TODO get some sort of inputPlugin concurrency hint here

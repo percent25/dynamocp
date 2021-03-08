@@ -234,18 +234,19 @@ public class App implements ApplicationRunner {
     inputPlugin.setListener(jsonElements->{
       // log(jsonElements);
       OutputPlugin outputPlugin = outputPluginSupplier.get();
-      for (JsonElement jsonElement : jsonElements) {
-        // log(jsonElement);
-        ListenableFuture<?> lf = outputPlugin.write(jsonElement);
-        lf.addListener(()->{
-          try {
-            lf.get();
-          } catch (Exception e) {
-            log(e);
-          }
-        }, MoreExecutors.directExecutor());
-      }
-      return outputPlugin.flush();
+      return outputPlugin.write(jsonElements);
+          // for (JsonElement jsonElement : jsonElements) {
+          //   // log(jsonElement);
+          //   ListenableFuture<?> lf = outputPlugin.write(jsonElement);
+          //   lf.addListener(()->{
+          //     try {
+          //       lf.get();
+          //     } catch (Exception e) {
+          //       log(e);
+          //     }
+          //   }, MoreExecutors.directExecutor());
+          // }
+          // return outputPlugin.flush();
     });
 
     // % dynamocat MyTable MyQueue
