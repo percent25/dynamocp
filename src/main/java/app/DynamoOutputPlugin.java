@@ -79,11 +79,12 @@ public class DynamoOutputPlugin implements OutputPlugin {
     return new FutureRunner() {
       {
         run(() -> {
-          if (partition.size() == 25)
+          if (partition.size() == 25) // dynamo batch write limit
              partition = flush(partition);
 
           Map<String, AttributeValue> item = render(jsonElement);
-          WriteRequest writeRequest = WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build();
+          PutRequest putRequest = PutRequest.builder().item(item).build();
+          WriteRequest writeRequest = WriteRequest.builder().putRequest(putRequest).build();
 
           VoidFuture lf = new VoidFuture();
           partition.put(writeRequest, lf);
@@ -99,10 +100,10 @@ public class DynamoOutputPlugin implements OutputPlugin {
     return new FutureRunner() {
       {
         run(() -> {
-          ListenableFuture<?> result = Futures.successfulAsList(partition.values());
+          ListenableFuture<?> lf = Futures.successfulAsList(partition.values());
           if (partition.size() > 0)
             partition = flush(partition);
-          return result;
+          return lf;
         });
       }
     }.get();
@@ -140,31 +141,25 @@ public class DynamoOutputPlugin implements OutputPlugin {
           
         }, batchWriteItemResponse -> {
 
-          try {
+          for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
+            permits += consumedCapacity.capacityUnits().intValue();
+            // writeLimiter.acquire(consumedCapacity.capacityUnits().intValue());
+          }
 
-            for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
-              permits += consumedCapacity.capacityUnits().intValue();
-              // writeLimiter.acquire(consumedCapacity.capacityUnits().intValue());
-            }
-  
-              // failure 500
-            if (batchWriteItemResponse.hasUnprocessedItems()) {
-              for (List<WriteRequest> unprocessedItems : batchWriteItemResponse.unprocessedItems().values()) {
-                for (WriteRequest writeRequest : unprocessedItems) {
-                  partition.removeAll(writeRequest).forEach(lf -> {
-                    lf.setException(new Exception("unprocessedItem"));
-                  });
-                }
+            // failure 500
+          if (batchWriteItemResponse.hasUnprocessedItems()) {
+            for (List<WriteRequest> unprocessedItems : batchWriteItemResponse.unprocessedItems().values()) {
+              for (WriteRequest writeRequest : unprocessedItems) {
+                partition.removeAll(writeRequest).forEach(lf -> {
+                  lf.setException(new Exception("unprocessedItem"));
+                });
               }
             }
-            // success 200
-            partition.values().forEach(lf -> {
-              lf.setVoid();
-            });
-  
-          } catch (Exception e) {
-            throw new RuntimeException(e);
           }
+          // success 200
+          partition.values().forEach(lf -> {
+            lf.setVoid();
+          });
 
         }, e->{
           log(e);
@@ -194,7 +189,8 @@ public class DynamoOutputPlugin implements OutputPlugin {
   }
 
   private void log(Object... args) {
-    System.err.println(getClass().getSimpleName()+Lists.newArrayList(args));
+    String threadName = "["+Thread.currentThread().getName()+"]";
+    System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
   }
 }
 
@@ -241,7 +237,8 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   }
 
   private void log(Object... args) {
-    System.err.println(getClass().getSimpleName()+Lists.newArrayList(args));
+    String threadName = "["+Thread.currentThread().getName()+"]";
+    System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
   }
 
 }
