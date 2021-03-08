@@ -54,24 +54,17 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
-  private final int wcuLimit;
   private final RateLimiter writeLimiter;
+  private final BlockingQueue<Number> permitsQueue; // thundering herd
 
   private Multimap<WriteRequest, VoidFuture> partition = ArrayListMultimap.create();
 
-  // thundering herd
-  private final BlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(1);
-
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, int wcuLimit) {
-    log("ctor", tableName, wcuLimit);
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue) {
+    log("ctor", tableName);
     this.client = client;
     this.tableName = tableName;
-    this.wcuLimit = wcuLimit;
-
-    writeLimiter = RateLimiter.create(wcuLimit);
-
-    permitsQueue.add(wcuLimit);
-
+    this.writeLimiter = writeLimiter;
+    this.permitsQueue = permitsQueue;
   }
 
   @Override
@@ -80,6 +73,10 @@ public class DynamoOutputPlugin implements OutputPlugin {
     return new FutureRunner() {
       {
         run(() -> {
+
+          // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem requests.
+          // The total size of all the items written cannot exceed 16 MB.
+          
           if (partition.size() == 25) // dynamo batch write limit
              partition = flush(partition);
 
@@ -215,9 +212,22 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     DynamoDbAsyncClient client = DynamoDbAsyncClient.create();
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
-    // describeTableResponse.table().
+
+    RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit);
+
+    // thundering herd
+    //###TODO get some sort of inputPlugin concurrency hint here
+    //###TODO get some sort of inputPlugin concurrency hint here
+    //###TODO get some sort of inputPlugin concurrency hint here
+    ArrayBlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(8); //###TODO get some sort of inputPlugin concurrency hint here
+    while (permitsQueue.remainingCapacity()>0)
+      permitsQueue.add(options.wcuLimit);
+    //###TODO get some sort of inputPlugin concurrency hint here
+    //###TODO get some sort of inputPlugin concurrency hint here
+    //###TODO get some sort of inputPlugin concurrency hint here
+
     return ()->{
-      return new DynamoOutputPlugin(client, tableName, options.wcuLimit);
+      return new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue);
     };
   }
 
