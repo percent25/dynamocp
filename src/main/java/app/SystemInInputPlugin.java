@@ -33,25 +33,23 @@ public class SystemInInputPlugin implements InputPlugin {
   public ListenableFuture<?> read() throws Exception {
     final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
     try {
-      List<JsonElement> list= new ArrayList<>();
+      List<JsonElement> partition = new ArrayList<>();
       JsonStreamParser parser = new JsonStreamParser(br);
       while (parser.hasNext()) {
 
-        JsonElement jsonElement = parser.next();
-        list.add(jsonElement);
+        partition.add(parser.next());
 
-        if (!parser.hasNext() || list.size() == 20000)
-          {
-            ListenableFuture<?> lf = listener.apply(list);
-            try {
-              lf.get();
-            } catch (Exception e) {
-              log(e);
-            }
-            list = new ArrayList<>();    
+        if (!parser.hasNext() || partition.size() == 20000) {
+          ListenableFuture<?> lf = listener.apply(partition);
+          try {
+            lf.get();
+          } catch (Exception e) {
+            log(e);
           }
+          partition = new ArrayList<>();
+        }
 
-    }
+      }
     } finally {
       br.close();
     }
