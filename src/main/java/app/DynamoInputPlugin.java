@@ -38,7 +38,7 @@ public class DynamoInputPlugin implements InputPlugin {
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   // thundering herd
-  private final BlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(1);
+  private final BlockingQueue<Number> permitsQueue;
 
   /**
    * ctor
@@ -49,12 +49,18 @@ public class DynamoInputPlugin implements InputPlugin {
    * @param rcuLimit
    */
   public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int totalSegments, int rcuLimit) {
+    log("ctor", tableName, totalSegments, rcuLimit);
+
     this.client = client;
     this.tableName = tableName;
     this.totalSegments = totalSegments;
+  
     this.readLimiter = RateLimiter.create(rcuLimit);
 
-    permitsQueue.add(rcuLimit);
+    permitsQueue = Queues.newArrayBlockingQueue(totalSegments);
+
+    for (int i = 0; i < totalSegments; ++i)
+      permitsQueue.add(128); // not rcuLimit
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     exclusiveStartKeys.addAll(Collections.nCopies(Math.max(rcuLimit/128, 1), null));
@@ -181,18 +187,46 @@ public class DynamoInputPlugin implements InputPlugin {
 
 }
 
-
 @Service
 class DynamoInputPluginProvider implements InputPluginProvider {
 
+  class Options {
+    //
+    public boolean debug;
+    // reading
+    public int rcuLimit = -1;
+    // writing
+    public int wcuLimit = -1;
+    //
+    public String resume; // base64 encoded gzipped app state
+    //
+    public String transform_expression;
+  
+    //
+    public String toString() {
+      return new Gson().toJson(this);
+    }
+  }
+
   @Override
   public InputPlugin get(ApplicationArguments args) throws Exception {
+
+    Options options = OptionArgs.parseOptions(args, Options.class);
+
+    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+    if (options.rcuLimit == -1)
+      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 2;
+    if (options.wcuLimit == -1)
+      options.wcuLimit = options.rcuLimit * 8;
+
+      int totalSegments = Math.max(options.rcuLimit/128, 1);
+
     String tableName = args.getNonOptionArgs().get(0);
     DynamoDbAsyncClient client = DynamoDbAsyncClient.create();
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
     // describeTableResponse.table().
-    return new DynamoInputPlugin(client, tableName, 1, 128);
+    return new DynamoInputPlugin(client, tableName, totalSegments, options.rcuLimit);
   }
   
 }
