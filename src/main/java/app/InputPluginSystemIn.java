@@ -2,7 +2,9 @@ package app;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
@@ -44,14 +46,24 @@ public class InputPluginSystemIn implements InputPlugin {
   public ListenableFuture<?> read() throws Exception {
     final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
     try {
+      List<JsonElement> list= new ArrayList<>();
       JsonStreamParser parser = new JsonStreamParser(br);
       while (parser.hasNext()) {
-        ListenableFuture<?> lf = listener.apply(ImmutableList.of(parser.next()));        
-        try {
-          lf.get();
-        } catch (Exception e) {
-          log(e);
-        }
+
+        JsonElement jsonElement = parser.next();
+        list.add(jsonElement);
+
+        if (!parser.hasNext() || list.size() == 20000)
+          {
+            ListenableFuture<?> lf = listener.apply(list);
+            try {
+              lf.get();
+            } catch (Exception e) {
+              log(e);
+            }
+            list = new ArrayList<>();    
+          }
+
     }
     } finally {
       br.close();
