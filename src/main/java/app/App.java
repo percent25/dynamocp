@@ -206,9 +206,9 @@ public class App implements ApplicationRunner {
     }
 
     if (inputPlugins.size() == 0)
-      throw new Exception("no input plugin!");
+      throw new Exception("no source!");
     if (inputPlugins.size() != 1)
-      throw new Exception("multiple input plugins!");
+      throw new Exception("ambiguous sources!");
 
     InputPlugin input = inputPlugins.get(0);
     // InputPlugin input = new InputPluginSystemIn();
@@ -227,9 +227,9 @@ public class App implements ApplicationRunner {
       }
     }
     if (outputPlugins.size() == 0)
-      throw new Exception("no output plugin!");
+      throw new Exception("no target!");
     if (outputPlugins.size() != 1)
-      throw new Exception("multiple output plugins!");
+      throw new Exception("ambiguous targets!");
 
     OutputPlugin output = outputPlugins.get(0);
 
