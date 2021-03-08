@@ -183,7 +183,7 @@ public class DynamoInputPlugin implements InputPlugin {
 
 
 @Service
-class InputPluginProviderDynamo implements InputPluginProvider {
+class DynamoInputPluginProvider implements InputPluginProvider {
 
   @Override
   public InputPlugin get(ApplicationArguments args) throws Exception {

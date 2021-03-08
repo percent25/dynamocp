@@ -24,7 +24,7 @@ public class SystemOutOutputPlugin implements OutputPlugin {
 }
 
 @Service
-class OutputPluginSystemOutProvider implements OutputPluginProvider {
+class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public OutputPlugin get(ApplicationArguments args) throws Exception {

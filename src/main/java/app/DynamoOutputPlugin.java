@@ -199,7 +199,7 @@ public class DynamoOutputPlugin implements OutputPlugin {
 }
 
 @Service
-class OutputPluginProviderDynamo implements OutputPluginProvider {
+class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public OutputPlugin get(ApplicationArguments args) throws Exception {

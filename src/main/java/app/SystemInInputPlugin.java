@@ -17,19 +17,6 @@ import com.google.gson.JsonStreamParser;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
-@Service
-class InputPluginSystemInProvider implements InputPluginProvider {
-
-  @Override
-  public InputPlugin get(ApplicationArguments args) throws Exception {
-    String arg = args.getNonOptionArgs().get(0);
-    if ("-".equals(arg))
-      return new SystemInInputPlugin();
-    return null;
-  }
-
-}
-
 public class SystemInInputPlugin implements InputPlugin {
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
@@ -74,4 +61,17 @@ public class SystemInInputPlugin implements InputPlugin {
   private void log(Object... args) {
     System.err.println(getClass().getSimpleName()+Arrays.asList(args));
   }
+}
+
+@Service
+class SystemInInputPluginProvider implements InputPluginProvider {
+
+  @Override
+  public InputPlugin get(ApplicationArguments args) throws Exception {
+    String arg = args.getNonOptionArgs().get(0);
+    if ("-".equals(arg))
+      return new SystemInInputPlugin();
+    return null;
+  }
+
 }
