@@ -69,28 +69,22 @@ public class InputPluginDynamo implements InputPlugin {
   @Override
   public ListenableFuture<?> read() throws Exception {
     return new FutureRunner() {
-      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
-      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
-      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
-      int permits; //###TODO THIS IS NOT RIGHT BEING HERE
-      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
-      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
-      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
       {
         for (int segment = 0; segment < totalSegments; ++segment)
           doSegment(segment);
       }
       void doSegment(int segment) {
+        int[] permits = new int[1];
         List<JsonElement> list = new ArrayList<>();
         run(() -> {
 
           log("permitsQueue.take");
-          int permits = permitsQueue.take().intValue();
+          permits[0] = permitsQueue.take().intValue();
           log("permits:"+permits);
 
           log("acquire");
-          if (permits > 0)
-            readLimiter.acquire(permits);
+          if (permits[0] > 0)
+            readLimiter.acquire(permits[0]);
           log("acquire done");
 
           // STEP 1 Do the scan
@@ -106,7 +100,7 @@ public class InputPluginDynamo implements InputPlugin {
               //
               .totalSegments(totalSegments)
               //
-              // .limit(250)
+              .limit(250)
               //
               .build();
 
@@ -119,7 +113,7 @@ public class InputPluginDynamo implements InputPlugin {
 
           exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
 
-          permits = scanResponse.consumedCapacity().capacityUnits().intValue();
+          permits[0] = scanResponse.consumedCapacity().capacityUnits().intValue();
 
           // STEP 2 Process results here
 
@@ -151,7 +145,7 @@ public class InputPluginDynamo implements InputPlugin {
           e.printStackTrace();
         }, ()->{
           try {
-            permitsQueue.put(permits); // replenish permits
+            permitsQueue.put(permits[0]); // replenish permits
           } catch (Exception e) {
             log(e);
             e.printStackTrace();
