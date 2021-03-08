@@ -233,6 +233,10 @@ public class App implements ApplicationRunner {
 
     OutputPlugin output = outputPlugins.get(0);
 
+    // ----------------------------------------------------------------------
+    // main loop
+    // ----------------------------------------------------------------------
+
     input.setListener(jsonElements->{
       // log(jsonElements);
       for (JsonElement jsonElement : jsonElements) {
@@ -250,8 +254,13 @@ public class App implements ApplicationRunner {
     });
 
     // % dynamocat MyTable MyQueue
+    log("input.read().get();111");
     input.read().get();
+    log("input.read().get();222");
+
+    log("output.flush().get();111");
     output.flush().get();
+    log("output.flush().get();222");
 
   }
 

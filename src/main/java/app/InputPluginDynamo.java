@@ -1,68 +1,30 @@
 package app;
 
-import java.util.function.Function;
-
-import com.google.common.util.concurrent.ListenableFuture;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.concurrent.BlockingQueue;
+import java.util.function.Function;
 
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.CaseFormat;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Range;
-import com.google.common.io.BaseEncoding;
-import com.google.common.io.CharStreams;
-import com.google.common.util.concurrent.Futures;
+import com.google.common.collect.Queues;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
 
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.info.BuildProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
-import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
-import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
-import software.amazon.awssdk.utils.ImmutableMap;
 
 public class InputPluginDynamo implements InputPlugin {
 
@@ -75,14 +37,8 @@ public class InputPluginDynamo implements InputPlugin {
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  // public static InputPlugin create(ApplicationArguments args, List<InputPlugin> plugins) throws Exception {
-  //   String tableName = args.getNonOptionArgs().get(0);
-  //   DynamoDbAsyncClient client = DynamoDbAsyncClient.create();
-  //   DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
-  //   DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
-  //   // describeTableResponse.table().
-  //   return new InputPluginDynamo(client, tableName, 1, 128);
-  // }
+  // thundering herd
+  private final BlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(1);
 
   /**
    * ctor
@@ -98,8 +54,10 @@ public class InputPluginDynamo implements InputPlugin {
     this.totalSegments = totalSegments;
     this.readLimiter = RateLimiter.create(rcuLimit);
 
-        // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-        exclusiveStartKeys.addAll(Collections.nCopies(Math.max(rcuLimit/128, 1), null));
+    permitsQueue.add(rcuLimit);
+
+    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+    exclusiveStartKeys.addAll(Collections.nCopies(Math.max(rcuLimit/128, 1), null));
 
   }
 
@@ -111,14 +69,29 @@ public class InputPluginDynamo implements InputPlugin {
   @Override
   public ListenableFuture<?> read() throws Exception {
     return new FutureRunner() {
+      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
+      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
+      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
+      int permits; //###TODO THIS IS NOT RIGHT BEING HERE
+      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
+      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
+      // int permits; //###TODO THIS IS NOT RIGHT BEING HERE
       {
         for (int segment = 0; segment < totalSegments; ++segment)
-          doSegment(segment, 128);
+          doSegment(segment);
       }
-      void doSegment(int segment, int permits) {
+      void doSegment(int segment) {
+        List<JsonElement> list = new ArrayList<>();
         run(() -> {
+
+          log("permitsQueue.take");
+          int permits = permitsQueue.take().intValue();
+          log("permits:"+permits);
+
+          log("acquire");
           if (permits > 0)
             readLimiter.acquire(permits);
+          log("acquire done");
 
           // STEP 1 Do the scan
           ScanRequest scanRequest = ScanRequest.builder()
@@ -132,71 +105,73 @@ public class InputPluginDynamo implements InputPlugin {
               .segment(segment)
               //
               .totalSegments(totalSegments)
-              // //
-              // .limit(options.scanLimit > 0 ? options.scanLimit : null)
+              //
+              // .limit(250)
               //
               .build();
+
+          log(scanRequest);
+
           return lf(client.scan(scanRequest));
         }, scanResponse -> {
+
+          log(scanResponse.items().size());
+
+          exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
+
+          permits = scanResponse.consumedCapacity().capacityUnits().intValue();
+
+          // STEP 2 Process results here
+
+          // readCount.addAndGet(scanResponse.items().size());
+
+          for (Map<String, AttributeValue> item : scanResponse.items()) {
+            list.add(parse(item));
+            // System.out.println(render(item));
+          }
+
+          // run(()->{
+          //   return listener.apply(list);
+          // }, ()->{ // finally
+          //   if (!exclusiveStartKeys.get(segment).isEmpty())
+          //     doSegment(segment);
+          // });
+
+                // log(readCount.get(),
+                //     //
+                //     String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(),
+                //         Double.valueOf(wcuMeter().getMeanRate()).intValue()),
+                //     //
+                //     renderState(appState));
+
+              // System.err.println(renderState(appState));
+
+        }, e->{
+          log(e);
+          e.printStackTrace();
+        }, ()->{
           try {
-
-            exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
-
-            // STEP 2 Process results here
-
-            // readCount.addAndGet(scanResponse.items().size());
-
-            if (true)
-            {
-
-
-              List<JsonElement> list = new ArrayList<>();
-              for (Map<String, AttributeValue> item : scanResponse.items()) {
-                list.add(render(item));
-                // System.out.println(render(item));
-              }
-              listener.apply(list).get();
-
-                    // log(readCount.get(),
-                    //     //
-                    //     String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(),
-                    //         Double.valueOf(wcuMeter().getMeanRate()).intValue()),
-                    //     //
-                    //     renderState(appState));
-
-                  // System.err.println(renderState(appState));
-
-
-              // for (Map<String, AttributeValue> item : scanResponse.items())
-              //   out(item);
-
-            } else {
-
-                    // List<Map<String, AttributeValue>> items = new ArrayList<>();
-                    // for (Map<String, AttributeValue> item : scanResponse.items()) {
-                    //   item = new HashMap<>(item); // deep copy
-                    //   items.add(item);
-                    //   System.out.println(item);
-                    // }
-                    // doWrite(items);
-            }
-
-            if (!exclusiveStartKeys.get(segment).isEmpty())
-              doSegment(segment, scanResponse.consumedCapacity().capacityUnits().intValue());
-
+            permitsQueue.put(permits); // replenish permits
           } catch (Exception e) {
+            log(e);
+            e.printStackTrace();
             throw new RuntimeException(e);
+          } finally {
+
+            run(()->{
+              return listener.apply(list);
+            }, ()->{ // finally
+              if (!exclusiveStartKeys.get(segment).isEmpty())
+                doSegment(segment); // consumes permits
+            });
+  
           }
         });
       }
     }.get();
   }
 
-  private Map<String, AttributeValue> parse() {
-    return null;
-  }
-
-  private JsonElement render(Map<String, AttributeValue> item) throws Exception {
+  private JsonElement parse(Map<String, AttributeValue> item) {
     return new Gson().toJsonTree(Maps.transformValues(item, value -> {
       try {
         return new Gson().fromJson(new ObjectMapper().writeValueAsString(value.toBuilder()), JsonElement.class);
@@ -204,6 +179,10 @@ public class InputPluginDynamo implements InputPlugin {
         throw new RuntimeException(e);
       }
     }));
+  }
+
+  private void log(Object... args) {
+    System.err.println(getClass().getSimpleName()+Lists.newArrayList(args));
   }
 
 }
