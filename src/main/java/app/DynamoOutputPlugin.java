@@ -198,29 +198,11 @@ public class DynamoOutputPlugin implements OutputPlugin {
 @Service
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
-  static class Options {
-    //
-    public boolean debug;
-    // reading
-    public int rcuLimit = -1;
-    // writing
-    public int wcuLimit = -1;
-    //
-    public String resume; // base64 encoded gzipped app state
-    //
-    public String transform_expression;
-  
-    //
-    public String toString() {
-      return new Gson().toJson(this);
-    }
-  }
-
   @Override
   public Supplier<OutputPlugin> get(ApplicationArguments args) throws Exception {
     String tableName = args.getNonOptionArgs().get(1);
 
-    Options options = OptionArgs.parseOptions(args, Options.class);
+    DynamoOptions options = OptionArgs.parseOptions(args, DynamoOptions.class);
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.rcuLimit == -1)
