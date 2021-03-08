@@ -39,7 +39,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
-public class OutputPluginDynamo implements OutputPlugin {
+public class DynamoOutputPlugin implements OutputPlugin {
 
   private class VoidFuture extends AbstractFuture<Void> {
     public boolean setVoid() {
@@ -61,7 +61,7 @@ public class OutputPluginDynamo implements OutputPlugin {
   // thundering herd
   private final BlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(1);
 
-  public OutputPluginDynamo(DynamoDbAsyncClient client, String tableName, int wcuLimit) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, int wcuLimit) {
     log("ctor", client, tableName, wcuLimit);
     this.client = client;
     this.tableName = tableName;
@@ -208,7 +208,7 @@ class OutputPluginProviderDynamo implements OutputPluginProvider {
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
     // describeTableResponse.table().
-    return new OutputPluginDynamo(client, tableName, 128);
+    return new DynamoOutputPlugin(client, tableName, 128);
   }
 
   // private void log(Object... args) {

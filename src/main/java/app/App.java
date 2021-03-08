@@ -264,58 +264,58 @@ public class App implements ApplicationRunner {
 
   }
 
-  private void doWrite(List<Map<String, AttributeValue>> items) throws Exception {
-    // log("doWrite", items.size());
-    List<WriteRequest> writeRequests = Lists.newArrayList();
-    for (Map<String, AttributeValue> item : items)
-      writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
+      // private void doWrite(List<Map<String, AttributeValue>> items) throws Exception {
+      //   // log("doWrite", items.size());
+      //   List<WriteRequest> writeRequests = Lists.newArrayList();
+      //   for (Map<String, AttributeValue> item : items)
+      //     writeRequests.add(WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build());
 
-    // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem requests.
-    // The total size of all the items written cannot exceed 16 MB.
-    final int batch = 25;
+      //   // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem requests.
+      //   // The total size of all the items written cannot exceed 16 MB.
+      //   final int batch = 25;
 
-    // scatter
-    List<CompletableFuture<BatchWriteItemResponse>> futures = new ArrayList<>();
-    for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
-      // log(i);
-      int toIndex = fromIndex + batch;
-      if (writeRequests.size() < toIndex)
-        toIndex = writeRequests.size();
+      //   // scatter
+      //   List<CompletableFuture<BatchWriteItemResponse>> futures = new ArrayList<>();
+      //   for (int fromIndex = 0; fromIndex < writeRequests.size(); fromIndex += batch) {
+      //     // log(i);
+      //     int toIndex = fromIndex + batch;
+      //     if (writeRequests.size() < toIndex)
+      //       toIndex = writeRequests.size();
 
-      List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
+      //     List<WriteRequest> subList = writeRequests.subList(fromIndex, toIndex);
 
-      BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
-          //
-          .requestItems(ImmutableMap.of("targetTable", subList))
-          //
-          .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-          //
-          .build();
+      //     BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+      //         //
+      //         .requestItems(ImmutableMap.of("targetTable", subList))
+      //         //
+      //         .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+      //         //
+      //         .build();
 
-      // log("batchWriteItem", fromIndex, toIndex);
-      futures.add(dynamoAsync.batchWriteItem(batchWriteItemRequest));
-    }
+      //     // log("batchWriteItem", fromIndex, toIndex);
+      //     futures.add(dynamoAsync.batchWriteItem(batchWriteItemRequest));
+      //   }
 
-    // gather
-    for (CompletableFuture<BatchWriteItemResponse> future : futures) {
-      BatchWriteItemResponse batchWriteItemResponse = future.get();
+      //   // gather
+      //   for (CompletableFuture<BatchWriteItemResponse> future : futures) {
+      //     BatchWriteItemResponse batchWriteItemResponse = future.get();
 
-      Double consumedCapacityUnits = batchWriteItemResponse.consumedCapacity().iterator().next().capacityUnits();
-      wcuMeter().mark(consumedCapacityUnits.longValue());
+      //     Double consumedCapacityUnits = batchWriteItemResponse.consumedCapacity().iterator().next().capacityUnits();
+      //     wcuMeter().mark(consumedCapacityUnits.longValue());
 
-      int writePermits = consumedCapacityUnits.intValue();
-      if (writePermits > 0)
-        writeLimiter.acquire(writePermits);
-    }
+      //     int writePermits = consumedCapacityUnits.intValue();
+      //     if (writePermits > 0)
+      //       writeLimiter.acquire(writePermits);
+      //   }
 
-    appState.count.addAndGet(items.size());
+      //   appState.count.addAndGet(items.size());
 
-    log(appState.count.get(),
-        //
-        String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(), Double.valueOf(wcuMeter().getMeanRate()).intValue()),
-        //
-        renderState(appState));
-  }
+      //   log(appState.count.get(),
+      //       //
+      //       String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(), Double.valueOf(wcuMeter().getMeanRate()).intValue()),
+      //       //
+      //       renderState(appState));
+      // }
 
   private static AppState parseState(String base64) throws Exception {
     byte[] bytes = BaseEncoding.base64().decode(base64);

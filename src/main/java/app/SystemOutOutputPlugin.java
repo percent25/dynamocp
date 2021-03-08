@@ -7,7 +7,7 @@ import com.google.gson.JsonElement;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
-public class OutputPluginSystemOut implements OutputPlugin {
+public class SystemOutOutputPlugin implements OutputPlugin {
 
   @Override
   public ListenableFuture<?> write(JsonElement jsonElement) {
@@ -30,7 +30,7 @@ class OutputPluginSystemOutProvider implements OutputPluginProvider {
   public OutputPlugin get(ApplicationArguments args) throws Exception {
     String arg = args.getNonOptionArgs().get(1);
     if ("-".equals(arg))
-      return new OutputPluginSystemOut();
+      return new SystemOutOutputPlugin();
     return null;
   }
 

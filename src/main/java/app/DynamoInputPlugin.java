@@ -26,7 +26,7 @@ import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
-public class InputPluginDynamo implements InputPlugin {
+public class DynamoInputPlugin implements InputPlugin {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
@@ -48,7 +48,7 @@ public class InputPluginDynamo implements InputPlugin {
    * @param totalSegments
    * @param rcuLimit
    */
-  public InputPluginDynamo(DynamoDbAsyncClient client, String tableName, int totalSegments, int rcuLimit) {
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int totalSegments, int rcuLimit) {
     this.client = client;
     this.tableName = tableName;
     this.totalSegments = totalSegments;
@@ -192,7 +192,7 @@ class InputPluginProviderDynamo implements InputPluginProvider {
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
     // describeTableResponse.table().
-    return new InputPluginDynamo(client, tableName, 1, 128);
+    return new DynamoInputPlugin(client, tableName, 1, 128);
   }
   
 }

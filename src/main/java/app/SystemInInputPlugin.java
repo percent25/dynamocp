@@ -24,17 +24,17 @@ class InputPluginSystemInProvider implements InputPluginProvider {
   public InputPlugin get(ApplicationArguments args) throws Exception {
     String arg = args.getNonOptionArgs().get(0);
     if ("-".equals(arg))
-      return new InputPluginSystemIn();
+      return new SystemInInputPlugin();
     return null;
   }
 
 }
 
-public class InputPluginSystemIn implements InputPlugin {
+public class SystemInInputPlugin implements InputPlugin {
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  public InputPluginSystemIn() {
+  public SystemInInputPlugin() {
   }
 
   @Override
