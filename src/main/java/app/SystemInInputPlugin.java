@@ -5,9 +5,9 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -20,6 +20,14 @@ import org.springframework.stereotype.Service;
 public class SystemInInputPlugin implements InputPlugin {
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
+
+  //###TODO
+  //###TODO
+  //###TODO
+  private final Semaphore sem = new Semaphore(15); // backpressure
+  //###TODO
+  //###TODO
+  //###TODO
 
   public SystemInInputPlugin() {
   }
@@ -39,9 +47,14 @@ public class SystemInInputPlugin implements InputPlugin {
 
         partition.add(parser.next());
 
-        if (!parser.hasNext() || partition.size() == 20000) {
+        if (!parser.hasNext() || partition.size() == 25) { // mtu
           try {
-            listener.apply(partition).get(); // backpressure
+            // STEP 1
+            sem.acquire();
+            // STEP 2
+            listener.apply(partition).addListener(()->{
+              sem.release();
+            }, MoreExecutors.directExecutor());
           } catch (Exception e) {
             log(e);
           }
