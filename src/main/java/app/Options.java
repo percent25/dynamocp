@@ -6,8 +6,8 @@ import com.google.gson.JsonObject;
 
 import org.springframework.boot.ApplicationArguments;
 
-public class OptionArgs {
-  public static <T> T parseOptions(ApplicationArguments args, Class<T> classOfT) {
+public class Options {
+  public static <T> T parse(ApplicationArguments args, Class<T> classOfT) {
     JsonObject options = new JsonObject();
     for (String name : args.getOptionNames()) {
       String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);

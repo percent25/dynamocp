@@ -228,7 +228,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   public OutputPlugin get(ApplicationArguments args) throws Exception {
     String tableName = args.getNonOptionArgs().get(1);
 
-    DynamoOptions options = OptionArgs.parseOptions(args, DynamoOptions.class);
+    DynamoOptions options = Options.parse(args, DynamoOptions.class);
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.rcuLimit == -1)
