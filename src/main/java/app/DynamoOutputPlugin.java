@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
 import com.codahale.metrics.Meter;
@@ -28,6 +30,7 @@ import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -50,24 +53,32 @@ public class DynamoOutputPlugin implements OutputPlugin {
   private final DynamoDbAsyncClient client;
   private final String tableName;
   private final RateLimiter writeLimiter;
-  private final BlockingQueue<Number> permitsQueue; // thundering herd
+  // private final BlockingQueue<Number> permitsQueue; // thundering herd
 
-  private final ExecutorService executor1;
-  private final ExecutorService executor2;
+  // private final ExecutorService executor;
+  // private final ExecutorService executor1;
+  // private final ExecutorService executor2;
 
-    private final MetricRegistry metrics = new MetricRegistry();
-  
-      private Meter wcuMeter() { return metrics.meter("wcu"); }
+  //###TODO
+  //###TODO
+  //###TODO
+  private final Semaphore sem = new Semaphore(15);
+  //###TODO
+  //###TODO
+  //###TODO
 
+  private LocalMeter wcuMeter = new LocalMeter();
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue, ExecutorService executor1, ExecutorService executor2) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue, ExecutorService executor, ExecutorService executor1, ExecutorService executor2) {
     log("ctor", tableName);
     this.client = client;
     this.tableName = tableName;
     this.writeLimiter = writeLimiter;
-    this.permitsQueue = permitsQueue;
-    this.executor1 = executor1;
-    this.executor2 = executor2;
+    // this.executor = executor;
+    // this.sem = new Semaphore()
+    // this.permitsQueue = permitsQueue;
+    // this.executor1 = executor1;
+    // this.executor2 = executor2;
   }
 
   @Override
@@ -79,7 +90,14 @@ public class DynamoOutputPlugin implements OutputPlugin {
         // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem requests.
         // The total size of all the items written cannot exceed 16 MB.
         for (Iterable<JsonElement> partition : Iterables.partition(jsonElements, 25)) {
+
+          // pre-throttle
+            // writeLimiter.acquire(25);
+
           run(()->{
+
+            sem.acquire();
+
             List<WriteRequest> requestItems = new ArrayList<>();
             for (JsonElement jsonElement : partition) {
               Map<String, AttributeValue> item = render(jsonElement);
@@ -87,130 +105,100 @@ public class DynamoOutputPlugin implements OutputPlugin {
               WriteRequest writeRequest = WriteRequest.builder().putRequest(putRequest).build();
               requestItems.add(writeRequest);
             }
-            ListenableFuture<?> lf = write(++num, requestItems);
-            // futures.add(lf);
-            return lf;
+            batchWriteItem(++num, requestItems).addListener(()->{
+              sem.release();
+            }, MoreExecutors.directExecutor());
+
+            //###TODO RETURN BATCHWRITEITEM LF HERE??
+            //###TODO RETURN BATCHWRITEITEM LF HERE??
+            //###TODO RETURN BATCHWRITEITEM LF HERE??
+            return Futures.immediateVoidFuture();
+            //###TODO RETURN BATCHWRITEITEM LF HERE??
+            //###TODO RETURN BATCHWRITEITEM LF HERE??
+            //###TODO RETURN BATCHWRITEITEM LF HERE??
+
           });
         }
       }
     }.get();
   }
 
-    class WriteRecord {
+    class BatchWriteItemRecord {
       public boolean success;
       public String failureMessage;
       public int unprocessedItems;
       public int consumedCapacityUnits;
-      public int wcuMeanRate;
+      public String wcuMeter;
       public String toString() {
-        return getClass().getSimpleName()+new Gson().toJson(this);
+        return "BatchWriteItemRecord"+new Gson().toJson(this);
       }
     }
 
-  private ListenableFuture<?> write(int num, List<WriteRequest> partition) {
+  private ListenableFuture<?> batchWriteItem(int num, Collection<WriteRequest> requestItems) {
     // log(num, "write", partition.size());
     return new FutureRunner() {
-      WriteRecord record = new WriteRecord();
+      BatchWriteItemRecord record = new BatchWriteItemRecord();
       {
-        run(()->{
+        doWrite(requestItems);
+      }
+      void doWrite(Collection<WriteRequest> requestItems) {
+        run(() -> {
 
-          return Futures.submit(()->{
-            return permitsQueue.take();
-          }, executor1);
+          BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+              //
+              .requestItems(ImmutableMap.of(tableName, requestItems))
+              //
+              .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+              //
+              .build();
 
-        }, permits ->{
+          return lf(client.batchWriteItem(batchWriteItemRequest));
+          
+        }, batchWriteItemResponse -> {
 
-          run(()->{
-            return Futures.submit(()->{
-              try {
-              // log(num, "acquire", permits);
-              if (permits.intValue() > 0)
-                  writeLimiter.acquire(permits.intValue()); // consume permits
-              // log(num, "acquired", permits);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
-            }, executor1);
-  
-          }, result->{
+          for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
+            wcuMeter.mark(consumedCapacity.capacityUnits().longValue());
+            record.consumedCapacityUnits += consumedCapacity.capacityUnits().intValue();
+          }
 
-            run(() -> {
+          // post-throttle
+              if (record.consumedCapacityUnits > 0)
+                writeLimiter.acquire(record.consumedCapacityUnits); // consume permits
 
-              // permits = number.intValue();
-  
-              // throttle
-              // log(num, "acquire", permits);
-                        // if (permits.intValue() > 0)
-                        //   writeLimiter.acquire(permits.intValue()); // consume permits
-
-
-
-                        // writeLimiter.acquire(250); // consume permits
-
-
-    
-              BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
-                  //
-                  .requestItems(ImmutableMap.of(tableName, partition))
-                  //
-                  .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-                  //
-                  .build();
-    
-              return lf(client.batchWriteItem(batchWriteItemRequest));
-              
-            }, batchWriteItemResponse -> {
-    
-              for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
-                wcuMeter().mark(consumedCapacity.capacityUnits().longValue());
-                record.consumedCapacityUnits += consumedCapacity.capacityUnits().intValue();
-              }
-                  // if (consumedCapacityUnits > 0)
-                  //   writeLimiter.acquire(consumedCapacityUnits); // consume permits
-    
-              if (batchWriteItemResponse.hasUnprocessedItems()) {
-                if (!batchWriteItemResponse.unprocessedItems().isEmpty()) {
+          if (batchWriteItemResponse.hasUnprocessedItems()) {
+            if (!batchWriteItemResponse.unprocessedItems().isEmpty()) {
                   int size = batchWriteItemResponse.unprocessedItems().values().iterator().next().size();
-                  if (size>0) {
-                    record.unprocessedItems = size;
-                    // log("unprocessedItems", size);
-                  }
-                }
-                // log("unprocessedItems", batchWriteItemResponse.unprocessedItems());
-                // for (List<WriteRequest> unprocessedItems : batchWriteItemResponse.unprocessedItems().values()) {
-                //   for (WriteRequest writeRequest : unprocessedItems) {
-                //     log("###unprocessedItem###", writeRequest);
-                //   }
-                // }
-              }
+                  record.unprocessedItems += size;
+                  doWrite(batchWriteItemResponse.unprocessedItems().values().iterator().next());
+                  // if (size>0) {
+                  //   record.unprocessedItems = size;
+                  //   // log("unprocessedItems", size);
+                  // }
+            }
+            // log("unprocessedItems", batchWriteItemResponse.unprocessedItems());
+            // for (List<WriteRequest> unprocessedItems : batchWriteItemResponse.unprocessedItems().values()) {
+            //   for (WriteRequest writeRequest : unprocessedItems) {
+            //     log("###unprocessedItem###", writeRequest);
+            //   }
+            // }
+          }
 
-              record.success = true;
+          record.success = true;
 
-            }, e->{ // catch
-              record.failureMessage = ""+e;
-            }, ()->{ // finally
-              // log(record);
-              record.wcuMeanRate = Double.valueOf(wcuMeter().getMeanRate()).intValue();
-              // log(num, "write", partition.size(), wcuMeter().getMeanRate());
-              try {
-                // log(num, "put permits", consumedCapacityUnits);
-                permitsQueue.put(record.consumedCapacityUnits); // guaranteed produce permits
-                // log(num, "permits put", consumedCapacityUnits);
-              } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
-            });
-    
-          });
-  
-        // }, e->{
-        //   log(e);
-        //   e.printStackTrace();
-        //   throw new RuntimeException(e);
-        // }, ()->{
-
+        }, e->{ // catch
+          record.failureMessage = ""+e;
+        }, ()->{ // finally
+          // log(record);
+          record.wcuMeter = wcuMeter.toString();
+          // log(num, "write", partition.size(), wcuMeter().getMeanRate());
+          try {
+            // log(num, "put permits", consumedCapacityUnits);
+                                    // permitsQueue.put(record.consumedCapacityUnits); // guaranteed produce permits
+            // log(num, "permits put", consumedCapacityUnits);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
         });
-
       }
       @Override
       protected void onListen() {
@@ -253,15 +241,14 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
     log("options", options);
   
-    DynamoDbAsyncClient client = DynamoDbAsyncClient.create();
+    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
 
     RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit);
     log("writeLimiter", writeLimiter);
 
-    writeLimiter.acquire(options.wcuLimit);
-    writeLimiter.acquire(options.wcuLimit);
+    ExecutorService executor = Executors.newFixedThreadPool(options.totalSegments);
 
     ExecutorService executor1 = Executors.newCachedThreadPool();
      ExecutorService executor2 = Executors.newCachedThreadPool();
@@ -273,13 +260,13 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     //###TODO get some sort of inputPlugin concurrency hint here
     //###TODO get some sort of inputPlugin concurrency hint here
     ArrayBlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(options.totalSegments); //###TODO get some sort of inputPlugin concurrency hint here
-    for (int i = 0; i < options.totalSegments; ++i)
-      permitsQueue.add(options.wcuLimit); // stagger?
+    while (permitsQueue.remainingCapacity()>0)
+      permitsQueue.add(options.wcuLimit); // stagger to work around thundering herd problem?
     //###TODO get some sort of inputPlugin concurrency hint here
     //###TODO get some sort of inputPlugin concurrency hint here
     //###TODO get some sort of inputPlugin concurrency hint here
 
-    return new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue, executor1, executor2);
+    return new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue, executor, executor1, executor2);
   }
 
   private void log(Object... args) {
