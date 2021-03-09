@@ -40,9 +40,8 @@ public class SystemInInputPlugin implements InputPlugin {
         partition.add(parser.next());
 
         if (!parser.hasNext() || partition.size() == 20000) {
-          ListenableFuture<?> lf = listener.apply(partition);
           try {
-            lf.get();
+            listener.apply(partition).get(); // backpressure
           } catch (Exception e) {
             log(e);
           }
