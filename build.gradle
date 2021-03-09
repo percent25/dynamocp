@@ -3,6 +3,7 @@ plugins {
 }
 
 apply plugin: "java"
+apply plugin: "application" // for mainClassName
 apply plugin: "io.spring.dependency-management"
 
 sourceCompatibility = 1.8
@@ -22,6 +23,7 @@ dependencies {
 // aws sdk 2
 	implementation platform("software.amazon.awssdk:bom:+")
 	implementation "software.amazon.awssdk:dynamodb"
+     implementation 'software.amazon.awssdk:netty-nio-client'
 }
 
 springBoot {
@@ -35,3 +37,5 @@ bootJar {
 		script = file("custom.script")
 	}
 }
+
+// mainClassName = "app.Experiment"
