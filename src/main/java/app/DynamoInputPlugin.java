@@ -220,7 +220,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     log("options", options);
 
     String tableName = args.getNonOptionArgs().get(0);
-    DynamoDbAsyncClient client = DynamoDbAsyncClient.create();
+    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
     // describeTableResponse.table().
