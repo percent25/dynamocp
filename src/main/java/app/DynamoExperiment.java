@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
-public class Experiment {
+public class DynamoExperiment {
 
   static AtomicLong id = new AtomicLong();
 
