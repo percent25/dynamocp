@@ -45,11 +45,11 @@ public class DynamoExperiment2 {
   static DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
   static String tableName = "MyTable";
 
-  static int concurrency = 16;
+  static int concurrency = 8;
   static Semaphore sem = new Semaphore(concurrency);
 
-  static long fastWindow = 60;
-  static long slowWindow = 300;
+  static long fastWindow = 6;
+  static long slowWindow = 30;
 
   static RateLimiter rateLimiter = RateLimiter.create(5.0);
   static LocalMeter reportedMeter = new LocalMeter();
@@ -64,9 +64,6 @@ public class DynamoExperiment2 {
 
     // prime client
     log(client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get());
-
-    // // prime local meter
-    // localMeter.mark(Double.valueOf(rateLimiter.getRate()).longValue()*fastWindow);
 
     while (true) {
 
@@ -121,7 +118,7 @@ public class DynamoExperiment2 {
             myRecord.rateIn = rateIn;
             // log("rate", rate, "delta", delta);
 
-            double factor = 1;
+            double factor = 3/2; // how aggressive
 
             // speeding up?
             if (fastRate > slowRate) {
@@ -170,7 +167,6 @@ public class DynamoExperiment2 {
               rateLimiter.setRate(rateOut);
 
             }
-
 
             myRecord.success=true;
 

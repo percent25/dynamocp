@@ -1,7 +1,6 @@
 package app;
 
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.AtomicDouble;
 
