@@ -1,5 +1,7 @@
 package app;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.UUID;
@@ -13,6 +15,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 import com.spotify.futures.CompletableFuturesExtra;
 
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
@@ -24,14 +29,23 @@ import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 class MyRecord {
   public boolean success;
   public String failureMessage;
-  public double rateIn;
-  public double instantaneousRate;
-  public double fastRate;
-  public double slowRate;
-  public double rateOut;
+  public double rateIn; // desired
+  public double instantRate; // reported
+  public double fastRate; // reported
+  public double slowRate; // reported
+  public String meter;
+  public double rateOut;// desired
+
   public String toString() {
-    return new Gson().toJson(this);
+    return gson.toJson(this);
   }
+
+  static Gson gson = new GsonBuilder()
+      .registerTypeAdapter(Double.class, (JsonSerializer<Double>) (src, typeOfSrc, context) -> {
+        DecimalFormat df = new DecimalFormat("#.#");
+        df.setRoundingMode(RoundingMode.HALF_EVEN);
+        return new JsonPrimitive(Double.parseDouble(df.format(src)));
+      }).create();
 }
 
 public class DynamoExperiment2 {
@@ -45,7 +59,7 @@ public class DynamoExperiment2 {
   static DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
   static String tableName = "MyTable";
 
-  static int concurrency = 8;
+  static int concurrency = 2;
   static Semaphore sem = new Semaphore(concurrency);
 
   static long fastWindow = 6;
@@ -60,7 +74,7 @@ public class DynamoExperiment2 {
 
   public static void main(String... args) throws Exception {
 
-    rateLimiter.acquire(Double.valueOf(rateLimiter.getRate()).intValue());
+    // rateLimiter.acquire(Double.valueOf(rateLimiter.getRate()).intValue());
 
     // prime client
     log(client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get());
@@ -97,10 +111,8 @@ public class DynamoExperiment2 {
             // real -> adjusted
             // nominal -> unadjusted
 
-            // instantaneousRate ?!?
-
-            var instantaneousRate = Double.valueOf(1000.0 * consumedCapacityUnits / (t - t0) * concurrency).doubleValue();
-            myRecord.instantaneousRate = instantaneousRate;
+            var instantRate = Double.valueOf(1000.0 * consumedCapacityUnits / (t - t0) * concurrency).doubleValue();
+            myRecord.instantRate = instantRate;
 
             rateLimiter.acquire(consumedCapacityUnits.intValue());
             reportedMeter.mark(consumedCapacityUnits.longValue());
@@ -129,7 +141,7 @@ public class DynamoExperiment2 {
               // "rateIn":5.0,"instantaneousRate":56.737588652482266,"fastRate":0.2,"slowRate":0.1,"rateOut":30.868794326241133}
               // "rateIn":30.868794326241133,"instantaneousRate":36.03603603603604,"fastRate":0.4,"slowRate":0.2,"rateOut":33.45241518113858}
 
-              var absDesire = Math.max(instantaneousRate, fastRate);
+              var absDesire = Math.max(instantRate, fastRate);
               var whereWeAreNow = rateIn; // Math.max(rateIn, fastRate); //###TODO SHOULD THIS BE JUST RATEIN ?? 
               var deltaDesire = absDesire - rateIn;
               var rateOut = absDesire - deltaDesire*slowRate/fastRate / factor;
@@ -153,9 +165,9 @@ public class DynamoExperiment2 {
 
                     // var absDesire = Math.min(instantaneousRate, fastRate);
               // want lowest non-zero
-              var absDesire = instantaneousRate;
+              var absDesire = instantRate;
               if (slowRate > 0) {
-                if (slowRate < instantaneousRate)
+                if (slowRate < instantRate)
                   absDesire = slowRate;
               }
               var whereWeAreNow = rateIn; // Math.min(rateIn, fastRate);
@@ -174,13 +186,8 @@ public class DynamoExperiment2 {
             myRecord.failureMessage = ""+e;
           } finally {
             sem.release();
-            log(
-              "consumed",
-              // "firstMeter", firstMeter,
-              // "secondMeter", secondMeter,
-              myRecord);
-
-              log(reportedMeter);
+            myRecord.meter = reportedMeter.toString();
+            log(myRecord);
           }
         } // synchronized
         }, MoreExecutors.directExecutor());

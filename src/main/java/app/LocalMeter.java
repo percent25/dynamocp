@@ -1,5 +1,7 @@
 package app;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import com.google.common.util.concurrent.AtomicDouble;
@@ -44,9 +46,16 @@ public class LocalMeter {
 
   public String toString() {
     // return String.format("%s(%s/s)", total, avg(15).longValue());
-    return String.format("%s %s/%s/%s %s/%s/%s", total.longValue(),
-      avg(1).longValue(), avg(5).longValue(), avg(15).longValue(),
-      avg(60).longValue(), avg(300).longValue(), avg(900).longValue());
+    return String.format("%s %s/%s/%s %s/%s/%s",
+      num(total),
+      num(avg(1)), num(avg(5)), num(avg(15)),
+      num(avg(60)), num(avg(300)), num(avg(900)));
+  }
+
+  private String num(Number src) {
+    DecimalFormat df = new DecimalFormat("#.#");
+    df.setRoundingMode(RoundingMode.HALF_EVEN);
+    return df.format(src);
   }
 
 }
