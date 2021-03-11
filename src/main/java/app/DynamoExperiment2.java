@@ -59,7 +59,7 @@ public class DynamoExperiment2 {
   static DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
   static String tableName = "MyTable";
 
-  static int concurrency = 2;
+  static int concurrency = 4;
   static Semaphore sem = new Semaphore(concurrency);
 
   static long fastWindow = 6;
@@ -74,7 +74,13 @@ public class DynamoExperiment2 {
 
   public static void main(String... args) throws Exception {
 
-    // rateLimiter.acquire(Double.valueOf(rateLimiter.getRate()).intValue());
+    //###TODO ERADICATE ME
+    //###TODO ERADICATE ME
+    //###TODO ERADICATE ME
+    rateLimiter.acquire(Double.valueOf(rateLimiter.getRate()).intValue());
+    //###TODO ERADICATE ME
+    //###TODO ERADICATE ME
+    //###TODO ERADICATE ME
 
     // prime client
     log(client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get());
@@ -114,7 +120,10 @@ public class DynamoExperiment2 {
             var instantRate = Double.valueOf(1000.0 * consumedCapacityUnits / (t - t0) * concurrency).doubleValue();
             myRecord.instantRate = instantRate;
 
+            //THROTTLE
             rateLimiter.acquire(consumedCapacityUnits.intValue());
+            //THROTTLE
+
             reportedMeter.mark(consumedCapacityUnits.longValue());
 
             // 80.0 -> 0.5    0.0/0.0
@@ -125,26 +134,31 @@ public class DynamoExperiment2 {
             var slowRate = reportedMeter.avg(slowWindow).doubleValue();
             myRecord.slowRate = reportedMeter.avg(slowWindow).doubleValue();
 
-            var rateIn = rateLimiter.getRate();
-
-            myRecord.rateIn = rateIn;
+            myRecord.rateIn = rateLimiter.getRate();
             // log("rate", rate, "delta", delta);
 
-            double factor = 3/2; // how aggressive
+            // double factor = 5; // how aggressive
 
             // speeding up?
             if (fastRate > slowRate) {
+              
+              double factor = 2; // how aggressive
 
-              // we desire to achieve instantaneousRate or fastRate
-              // the gap to instantaneousRate is... from where we are now to instantaneousRate
+              // we desire to achieve instantRate or fastRate
+              // the gap to instantRate is... from where we are now to instantRate
 
-              // "rateIn":5.0,"instantaneousRate":56.737588652482266,"fastRate":0.2,"slowRate":0.1,"rateOut":30.868794326241133}
-              // "rateIn":30.868794326241133,"instantaneousRate":36.03603603603604,"fastRate":0.4,"slowRate":0.2,"rateOut":33.45241518113858}
+              // "rateIn":5.0,"instantRate":56.737588652482266,"fastRate":0.2,"slowRate":0.1,"rateOut":30.868794326241133}
+              // "rateIn":30.868794326241133,"instantRate":36.03603603603604,"fastRate":0.4,"slowRate":0.2,"rateOut":33.45241518113858}
 
-              var absDesire = Math.max(instantRate, fastRate);
-              var whereWeAreNow = rateIn; // Math.max(rateIn, fastRate); //###TODO SHOULD THIS BE JUST RATEIN ?? 
-              var deltaDesire = absDesire - rateIn;
-              var rateOut = absDesire - deltaDesire*slowRate/fastRate / factor;
+              var rateIn = rateLimiter.getRate();
+              var desiredRate = Math.max(instantRate, fastRate); //###TODO PONDER THIS
+              // var whereWeAreNow = rateIn; // Math.max(rateIn, fastRate); //###TODO SHOULD THIS BE JUST RATEIN ?? 
+              var desiredDelta = desiredRate - rateIn;
+
+                  // var creepUp=(fastRate-slowRate)/slowRate;
+                  // log(creepUp);
+              var rateOut = rateIn + desiredDelta * .02; // creep up slow
+              // var rateOut = rateIn + desiredDelta*slowRate/fastRate;
 
               myRecord.rateOut = rateOut;
 
@@ -152,27 +166,36 @@ public class DynamoExperiment2 {
 
             }
 
-            //.IllegalArgumentException: rate must be positive","rateIn":10.2,"instantaneousRate":0.6476683937823834,"fastRate":0.0,"slowRate":4.6,"rateOut":0.0}
+            //.IllegalArgumentException: rate must be positive","rateIn":10.2,"instantRate":0.6476683937823834,"fastRate":0.0,"slowRate":4.6,"rateOut":0.0}
 
             // slowing down?
             if (fastRate < slowRate) {
 
-              // we desire to achieve instantaneousRate or fastRate
+              double factor = 3/2; // how aggressive
+
+              // we desire to achieve instantRate or fastRate
               // the gap to fastRate is... from where we are now to fastRate
 
-              // "rateIn":85.41694762895051,"instantaneousRate":89.88764044943821,"fastRate":17.2,"slowRate":42.4,"rateOut":88.07405751282528}
-              // "rateIn":45.958635258974546,"instantaneousRate":47.61904761904762,"fastRate":47.2,"slowRate":59.4,"rateOut":46.29966271340033}
+              // "rateIn":85.41694762895051,"instantRate":89.88764044943821,"fastRate":17.2,"slowRate":42.4,"rateOut":88.07405751282528}
+              // "rateIn":45.958635258974546,"instantRate":47.61904761904762,"fastRate":47.2,"slowRate":59.4,"rateOut":46.29966271340033}
 
-                    // var absDesire = Math.min(instantaneousRate, fastRate);
-              // want lowest non-zero
-              var absDesire = instantRate;
-              if (slowRate > 0) {
-                if (slowRate < instantRate)
-                  absDesire = slowRate;
-              }
-              var whereWeAreNow = rateIn; // Math.min(rateIn, fastRate);
-              var deltaDesire = rateIn - absDesire;
-              var rateOut = absDesire + deltaDesire*fastRate/slowRate / factor;
+                    // var absDesire = Math.min(instantRate, fastRate);
+              
+              var rateIn = rateLimiter.getRate();
+
+              var desiredRate = slowRate; //###TODO PONDER THIS
+              // var desiredRate = Math.min(instantRate, slowRate);
+
+                    // var desiredRate = instantRate; // // want lowest non-zero
+                    // if (fastRate > 0) {
+                    //   if (fastRate < instantRate)
+                    //     desiredRate = fastRate;
+                    // }
+
+              // var whereWeAreNow = rateIn; // Math.min(rateIn, fastRate);
+              var desiredDelta = rateIn - desiredRate;
+              var rateOut = rateIn - desiredDelta * 0.50; // thunk down fast
+              // var rateOut = rateIn - desiredDelta*.5 + desiredDelta*fastRate/slowRate / factor;
 
               myRecord.rateOut = rateOut;
 
