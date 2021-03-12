@@ -16,8 +16,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -225,48 +223,52 @@ public class DynamoOutputPlugin implements OutputPlugin {
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
-  public OutputPlugin get(ApplicationArguments args) throws Exception {
-    String tableName = args.getNonOptionArgs().get(1);
+  public OutputPlugin get(String arg, ApplicationArguments args) throws Exception {
+    if (arg.startsWith("dynamo:")) {
+      
+      String tableName = arg.substring(arg.indexOf(":"));
 
-    DynamoOptions options = Options.parse(args, DynamoOptions.class);
-
-    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    if (options.rcuLimit == -1)
-      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 2;
-    if (options.wcuLimit == -1)
-      options.wcuLimit = options.rcuLimit * 8;
-
-    if (options.totalSegments == 0)
-      options.totalSegments = Math.max(options.rcuLimit/128, 1);
-
-    log("options", options);
+      DynamoOptions options = Options.parse(args, DynamoOptions.class);
   
-    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
-    DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
-    DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
-
-    RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit);
-    log("writeLimiter", writeLimiter);
-
-    ExecutorService executor = Executors.newFixedThreadPool(options.totalSegments);
-
-    ExecutorService executor1 = Executors.newCachedThreadPool();
-     ExecutorService executor2 = Executors.newCachedThreadPool();
-    //  ExecutorService executor1 = Executors.newFixedThreadPool(options.totalSegments);
-    // ExecutorService executor2 = Executors.newFixedThreadPool(options.totalSegments);
-
-    // thundering herd
-    //###TODO get some sort of inputPlugin concurrency hint here
-    //###TODO get some sort of inputPlugin concurrency hint here
-    //###TODO get some sort of inputPlugin concurrency hint here
-    ArrayBlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(options.totalSegments); //###TODO get some sort of inputPlugin concurrency hint here
-    while (permitsQueue.remainingCapacity()>0)
-      permitsQueue.add(options.wcuLimit); // stagger to work around thundering herd problem?
-    //###TODO get some sort of inputPlugin concurrency hint here
-    //###TODO get some sort of inputPlugin concurrency hint here
-    //###TODO get some sort of inputPlugin concurrency hint here
-
-    return new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue, executor, executor1, executor2);
+      // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+      if (options.rcuLimit == -1)
+        options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 2;
+      if (options.wcuLimit == -1)
+        options.wcuLimit = options.rcuLimit * 8;
+  
+      if (options.totalSegments == 0)
+        options.totalSegments = Math.max(options.rcuLimit/128, 1);
+  
+      log("options", options);
+    
+      DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
+      DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
+      DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
+  
+      RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit);
+      log("writeLimiter", writeLimiter);
+  
+      ExecutorService executor = Executors.newFixedThreadPool(options.totalSegments);
+  
+      ExecutorService executor1 = Executors.newCachedThreadPool();
+       ExecutorService executor2 = Executors.newCachedThreadPool();
+      //  ExecutorService executor1 = Executors.newFixedThreadPool(options.totalSegments);
+      // ExecutorService executor2 = Executors.newFixedThreadPool(options.totalSegments);
+  
+      // thundering herd
+      //###TODO get some sort of inputPlugin concurrency hint here
+      //###TODO get some sort of inputPlugin concurrency hint here
+      //###TODO get some sort of inputPlugin concurrency hint here
+      ArrayBlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(options.totalSegments); //###TODO get some sort of inputPlugin concurrency hint here
+      while (permitsQueue.remainingCapacity()>0)
+        permitsQueue.add(options.wcuLimit); // stagger to work around thundering herd problem?
+      //###TODO get some sort of inputPlugin concurrency hint here
+      //###TODO get some sort of inputPlugin concurrency hint here
+      //###TODO get some sort of inputPlugin concurrency hint here
+  
+      return new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue, executor, executor1, executor2);
+      }
+      return null;
   }
 
   private void log(Object... args) {

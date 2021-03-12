@@ -77,8 +77,7 @@ public class SystemInInputPlugin implements InputPlugin {
 class SystemInInputPluginProvider implements InputPluginProvider {
 
   @Override
-  public InputPlugin get(ApplicationArguments args) throws Exception {
-    String arg = args.getNonOptionArgs().get(0);
+  public InputPlugin get(String arg, ApplicationArguments args) throws Exception {
     if ("-".equals(arg))
       return new SystemInInputPlugin();
     return null;

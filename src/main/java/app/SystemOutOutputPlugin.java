@@ -30,8 +30,7 @@ public class SystemOutOutputPlugin implements OutputPlugin {
 class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
   @Override
-  public OutputPlugin get(ApplicationArguments args) throws Exception {
-    String arg = args.getNonOptionArgs().get(1);
+  public OutputPlugin get(String arg, ApplicationArguments args) throws Exception {
     if ("-".equals(arg))
       return new SystemOutOutputPlugin();
     return null;
