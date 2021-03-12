@@ -23,6 +23,7 @@ dependencies {
 // aws sdk 2
 	implementation platform("software.amazon.awssdk:bom:+")
 	implementation "software.amazon.awssdk:dynamodb"
+	implementation "software.amazon.awssdk:cloudwatch-metric-publisher"
      implementation 'software.amazon.awssdk:netty-nio-client'
 }
 
