@@ -32,7 +32,7 @@ public class DynamoExperiment {
     final int wcuLimit=4000;
 
     String tableName = "Dlcm-rrizun_MetaStore";
-    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
+    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
 
     RateLimiter rateLimiter = RateLimiter.create(wcuLimit);
 

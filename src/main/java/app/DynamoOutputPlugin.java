@@ -241,7 +241,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   
       log("options", options);
     
-      DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().httpClient(AwsSdkTwo.httpClient).build();
+      DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
       DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
       DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
   

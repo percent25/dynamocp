@@ -4,21 +4,19 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-import com.google.common.util.concurrent.AtomicDouble;
-
 public class LocalMeter {
 
   private final int windowSeconds = 900;
-  private final AtomicDouble total = new AtomicDouble();
   private final ConcurrentSkipListMap<Long, Double> values = new ConcurrentSkipListMap<>();
 
-  public long now() {
+  private long now() {
     return System.currentTimeMillis();
   }
 
   public void mark(Number value) {
-    final long now = now();
-    total.addAndGet(value.doubleValue());
+    mark(value, now());
+  }
+  public void mark(Number value, long now) {
     values.headMap(now - windowSeconds * 1000).clear();
     values.compute(now, (k, v) -> {
       return (v == null ? 0.0 : v) + value.doubleValue();
@@ -26,11 +24,16 @@ public class LocalMeter {
   }
 
   public Number avg(long windowSeconds) {
-    return sum(windowSeconds).doubleValue() / windowSeconds;
+    return avg(windowSeconds, now());
+  }
+  public Number avg(long windowSeconds, long now) {
+    return sum(windowSeconds, now).doubleValue() / windowSeconds;
   }
 
   public Number sum(long windowSeconds) {
-    final long now = now();
+    return sum(windowSeconds, now());
+  }
+  public Number sum(long windowSeconds, long now) {
     // values.headMap(now - windowSeconds * 1000).clear();
     long fromKey = now - windowSeconds * 1000;
     long toKey = now;
@@ -40,14 +43,8 @@ public class LocalMeter {
     return sum;
   }
 
-  public Number total() {
-    return total.get();
-  }
-
   public String toString() {
-    // return String.format("%s(%s/s)", total, avg(15).longValue());
-    return String.format("%s %s/%s/%s %s/%s/%s",
-      num(total),
+    return String.format("%s/%s/%s %s/%s/%s",
       num(avg(1)), num(avg(5)), num(avg(15)),
       num(avg(60)), num(avg(300)), num(avg(900)));
   }

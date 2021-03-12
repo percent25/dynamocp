@@ -1,5 +1,5 @@
 plugins {
-	id "org.springframework.boot" version "2.3.3.RELEASE"
+	id "org.springframework.boot" version "2.4.3"
 }
 
 apply plugin: "java"
@@ -14,17 +14,17 @@ repositories {
 }
 
 dependencies {
-	implementation 'com.codahale.metrics:metrics-core:+'
 	implementation "com.google.code.gson:gson:+"
+	implementation "org.springframework.boot:spring-boot-starter"
+
 	implementation "com.google.guava:guava:+"
 	implementation "com.spotify:futures-extra:+"
-	implementation "org.springframework.boot:spring-boot-starter"
 
 // aws sdk 2
 	implementation platform("software.amazon.awssdk:bom:+")
 	implementation "software.amazon.awssdk:dynamodb"
-	implementation "software.amazon.awssdk:cloudwatch-metric-publisher"
-     implementation 'software.amazon.awssdk:netty-nio-client'
+	// implementation "software.amazon.awssdk:cloudwatch-metric-publisher"
+    //  implementation 'software.amazon.awssdk:netty-nio-client'
 }
 
 springBoot {
@@ -39,4 +39,4 @@ bootJar {
 	}
 }
 
-mainClassName = "app.DynamoExperiment2"
+// mainClassName = "app.DynamoExperiment2"
