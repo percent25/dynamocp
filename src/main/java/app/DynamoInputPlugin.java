@@ -6,8 +6,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +14,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -44,8 +43,6 @@ public class DynamoInputPlugin implements InputPlugin {
 
   // thundering herd
   private final BlockingQueue<Number> permitsQueue;
-
-  private final ExecutorService executor = Executors.newCachedThreadPool();
 
   /**
    * ctor
@@ -97,7 +94,7 @@ public class DynamoInputPlugin implements InputPlugin {
         run(()->{
           return Futures.submit(()->{
             return permitsQueue.take();
-          }, executor);
+          }, MoreExecutors.directExecutor());
         }, number->{
 
           permits[0]=number.intValue();

@@ -1,7 +1,5 @@
 package app;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,21 +9,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Queues;
-import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -53,10 +42,6 @@ public class DynamoOutputPlugin implements OutputPlugin {
   private final RateLimiter writeLimiter;
   // private final BlockingQueue<Number> permitsQueue; // thundering herd
 
-  // private final ExecutorService executor;
-  // private final ExecutorService executor1;
-  // private final ExecutorService executor2;
-
   //###TODO
   //###TODO
   //###TODO
@@ -67,16 +52,11 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private LocalMeter wcuMeter = new LocalMeter();
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue, ExecutorService executor, ExecutorService executor1, ExecutorService executor2) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue) {
     log("ctor", tableName);
     this.client = client;
     this.tableName = tableName;
     this.writeLimiter = writeLimiter;
-    // this.executor = executor;
-    // this.sem = new Semaphore()
-    // this.permitsQueue = permitsQueue;
-    // this.executor1 = executor1;
-    // this.executor2 = executor2;
   }
 
   @Override
@@ -247,14 +227,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   
       RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit);
       log("writeLimiter", writeLimiter);
-  
-      ExecutorService executor = Executors.newFixedThreadPool(options.totalSegments);
-  
-      ExecutorService executor1 = Executors.newCachedThreadPool();
-       ExecutorService executor2 = Executors.newCachedThreadPool();
-      //  ExecutorService executor1 = Executors.newFixedThreadPool(options.totalSegments);
-      // ExecutorService executor2 = Executors.newFixedThreadPool(options.totalSegments);
-  
+    
       // thundering herd
       //###TODO get some sort of inputPlugin concurrency hint here
       //###TODO get some sort of inputPlugin concurrency hint here
@@ -266,7 +239,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       //###TODO get some sort of inputPlugin concurrency hint here
       //###TODO get some sort of inputPlugin concurrency hint here
   
-      return new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue, executor, executor1, executor2);
+      return new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue);
       }
       return null;
   }
