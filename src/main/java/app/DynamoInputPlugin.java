@@ -56,7 +56,7 @@ public class DynamoInputPlugin implements InputPlugin {
    * @param rcuLimit
    */
   public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int rcuLimit, int totalSegments) {
-    log("ctor", tableName, rcuLimit, totalSegments);
+    log("ctor", client, tableName, rcuLimit, totalSegments);
 
     this.client = client;
     this.tableName = tableName;
@@ -89,7 +89,7 @@ public class DynamoInputPlugin implements InputPlugin {
       }
       void doSegment(int segment) {
         
-        log(segment, "doSegment");
+        debug(segment, "doSegment");
 
         int[] permits = new int[1];
         List<JsonElement> jsonElements = new ArrayList<>();
@@ -103,12 +103,9 @@ public class DynamoInputPlugin implements InputPlugin {
           permits[0]=number.intValue();
 
           run(() -> {
-            // permits[0] = permitsQueue.take().intValue();
-            log(segment, "permits:"+permits[0]);
   
             if (permits[0] > 0)
               readLimiter.acquire(permits[0]);
-            log(segment, "acquired:"+permits[0]);
   
             // STEP 1 Do the scan
             ScanRequest scanRequest = ScanRequest.builder()
@@ -127,12 +124,12 @@ public class DynamoInputPlugin implements InputPlugin {
                 //
                 .build();
   
-            log(segment, "scanRequest", scanRequest);
+            debug(segment, "scanRequest", scanRequest);
   
             return lf(client.scan(scanRequest));
           }, scanResponse -> {
   
-            log(segment, "scanResponse", scanResponse.items().size());
+            debug(segment, "scanResponse", scanResponse.items().size());
   
             exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
   
@@ -157,14 +154,14 @@ public class DynamoInputPlugin implements InputPlugin {
                 // System.err.println(renderState(appState));
   
           }, e->{
-            log(e);
+            debug(e);
             e.printStackTrace();
             throw new RuntimeException(e);
           }, ()->{
             try {
               permitsQueue.put(permits[0]); // produce permits
             } catch (Exception e) {
-              log(segment, e);
+              debug(segment, e);
               e.printStackTrace();
               throw new RuntimeException(e);
             } finally {
@@ -197,6 +194,11 @@ public class DynamoInputPlugin implements InputPlugin {
     String threadName = "["+Thread.currentThread().getName()+"]";
     System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
   }
+  private void debug(Object... args) {
+    // String threadName = "["+Thread.currentThread().getName()+"]";
+    // System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
+  }
+
 
 }
 

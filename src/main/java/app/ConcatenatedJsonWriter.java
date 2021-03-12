@@ -102,7 +102,7 @@ public class ConcatenatedJsonWriter {
                     record.failureMessage = e.toString();
                     throw new RuntimeException(e); // propagate to caller
                 }, ()->{
-                    log(record);
+                    // log(record);
                 });
             }
         }.get();
@@ -132,7 +132,7 @@ public class ConcatenatedJsonWriter {
                         baos = flush(baos, partitions.get(baos));
                     return Futures.successfulAsList(partitions.values());
                 }, () -> {
-                    log(record);
+                    // log(record);
                 });
             }
         }.get();

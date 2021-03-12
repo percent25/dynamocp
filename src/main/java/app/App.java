@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.CaseFormat;
+import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -184,8 +186,12 @@ public class App implements ApplicationRunner {
     // ----------------------------------------------------------------------
 
     inputPlugin.setListener(jsonElements->{
-      // log(jsonElements);
-      return outputPlugin.write(jsonElements);
+      log("read", Iterables.size(jsonElements));
+      var lf = outputPlugin.write(jsonElements);
+      lf.addListener(()->{
+        log("write", Iterables.size(jsonElements));
+      }, MoreExecutors.directExecutor());
+      return lf;
           // for (JsonElement jsonElement : jsonElements) {
           //   // log(jsonElement);
           //   ListenableFuture<?> lf = outputPlugin.write(jsonElement);
