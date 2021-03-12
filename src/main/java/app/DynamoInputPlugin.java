@@ -206,7 +206,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   @Override
   public InputPlugin get(String arg, ApplicationArguments args) throws Exception {
     if (arg.startsWith("dynamo:")) {
-      String tableName = arg.substring(arg.indexOf(":"));
+      String tableName = arg.substring(arg.indexOf(":")+1);
 
       DynamoOptions options = Options.parse(args, DynamoOptions.class);
 

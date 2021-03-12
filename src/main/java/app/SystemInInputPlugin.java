@@ -47,7 +47,7 @@ public class SystemInInputPlugin implements InputPlugin {
 
         partition.add(parser.next());
 
-        if (!parser.hasNext() || partition.size() == 25) { // mtu
+        if (!parser.hasNext() || partition.size() == 1000) { // mtu
           try {
             // STEP 1
             sem.acquire();
