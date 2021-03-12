@@ -144,13 +144,13 @@ public class App implements ApplicationRunner {
 
     List<InputPlugin> inputPlugins = new ArrayList<>();
     for (InputPluginProvider provider : inputPluginProviders) {
-      System.err.println(provider);
+      log(provider);
       try {
         InputPlugin inputPlugin = provider.get(args.getNonOptionArgs().get(0), args);
         if (inputPlugin!=null)
           inputPlugins.add(inputPlugin);
       } catch (Exception e) {
-        System.err.println(e);
+        log(e);
       }
     }
 
@@ -165,13 +165,13 @@ public class App implements ApplicationRunner {
 
     List<OutputPlugin> outputPlugins = new ArrayList<>();
     for (OutputPluginProvider provider : outputPluginProviders) {
-      System.err.println(provider);
+      log(provider);
       try {
         OutputPlugin outputPlugin = provider.get(args.getNonOptionArgs().get(1), args);
         if (outputPlugin!=null)
           outputPlugins.add(outputPlugin);
       } catch (Exception e) {
-        System.err.println(e);
+        log(e);
       }
     }
     if (outputPlugins.size() == 0)
@@ -247,7 +247,7 @@ public class App implements ApplicationRunner {
   // }
 
   private void log(Object... args) {
-    System.err.println(getClass().getSimpleName()+Arrays.asList(args));
+    new LogHelper(this).log(args);
   }
 
 }

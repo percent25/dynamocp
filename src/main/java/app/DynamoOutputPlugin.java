@@ -194,8 +194,7 @@ public class DynamoOutputPlugin implements OutputPlugin {
   }
 
   private void log(Object... args) {
-    String threadName = "["+Thread.currentThread().getName()+"]";
-    System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
+    new LogHelper(this).log(args);
   }
 }
 
@@ -245,8 +244,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   }
 
   private void log(Object... args) {
-    String threadName = "["+Thread.currentThread().getName()+"]";
-    System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
+    new LogHelper(this).log(args);
   }
 
 }

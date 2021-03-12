@@ -69,7 +69,7 @@ public class SystemInInputPlugin implements InputPlugin {
   }
 
   private void log(Object... args) {
-    System.err.println(getClass().getSimpleName()+Arrays.asList(args));
+    new LogHelper(this).log(args);
   }
 }
 

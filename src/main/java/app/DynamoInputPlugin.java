@@ -9,6 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
@@ -188,12 +189,10 @@ public class DynamoInputPlugin implements InputPlugin {
   }
 
   private void log(Object... args) {
-    String threadName = "["+Thread.currentThread().getName()+"]";
-    System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
+    new LogHelper(this).log(args);
   }
   private void debug(Object... args) {
-    // String threadName = "["+Thread.currentThread().getName()+"]";
-    // System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
+    // new LogHelper(this).debug(args);
   }
 
 

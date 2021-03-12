@@ -14,8 +14,9 @@ public class LogHelper {
 
   public void log(Object... args) {
     List<String> parts = new ArrayList<>();
-    // parts.add(new Date().toString());
-    // parts.add(object.toString());
+    parts.add(new Date().toString());
+    parts.add(String.format("[%s]", Thread.currentThread().getName()));
+    parts.add(object.toString());
     for (Object arg : args)
       parts.add("" + arg);
     System.err.println(String.join(" ", parts));
