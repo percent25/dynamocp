@@ -1,0 +1,123 @@
+----------------------------------------------------------------------
+SUCCESS
+----------------------------------------------------------------------
+
+2021-03-12T11:39:29.579422Z MarshallingDuration class java.time.Duration [CORE] PT0.00019555S
+2021-03-12T11:39:29.579468Z RetryCount class java.lang.Integer [CORE] 0
+2021-03-12T11:39:29.579480Z ApiCallSuccessful class java.lang.Boolean [CORE] true
+2021-03-12T11:39:29.579488Z OperationName class java.lang.String [CORE] PutItem
+2021-03-12T11:39:29.579495Z ApiCallDuration class java.time.Duration [CORE] PT0.115024168S
+2021-03-12T11:39:29.579503Z CredentialsFetchDuration class java.time.Duration [CORE] PT0.000005872S
+2021-03-12T11:39:29.579516Z ServiceId class java.lang.String [CORE] DynamoDB
+
+2021-03-12T11:39:29.579529Z SigningDuration class java.time.Duration [CORE] PT0.000200711S
+2021-03-12T11:39:29.579536Z UnmarshallingDuration class java.time.Duration [CORE] PT0.000193763S
+2021-03-12T11:39:29.579543Z ServiceCallDuration class java.time.Duration [CORE] PT0.114552558S
+2021-03-12T11:39:29.579549Z HttpStatusCode class java.lang.Integer [CORE, HTTP_CLIENT] 200
+2021-03-12T11:39:29.579556Z BackoffDelayDuration class java.time.Duration [CORE] PT0S
+2021-03-12T11:39:29.579563Z AwsRequestId class java.lang.String [CORE] HSFEAC1JMPMQAO1VK91TF228KBVV4KQNSO5AEMVJF66Q9ASUAAJG
+2021-03-12T11:39:29.579570Z AvailableConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 6
+2021-03-12T11:39:29.579576Z MaxConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 50
+2021-03-12T11:39:29.579583Z LeasedConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 2
+2021-03-12T11:39:29.579596Z PendingConcurrencyAcquires class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:29.579602Z HttpClientName class java.lang.String [CORE, HTTP_CLIENT] NettyNio
+
+2021-03-12T11:39:29.579914Z {"success":true,"rateIn":64.1,"instantRate":69.0,"fastRate":43.3,"slowRate":21.1,"dir":"FASTER","meter":"635 20/45.2/32.9 10.6/2.1/0.7","rateOut":64.2}
+
+----------------------------------------------------------------------
+THROTTLED
+----------------------------------------------------------------------
+
+2021-03-12T11:39:48.923601Z MarshallingDuration class java.time.Duration [CORE] PT0.000232169S
+2021-03-12T11:39:48.923647Z RetryCount class java.lang.Integer [CORE] 6
+2021-03-12T11:39:48.923664Z ApiCallSuccessful class java.lang.Boolean [CORE] true
+2021-03-12T11:39:48.923682Z OperationName class java.lang.String [CORE] PutItem
+2021-03-12T11:39:48.923693Z ApiCallDuration class java.time.Duration [CORE] PT21.30184144S
+2021-03-12T11:39:48.923706Z CredentialsFetchDuration class java.time.Duration [CORE] PT0.000005406S
+2021-03-12T11:39:48.923718Z ServiceId class java.lang.String [CORE] DynamoDB
+
+2021-03-12T11:39:48.923728Z SigningDuration class java.time.Duration [CORE] PT0.000270151S
+2021-03-12T11:39:48.923739Z UnmarshallingDuration class java.time.Duration [CORE] PT0.00027478S
+2021-03-12T11:39:48.923750Z ServiceCallDuration class java.time.Duration [CORE] PT0.119870583S
+2021-03-12T11:39:48.923761Z HttpStatusCode class java.lang.Integer [CORE, HTTP_CLIENT] 400
+2021-03-12T11:39:48.923773Z BackoffDelayDuration class java.time.Duration [CORE] PT0S
+2021-03-12T11:39:48.923783Z AwsRequestId class java.lang.String [CORE] 5A2RNPI3CFBTRF4N90LP6D3D8JVV4KQNSO5AEMVJF66Q9ASUAAJG
+2021-03-12T11:39:48.923794Z AvailableConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 1
+2021-03-12T11:39:48.923811Z MaxConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 50
+2021-03-12T11:39:48.923822Z LeasedConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 7
+2021-03-12T11:39:48.923832Z PendingConcurrencyAcquires class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.923844Z HttpClientName class java.lang.String [CORE, HTTP_CLIENT] NettyNio
+
+2021-03-12T11:39:48.923855Z SigningDuration class java.time.Duration [CORE] PT0.000337213S
+2021-03-12T11:39:48.923868Z UnmarshallingDuration class java.time.Duration [CORE] PT0.000364025S
+2021-03-12T11:39:48.923881Z ServiceCallDuration class java.time.Duration [CORE] PT0.125172003S
+2021-03-12T11:39:48.923892Z HttpStatusCode class java.lang.Integer [CORE, HTTP_CLIENT] 400
+2021-03-12T11:39:48.923903Z BackoffDelayDuration class java.time.Duration [CORE] PT0.278S
+2021-03-12T11:39:48.923916Z AwsRequestId class java.lang.String [CORE] I0FA8FR95UQUOMJBVE6JIBHQMVVV4KQNSO5AEMVJF66Q9ASUAAJG
+2021-03-12T11:39:48.923928Z AvailableConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 3
+2021-03-12T11:39:48.923939Z MaxConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 50
+2021-03-12T11:39:48.923949Z LeasedConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 5
+2021-03-12T11:39:48.923960Z PendingConcurrencyAcquires class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.923978Z HttpClientName class java.lang.String [CORE, HTTP_CLIENT] NettyNio
+
+2021-03-12T11:39:48.923990Z SigningDuration class java.time.Duration [CORE] PT0.000289984S
+2021-03-12T11:39:48.924004Z UnmarshallingDuration class java.time.Duration [CORE] PT0.000313534S
+2021-03-12T11:39:48.924016Z ServiceCallDuration class java.time.Duration [CORE] PT0.11942873S
+2021-03-12T11:39:48.924030Z HttpStatusCode class java.lang.Integer [CORE, HTTP_CLIENT] 400
+2021-03-12T11:39:48.924042Z BackoffDelayDuration class java.time.Duration [CORE] PT0.797S
+2021-03-12T11:39:48.924056Z AwsRequestId class java.lang.String [CORE] PLTMGK0JCU39NE45TP53QQFFRBVV4KQNSO5AEMVJF66Q9ASUAAJG
+2021-03-12T11:39:48.924066Z AvailableConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 5
+2021-03-12T11:39:48.924078Z MaxConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 50
+2021-03-12T11:39:48.924088Z LeasedConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 3
+2021-03-12T11:39:48.924099Z PendingConcurrencyAcquires class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924110Z HttpClientName class java.lang.String [CORE, HTTP_CLIENT] NettyNio
+
+2021-03-12T11:39:48.924120Z SigningDuration class java.time.Duration [CORE] PT0.000277275S
+2021-03-12T11:39:48.924133Z UnmarshallingDuration class java.time.Duration [CORE] PT0.000284203S
+2021-03-12T11:39:48.924145Z ServiceCallDuration class java.time.Duration [CORE] PT0.119899172S
+2021-03-12T11:39:48.924163Z HttpStatusCode class java.lang.Integer [CORE, HTTP_CLIENT] 400
+2021-03-12T11:39:48.924176Z BackoffDelayDuration class java.time.Duration [CORE] PT1.267S
+2021-03-12T11:39:48.924190Z AwsRequestId class java.lang.String [CORE] 45MJQ9A6NTP5T62ABF3MOEG6B3VV4KQNSO5AEMVJF66Q9ASUAAJG
+2021-03-12T11:39:48.924202Z AvailableConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 7
+2021-03-12T11:39:48.924235Z MaxConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 50
+2021-03-12T11:39:48.924249Z LeasedConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 1
+2021-03-12T11:39:48.924261Z PendingConcurrencyAcquires class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924272Z HttpClientName class java.lang.String [CORE, HTTP_CLIENT] NettyNio
+
+2021-03-12T11:39:48.924284Z SigningDuration class java.time.Duration [CORE] PT0.000337014S
+2021-03-12T11:39:48.924297Z UnmarshallingDuration class java.time.Duration [CORE] PT0.000323294S
+2021-03-12T11:39:48.924310Z ServiceCallDuration class java.time.Duration [CORE] PT0.129297908S
+2021-03-12T11:39:48.924322Z HttpStatusCode class java.lang.Integer [CORE, HTTP_CLIENT] 400
+2021-03-12T11:39:48.924333Z BackoffDelayDuration class java.time.Duration [CORE] PT2.953S
+2021-03-12T11:39:48.924347Z AwsRequestId class java.lang.String [CORE] L7N45U3VT7UKRIA8H4DDIAH21FVV4KQNSO5AEMVJF66Q9ASUAAJG
+2021-03-12T11:39:48.924359Z AvailableConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 5
+2021-03-12T11:39:48.924376Z MaxConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 50
+2021-03-12T11:39:48.924388Z LeasedConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924398Z PendingConcurrencyAcquires class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924408Z HttpClientName class java.lang.String [CORE, HTTP_CLIENT] NettyNio
+
+2021-03-12T11:39:48.924419Z SigningDuration class java.time.Duration [CORE] PT0.000231298S
+2021-03-12T11:39:48.924432Z UnmarshallingDuration class java.time.Duration [CORE] PT0.00028736S
+2021-03-12T11:39:48.924445Z ServiceCallDuration class java.time.Duration [CORE] PT0.112865014S
+2021-03-12T11:39:48.924457Z HttpStatusCode class java.lang.Integer [CORE, HTTP_CLIENT] 400
+2021-03-12T11:39:48.924468Z BackoffDelayDuration class java.time.Duration [CORE] PT4.977S
+2021-03-12T11:39:48.924482Z AwsRequestId class java.lang.String [CORE] 439OI95FQJGKFPHB56B3RMJU7JVV4KQNSO5AEMVJF66Q9ASUAAJG
+2021-03-12T11:39:48.924492Z AvailableConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 2
+2021-03-12T11:39:48.924503Z MaxConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 50
+2021-03-12T11:39:48.924513Z LeasedConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924524Z PendingConcurrencyAcquires class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924539Z HttpClientName class java.lang.String [CORE, HTTP_CLIENT] NettyNio
+
+2021-03-12T11:39:48.924550Z SigningDuration class java.time.Duration [CORE] PT0.000288339S
+2021-03-12T11:39:48.924563Z UnmarshallingDuration class java.time.Duration [CORE] PT0.000175809S
+2021-03-12T11:39:48.924576Z ServiceCallDuration class java.time.Duration [CORE] PT0.581758602S
+2021-03-12T11:39:48.924587Z HttpStatusCode class java.lang.Integer [CORE, HTTP_CLIENT] 200
+2021-03-12T11:39:48.924598Z BackoffDelayDuration class java.time.Duration [CORE] PT9.695S
+2021-03-12T11:39:48.924611Z AwsRequestId class java.lang.String [CORE] LGP4TK09TQH854U3KOUJM6N49BVV4KQNSO5AEMVJF66Q9ASUAAJG
+2021-03-12T11:39:48.924622Z AvailableConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924633Z MaxConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 50
+2021-03-12T11:39:48.924644Z LeasedConcurrency class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924655Z PendingConcurrencyAcquires class java.lang.Integer [CORE, HTTP_CLIENT] 0
+2021-03-12T11:39:48.924665Z HttpClientName class java.lang.String [CORE, HTTP_CLIENT] NettyNio
+
+2021-03-12T11:39:48.925680Z {"success":true,"rateIn":64.2,"instantRate":0.4,"fastRate":0.0,"slowRate":13.7,"dir":"SLOWER","meter":"644 0/0.2/0.1 10.7/2.1/0.7","rateOut":38.9}
