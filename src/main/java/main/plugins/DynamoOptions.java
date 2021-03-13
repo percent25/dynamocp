@@ -5,12 +5,6 @@ import com.google.gson.Gson;
 public class DynamoOptions {
   //
   public boolean debug;
-  // // reading
-  // public int rcuLimit;
-  // // writing
-  // public int wcuLimit;
-  //
-  // public int totalSegments;
   //
   public String resume; // base64 encoded gzipped json state
 
