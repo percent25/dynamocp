@@ -5,6 +5,31 @@ OPEN
 
 FOR SYSTEMINPLUGIN.. WOULD BE NICE TO HAVE A FORMAL/NATIVE "FILE NOT FOUND" ERROR
 
+
+
+dynamo delete
+
+
+
+go back to individual JsonElement in main loop.. this is for "dlq" in the main loop
+ - this'll also help with the thundering herd impulse problem..
+  - ./dynamocat.jar dynamo:MyTableOnDemand dynamo:MyTableOnDemand,wcu=500
+
+
+SpEL based transform expressions?
+
+
+
+independent aws profiles for source and target
+
+
+
+move helpers package out from main package
+
+
+
+implement some sort of mtu hint ?
+
 ======================================================================
 CLOSED
 ======================================================================
