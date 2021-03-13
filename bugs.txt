@@ -24,10 +24,6 @@ independent aws profiles for source and target
 
 
 
-move helpers package out from main package
-
-
-
 implement some sort of mtu hint ?
 
 ======================================================================
