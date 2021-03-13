@@ -214,14 +214,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
 
       DynamoOptions options = Options.parse(args, DynamoOptions.class);
 
-      // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-      if (options.rcuLimit == -1)
-        options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 2;
-      if (options.wcuLimit == -1)
-        options.wcuLimit = options.rcuLimit * 8;
-  
-      if (options.totalSegments == 0)
-        options.totalSegments = Math.max(options.rcuLimit/128, 1);
+      options.infer();
   
       log("options", options);
   

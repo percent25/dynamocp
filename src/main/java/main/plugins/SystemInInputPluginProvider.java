@@ -31,7 +31,7 @@ class SystemInInputPlugin implements InputPlugin {
   //###TODO
   //###TODO
   //###TODO
-  private final Semaphore sem = new Semaphore(15); // backpressure
+  private final Semaphore sem = new Semaphore(Runtime.getRuntime().availableProcessors()); // backpressure
   //###TODO
   //###TODO
   //###TODO

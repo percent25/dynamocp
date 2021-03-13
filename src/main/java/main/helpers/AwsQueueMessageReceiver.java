@@ -31,8 +31,9 @@ import software.amazon.awssdk.services.sqs.model.*;
 // At-most-once aws sqs message receiver
 public class AwsQueueMessageReceiver {
 
-  private final String queueUrl;
   private final SqsAsyncClient sqsClient = SqsAsyncClient.create();
+  private final String queueUrl;
+  private final int concurrency;
 
   private boolean running;
   private Function<String, ListenableFuture<?>> listener;
@@ -46,9 +47,10 @@ public class AwsQueueMessageReceiver {
    * 
    * @param queueUrl
    */
-  public AwsQueueMessageReceiver(String queueUrl) {
+  public AwsQueueMessageReceiver(String queueUrl, int concurrency) {
     log("ctor", queueUrl);
     this.queueUrl = queueUrl;
+    this.concurrency = concurrency;
   }
 
   /**
@@ -66,7 +68,7 @@ public class AwsQueueMessageReceiver {
   public void start() {
     log("start", queueUrl);
     running = true;
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < concurrency; ++i)
       doReceiveMessage(i);
   }
 
