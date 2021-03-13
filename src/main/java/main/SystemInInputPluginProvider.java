@@ -1,4 +1,4 @@
-package main.plugins;
+package main;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -86,9 +86,9 @@ public class SystemInInputPluginProvider implements InputPluginProvider {
   public InputPlugin get(String arg, ApplicationArguments args) throws Exception {
     if ("-".equals(arg))
       return new SystemInInputPlugin(System.in);
-    File f = new File(arg);
-    if (f.exists())
-      return new SystemInInputPlugin(new FileInputStream(f));
+    // File f = new File(arg);
+    // if (f.exists())
+    //   return new SystemInInputPlugin(new FileInputStream(f));
     return null;
   }
 
