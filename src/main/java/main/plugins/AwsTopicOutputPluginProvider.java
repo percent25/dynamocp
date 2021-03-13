@@ -2,51 +2,14 @@ package main.plugins;
 
 import java.util.function.Supplier;
 
-import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.gson.JsonElement;
-
-import helpers.ConcatenatedJsonWriter;
-import helpers.ConcatenatedJsonWriterTransportAwsTopic;
-import helpers.LogHelper;
-
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
+import helpers.ConcatenatedJsonWriter;
+import helpers.ConcatenatedJsonWriterTransportAwsTopic;
 import main.OutputPlugin;
 import main.OutputPluginProvider;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
-
-// class AwsTopicOutputPlugin implements OutputPlugin {
-
-//     private final ConcatenatedJsonWriter writer;
-
-//     public AwsTopicOutputPlugin(ConcatenatedJsonWriter writer) {
-//         log("ctor");
-//         this.writer = writer;
-//     }
-//     @Override
-//     public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
-//         log("write", Iterables.size(jsonElements));
-//         for (JsonElement jsonElement : jsonElements) {
-//             var lf = writer.write(jsonElement);
-//             lf.addListener(()->{
-//                 try {
-//                     lf.get();
-//                 } catch (Exception e) {
-//                     log(e);
-//                 }
-//             }, MoreExecutors.directExecutor());
-//         }
-//         return writer.flush();
-//     }
-    
-//     private void log(Object... args) {
-//         new LogHelper(this).log(args);
-//     }
-
-// }
 
 @Service
 public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
