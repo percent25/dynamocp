@@ -228,8 +228,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   }
   
   private void log(Object... args) {
-    String threadName = "["+Thread.currentThread().getName()+"]";
-    System.err.println(threadName+getClass().getSimpleName()+Arrays.asList(args));
+    new LogHelper(this).log(args);
   }
 
 }
