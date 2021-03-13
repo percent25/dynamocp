@@ -1,4 +1,4 @@
-package main;
+package main.plugins;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +20,9 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
+import main.InputPlugin;
+import main.InputPluginProvider;
+import main.Options;
 import main.helpers.FutureRunner;
 import main.helpers.LogHelper;
 

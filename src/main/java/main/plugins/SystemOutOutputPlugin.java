@@ -1,10 +1,13 @@
-package main;
+package main.plugins;
 
 import java.util.function.Supplier;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
+
+import main.OutputPlugin;
+import main.OutputPluginProvider;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;

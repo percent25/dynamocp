@@ -1,4 +1,4 @@
-package main;
+package main.plugins;
 
 import java.util.function.Function;
 
@@ -8,6 +8,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
+import main.InputPlugin;
+import main.InputPluginProvider;
 import main.helpers.AwsQueueMessageReceiver;
 
 import org.springframework.boot.ApplicationArguments;

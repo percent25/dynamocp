@@ -1,4 +1,4 @@
-package main;
+package main.plugins;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -13,6 +13,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
+import main.InputPlugin;
+import main.InputPluginProvider;
 import main.helpers.LogHelper;
 
 import org.springframework.boot.ApplicationArguments;
