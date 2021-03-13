@@ -32,8 +32,6 @@ print unrecognized options
 
 
 
-FOR SYSTEMINPLUGIN.. WOULD BE NICE TO HAVE A FORMAL/NATIVE "FILE NOT FOUND" ERROR
-
 ======================================================================
 CLOSED
 ======================================================================
