@@ -64,7 +64,7 @@ public class DynamoOutputPlugin implements OutputPlugin {
   //###TODO
   //###TODO
 
-  private LocalMeter wcuMeter = new LocalMeter();
+  private static LocalMeter wcuMeter = new LocalMeter();
 
   public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue, boolean delete, Iterable<String> keySchema) {
     log("ctor", tableName);
