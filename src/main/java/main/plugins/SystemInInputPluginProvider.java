@@ -31,10 +31,12 @@ class SystemInInputPlugin implements InputPlugin {
   //###TODO
   //###TODO
   //###TODO
-  private final Semaphore sem = new Semaphore(Runtime.getRuntime().availableProcessors()); // backpressure
+  private final int concurrency = Runtime.getRuntime().availableProcessors();
+  private final Semaphore sem = new Semaphore(concurrency); // backpressure
   //###TODO
   //###TODO
   //###TODO
+  private final Object lock = new Object();
 
   public SystemInInputPlugin(InputStream in) {
     this.in = in;
@@ -62,13 +64,20 @@ class SystemInInputPlugin implements InputPlugin {
             // STEP 2
             listener.apply(partition).addListener(()->{
               sem.release();
+              synchronized (lock) {
+                lock.notify();
+              }
             }, MoreExecutors.directExecutor());
           } catch (Exception e) {
             log(e);
           }
           partition = new ArrayList<>();
         }
-
+      }
+      synchronized (lock) {
+        while (sem.availablePermits() < concurrency) {
+          lock.wait();
+        }
       }
     } finally {
       br.close();
