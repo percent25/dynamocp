@@ -42,24 +42,6 @@ class AppState {
   }
 }
 
-class AppOptions {
-  //
-  public boolean debug;
-  // reading
-  public int rcuLimit = -1;
-  // writing
-  public int wcuLimit = -1;
-  //
-  public String resume; // base64 encoded gzipped app state
-  //
-  public String transform_expression;
-
-  //
-  public String toString() {
-    return new Gson().toJson(this);
-  }
-}
-
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
 public class Main implements ApplicationRunner {
@@ -87,17 +69,6 @@ public class Main implements ApplicationRunner {
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
-  private AppOptions parseOptions(ApplicationArguments args) {
-    JsonObject options = new JsonObject();
-    for (String name : args.getOptionNames()) {
-      String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);
-      options.addProperty(lowerCamel, true);
-      for (String value : args.getOptionValues(name))
-        options.addProperty(lowerCamel, value);
-    }
-    return new Gson().fromJson(options, AppOptions.class);
-  }
-  
   AtomicLong in = new AtomicLong();
   AtomicLong out = new AtomicLong();
 
@@ -108,21 +79,6 @@ public class Main implements ApplicationRunner {
   public void run(ApplicationArguments args) throws Exception {
 
     try {
-
-    AppOptions options = parseOptions(args);
-
-    log("desired", options);
-
-    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    if (options.rcuLimit == -1)
-      options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 2;
-    if (options.wcuLimit == -1)
-      options.wcuLimit = options.rcuLimit * 8;
-
-    // if (options.resume!=null)
-    //   appState = parseState(options.resume);
-
-    log("reported", options);
 
     // input plugin
 
