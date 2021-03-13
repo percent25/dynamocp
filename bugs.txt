@@ -7,13 +7,12 @@ FOR SYSTEMINPLUGIN.. WOULD BE NICE TO HAVE A FORMAL/NATIVE "FILE NOT FOUND" ERRO
 
 
 
-dynamo delete
-
-
-
 go back to individual JsonElement in main loop.. this is for "dlq" in the main loop
  - this'll also help with the thundering herd impulse problem..
   - ./dynamocat.jar dynamo:MyTableOnDemand dynamo:MyTableOnDemand,wcu=500
+  - update: maybe don't need to go this far.. would not be able to leverage 'natural' source batching, e.g., sqs receiveMessage, dynamo scan, etc..
+  - InputPlugins deliver in terms of their natural batching.. outputPlugins can write individual JsonElement objects
+
 
 
 SpEL based transform expressions?
@@ -25,6 +24,14 @@ independent aws profiles for source and target
 
 
 implement some sort of mtu hint ?
+
+
+
+dynamo resume state
+
+
+
+print unrecognized options
 
 ======================================================================
 CLOSED
@@ -46,3 +53,7 @@ main.helpers.ConcatenatedJsonWriter@50b8ae8d flush
 main.Main$$EnhancerBySpringCGLIB$$ac85f331@52e7a6b2 in 102355 out 96000 [write]
 main.Main$$EnhancerBySpringCGLIB$$ac85f331@52e7a6b2 in 102355 out 97000 [write]
 main.Main$$EnhancerBySpringCGLIB$$ac85f331@52e7a6b2 input.read().get();222
+
+
+
+dynamo delete [done]
