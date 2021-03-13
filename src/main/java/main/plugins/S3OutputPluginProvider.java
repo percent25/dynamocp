@@ -56,9 +56,13 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
         if (arg.startsWith("s3://")) {
             S3AsyncClient client = S3AsyncClient.create();
             String bucket = new File(arg).getName();
+            // Note- aws s3 transport is threadsafe
             ConcatenatedJsonWriterTransportAwsS3 transport = new ConcatenatedJsonWriterTransportAwsS3(client, bucket, "awscat");
-            ConcatenatedJsonWriter writer = new ConcatenatedJsonWriter(transport);
-            return ()->new ConcatenatedJsonWriterOutputPlugin(writer);
+            return () -> {
+                // Note- ConcatenatedJsonWriter is not thread safe
+                // therefore need to return a new instance every invocation
+                return new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
+            };
         }
         return null;
     }
