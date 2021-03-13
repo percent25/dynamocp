@@ -18,35 +18,35 @@ import main.OutputPlugin;
 import main.OutputPluginProvider;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
 
-class AwsTopicOutputPlugin implements OutputPlugin {
+// class AwsTopicOutputPlugin implements OutputPlugin {
 
-    private final ConcatenatedJsonWriter writer;
+//     private final ConcatenatedJsonWriter writer;
 
-    public AwsTopicOutputPlugin(ConcatenatedJsonWriter writer) {
-        log("ctor");
-        this.writer = writer;
-    }
-    @Override
-    public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
-        log("write", Iterables.size(jsonElements));
-        for (JsonElement jsonElement : jsonElements) {
-            var lf = writer.write(jsonElement);
-            lf.addListener(()->{
-                try {
-                    lf.get();
-                } catch (Exception e) {
-                    log(e);
-                }
-            }, MoreExecutors.directExecutor());
-        }
-        return writer.flush();
-    }
+//     public AwsTopicOutputPlugin(ConcatenatedJsonWriter writer) {
+//         log("ctor");
+//         this.writer = writer;
+//     }
+//     @Override
+//     public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
+//         log("write", Iterables.size(jsonElements));
+//         for (JsonElement jsonElement : jsonElements) {
+//             var lf = writer.write(jsonElement);
+//             lf.addListener(()->{
+//                 try {
+//                     lf.get();
+//                 } catch (Exception e) {
+//                     log(e);
+//                 }
+//             }, MoreExecutors.directExecutor());
+//         }
+//         return writer.flush();
+//     }
     
-    private void log(Object... args) {
-        new LogHelper(this).log(args);
-    }
+//     private void log(Object... args) {
+//         new LogHelper(this).log(args);
+//     }
 
-}
+// }
 
 @Service
 public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
@@ -59,7 +59,7 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
             String topicArn = arg;
             SnsAsyncClient client = SnsAsyncClient.create();
             ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(client, topicArn);
-            return ()->new AwsTopicOutputPlugin(new ConcatenatedJsonWriter(transport));
+            return ()->new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
         }
         return null;
     }
