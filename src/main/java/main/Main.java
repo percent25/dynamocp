@@ -97,11 +97,16 @@ public class Main implements ApplicationRunner {
     return new Gson().fromJson(options, AppOptions.class);
   }
   
+  AtomicLong in = new AtomicLong();
+  AtomicLong out = new AtomicLong();
+
   /**
    * run
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
+
+    try {
 
     AppOptions options = parseOptions(args);
 
@@ -122,7 +127,6 @@ public class Main implements ApplicationRunner {
 
     List<InputPlugin> inputPlugins = new ArrayList<>();
     for (InputPluginProvider provider : inputPluginProviders) {
-      log(provider);
       try {
         InputPlugin inputPlugin = provider.get(args.getNonOptionArgs().get(0), args);
         if (inputPlugin!=null)
@@ -143,7 +147,6 @@ public class Main implements ApplicationRunner {
 
     List<OutputPlugin> outputPlugins = new ArrayList<>();
     for (OutputPluginProvider provider : outputPluginProviders) {
-      log(provider);
       try {
         OutputPlugin outputPlugin = provider.get(args.getNonOptionArgs().get(1), args);
         if (outputPlugin!=null)
@@ -164,10 +167,16 @@ public class Main implements ApplicationRunner {
     // ----------------------------------------------------------------------
 
     inputPlugin.setListener(jsonElements->{
-      log("read", Iterables.size(jsonElements));
+
+      in.addAndGet(Iterables.size(jsonElements));
+      log("in", in, "out", out);
+
       var lf = outputPlugin.write(jsonElements);
       lf.addListener(()->{
-        log("write", Iterables.size(jsonElements));
+
+        out.addAndGet(Iterables.size(jsonElements));
+        log("in", in, "out", out);
+
       }, MoreExecutors.directExecutor());
       return lf;
           // for (JsonElement jsonElement : jsonElements) {
@@ -193,6 +202,9 @@ public class Main implements ApplicationRunner {
     // outputPlugin.flush().get();
     // log("output.flush().get();222");
 
+  } catch (Exception e) {
+    log(e.getMessage());
+  }
   }
 
   // private static AppState parseState(String base64) throws Exception {

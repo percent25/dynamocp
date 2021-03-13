@@ -1,5 +1,7 @@
 package main.plugins;
 
+import java.io.File;
+import java.io.PrintStream;
 import java.util.function.Supplier;
 
 import com.google.common.util.concurrent.Futures;
@@ -14,10 +16,16 @@ import org.springframework.stereotype.Service;
 
 class SystemOutOutputPlugin implements OutputPlugin {
 
+  private final PrintStream out;
+
+  public SystemOutOutputPlugin(PrintStream out) {
+    this.out = out;
+  }
+
   @Override
   public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
     for (JsonElement jsonElement : jsonElements)
-      System.out.println(jsonElement);
+      out.println(jsonElement);
     return Futures.immediateVoidFuture();
   }
 
@@ -35,7 +43,10 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
   @Override
   public OutputPlugin get(String arg, ApplicationArguments args) throws Exception {
     if ("-".equals(arg))
-      return new SystemOutOutputPlugin();
+      return new SystemOutOutputPlugin(System.out);
+    // File f = new File(arg);
+    // if (f.exists())
+    //   return new SystemOutOutputPlugin(new PrintStream(f));
     return null;
   }
 

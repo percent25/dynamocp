@@ -1,6 +1,9 @@
 package main.plugins;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 class SystemInInputPlugin implements InputPlugin {
 
+  private final InputStream in;
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   //###TODO
@@ -32,7 +36,8 @@ class SystemInInputPlugin implements InputPlugin {
   //###TODO
   //###TODO
 
-  public SystemInInputPlugin() {
+  public SystemInInputPlugin(InputStream in) {
+    this.in = in;
   }
 
   @Override
@@ -42,7 +47,7 @@ class SystemInInputPlugin implements InputPlugin {
 
   @Override
   public ListenableFuture<?> read() throws Exception {
-    final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+    final BufferedReader br = new BufferedReader(new InputStreamReader(in));
     try {
       List<JsonElement> partition = new ArrayList<>();
       JsonStreamParser parser = new JsonStreamParser(br);
@@ -82,7 +87,10 @@ public class SystemInInputPluginProvider implements InputPluginProvider {
   @Override
   public InputPlugin get(String arg, ApplicationArguments args) throws Exception {
     if ("-".equals(arg))
-      return new SystemInInputPlugin();
+      return new SystemInInputPlugin(System.in);
+    File f = new File(arg);
+    if (f.exists())
+      return new SystemInInputPlugin(new FileInputStream(f));
     return null;
   }
 
