@@ -215,7 +215,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       String tableName = Args.parseArg(arg).split(":")[1];
 
       DynamoOptions options = Options.parse(arg, DynamoOptions.class);  
-      log("options", options);
+      log("desired", options);
   
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
       DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
@@ -225,7 +225,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
       options.infer(Runtime.getRuntime().availableProcessors(), provisionedRcu, provisionedWcu);
-      log("options", options);
+      log("reported", options);
 
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN

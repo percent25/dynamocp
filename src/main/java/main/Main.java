@@ -48,6 +48,7 @@ class AppState {
 public class Main implements ApplicationRunner {
 
   public static void main(String[] args) throws Exception {
+    System.err.println("main"+Arrays.asList(args));
     // args= new String[]{"dynamo:MyTabl  eOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
     SpringApplication.run(Main.class, args);
   }
@@ -61,6 +62,7 @@ public class Main implements ApplicationRunner {
    * ctor
    */
   public Main(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
+    log("ctor");
     this.context = context;
     this.buildProperties = buildProperties;
     this.inputPluginProviders.addAll(inputPluginProviders);
@@ -78,14 +80,12 @@ public class Main implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
+    log("run");
 
     try {
 
-    String source = args.getNonOptionArgs().get(0);
-    String target = args.getNonOptionArgs().get(1);
-
     // input plugin
-
+    String source = args.getNonOptionArgs().get(0);
     List<InputPlugin> inputPlugins = new ArrayList<>();
     for (InputPluginProvider provider : inputPluginProviders) {
       try {
@@ -96,32 +96,31 @@ public class Main implements ApplicationRunner {
         log(e);
       }
     }
-
     if (inputPlugins.size() == 0)
       throw new Exception("no source!");
     if (inputPlugins.size() != 1)
       throw new Exception("ambiguous sources!");
-
     InputPlugin inputPlugin = inputPlugins.get(0);
 
     // output plugin
-
     List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
-    for (OutputPluginProvider provider : outputPluginProviders) {
-      try {
-        Supplier<OutputPlugin> outputPlugin = provider.get(target, args);
-        if (outputPlugin!=null)
-          outputPlugins.add(outputPlugin);
-      } catch (Exception e) {
-        log(e);
-      }
+    if (args.getNonOptionArgs().size()>1) {
+      String target = args.getNonOptionArgs().get(1);
+      for (OutputPluginProvider provider : outputPluginProviders) {
+        try {
+          Supplier<OutputPlugin> outputPlugin = provider.get(target, args);
+          if (outputPlugin!=null)
+            outputPlugins.add(outputPlugin);
+        } catch (Exception e) {
+          log(e);
+        }
+      }  
     }
     if (outputPlugins.size() == 0)
       outputPlugins.add(new SystemOutOutputPluginProvider().get("-", args));
     if (outputPlugins.size() != 1)
       throw new Exception("ambiguous targets!");
-
-      Supplier<OutputPlugin> outputPlugin = outputPlugins.get(0);
+    Supplier<OutputPlugin> outputPlugin = outputPlugins.get(0);
 
     // ----------------------------------------------------------------------
     // main loop

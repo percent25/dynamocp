@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -14,6 +15,8 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -37,6 +40,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.ConsumedCapacity;
+import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
@@ -49,6 +53,8 @@ public class DynamoOutputPlugin implements OutputPlugin {
   private final String tableName;
   private final RateLimiter writeLimiter;
   // private final BlockingQueue<Number> permitsQueue; // thundering herd
+  private final boolean delete; // if true then issue DeleteItems (vs PutItems)
+  private final Iterable<String> keySchema;
 
   //###TODO
   //###TODO
@@ -60,11 +66,13 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private LocalMeter wcuMeter = new LocalMeter();
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, BlockingQueue<Number> permitsQueue, boolean delete, Iterable<String> keySchema) {
     log("ctor", tableName);
     this.client = client;
     this.tableName = tableName;
     this.writeLimiter = writeLimiter;
+    this.delete = delete;
+    this.keySchema = keySchema;
   }
 
   @Override
@@ -89,6 +97,11 @@ public class DynamoOutputPlugin implements OutputPlugin {
               Map<String, AttributeValue> item = render(jsonElement);
               PutRequest putRequest = PutRequest.builder().item(item).build();
               WriteRequest writeRequest = WriteRequest.builder().putRequest(putRequest).build();
+              if (delete) {
+                Map<String, AttributeValue> key = Maps.toMap(keySchema, k->item.get(k));
+                DeleteRequest deleteRequest = DeleteRequest.builder().key(key).build();
+                writeRequest = WriteRequest.builder().deleteRequest(deleteRequest).build();
+              }
               requestItems.add(writeRequest);
             }
             batchWriteItem(++num, requestItems).addListener(()->{
@@ -215,17 +228,19 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       String tableName = Args.parseArg(arg).split(":")[1];
 
       DynamoOptions options = Options.parse(arg, DynamoOptions.class);
-      log("options", options);
+      log("desired", options);
     
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
       DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
       DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
 
+      Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
+
       int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
       int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
       options.infer(Runtime.getRuntime().availableProcessors(), provisionedRcu, provisionedWcu);
-      log("options", options);
+      log("reported", options);
 
       RateLimiter writeLimiter = RateLimiter.create(options.wcu == 0 ? Integer.MAX_VALUE : options.wcu);
       log("writeLimiter", writeLimiter);
@@ -241,7 +256,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       //###TODO get some sort of inputPlugin concurrency hint here
       //###TODO get some sort of inputPlugin concurrency hint here
   
-      return () -> new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue);
+      return () -> new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue, options.delete, keySchema);
     }
     return null;
   }
