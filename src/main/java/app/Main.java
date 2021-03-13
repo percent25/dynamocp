@@ -59,11 +59,11 @@ class AppOptions {
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
-public class App implements ApplicationRunner {
+public class Main implements ApplicationRunner {
 
   public static void main(String[] args) throws Exception {
     // args= new String[]{"Dlcm-qa_MetaStore","Dlcm-dev_MetaStore","--rcu-limit=1024"};
-    SpringApplication.run(App.class, args);
+    SpringApplication.run(Main.class, args);
   }
 
   private final ApplicationContext context;
@@ -74,7 +74,7 @@ public class App implements ApplicationRunner {
   /**
    * ctor
    */
-  public App(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
+  public Main(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
     this.context = context;
     this.buildProperties = buildProperties;
     this.inputPluginProviders.addAll(inputPluginProviders);
