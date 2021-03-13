@@ -8,6 +8,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
+import main.helpers.AwsQueueMessageReceiver;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 

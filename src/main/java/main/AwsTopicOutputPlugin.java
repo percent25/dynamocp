@@ -7,6 +7,9 @@ import com.google.gson.JsonElement;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
+import main.helpers.ConcatenatedJsonWriter;
+import main.helpers.ConcatenatedJsonWriterTransportAwsTopic;
+import main.helpers.LogHelper;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
 
 public class AwsTopicOutputPlugin implements OutputPlugin {

@@ -1,4 +1,4 @@
-package main;
+package main.helpers;
 
 import java.util.*;
 
@@ -8,10 +8,20 @@ import java.util.*;
 public class LogHelper {
   private final Object object;
 
+  /**
+   * ctor
+   * 
+   * @param object
+   */
   public LogHelper(Object object) {
     this.object = object;
   }
 
+  /**
+   * log
+   * 
+   * @param args
+   */
   public void log(Object... args) {
     List<String> parts = new ArrayList<>();
     parts.add(new Date().toString());

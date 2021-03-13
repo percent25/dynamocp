@@ -1,4 +1,4 @@
-package main;
+package main.helpers;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

@@ -12,6 +12,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import main.helpers.LogHelper;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
@@ -94,14 +96,6 @@ public class Main implements ApplicationRunner {
     }
     return new Gson().fromJson(options, AppOptions.class);
   }
-
-  // private final MetricRegistry metrics = new MetricRegistry();
-  
-      // private Meter rcuMeter() { return metrics.meter("rcu"); }
-      // private Meter wcuMeter() { return metrics.meter("wcu"); }
-
-      // private final AtomicLong readCount = new AtomicLong();
-      // private final AtomicLong writeCount = new AtomicLong();
   
   /**
    * run
@@ -113,32 +107,16 @@ public class Main implements ApplicationRunner {
 
     log("desired", options);
 
-    // // source dynamo table name
-    // sourceTable = args.getNonOptionArgs().get(0);
-    // // targate dynamo table name
-    // if (args.getNonOptionArgs().size()>1)
-    //   targetTable = args.getNonOptionArgs().get(1);
-
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     if (options.rcuLimit == -1)
       options.rcuLimit = options.wcuLimit == -1 ? 128 : options.wcuLimit / 2;
     if (options.wcuLimit == -1)
       options.wcuLimit = options.rcuLimit * 8;
 
-    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    // appState.exclusiveStartKeys.addAll(Collections.nCopies(Math.max(options.rcuLimit/128, 1), null));
-
     // if (options.resume!=null)
     //   appState = parseState(options.resume);
 
     log("reported", options);
-
-        // // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-        // readLimiter = RateLimiter.create(options.rcuLimit);
-        // writeLimiter = RateLimiter.create(options.wcuLimit);
-
-        // // log thread count
-        // log(Range.closedOpen(0, appState.totalSegments()));
 
     // input plugin
 
