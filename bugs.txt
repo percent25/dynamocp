@@ -3,11 +3,7 @@
 OPEN
 ======================================================================
 
-FOR SYSTEMINPLUGIN.. WOULD BE NICE TO HAVE A FORMAL/NATIVE "FILE NOT FOUND" ERROR
-
-
-
-go back to individual JsonElement in main loop.. this is for "dlq" in the main loop
+[#1] go back to individual JsonElement in main loop.. this is for "dlq" in the main loop
  - this'll also help with the thundering herd impulse problem..
   - ./dynamocat.jar dynamo:MyTableOnDemand dynamo:MyTableOnDemand,wcu=500
   - update: maybe don't need to go this far.. would not be able to leverage 'natural' source batching, e.g., sqs receiveMessage, dynamo scan, etc..
@@ -24,6 +20,7 @@ independent aws profiles for source and target
 
 
 implement some sort of mtu hint ?
+ - may not be necessary.. see [#1]
 
 
 
@@ -32,6 +29,10 @@ dynamo resume state
 
 
 print unrecognized options
+
+
+
+FOR SYSTEMINPLUGIN.. WOULD BE NICE TO HAVE A FORMAL/NATIVE "FILE NOT FOUND" ERROR
 
 ======================================================================
 CLOSED
