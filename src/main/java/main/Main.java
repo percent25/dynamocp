@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
@@ -145,10 +146,10 @@ public class Main implements ApplicationRunner {
 
     // output plugin
 
-    List<OutputPlugin> outputPlugins = new ArrayList<>();
+    List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
     for (OutputPluginProvider provider : outputPluginProviders) {
       try {
-        OutputPlugin outputPlugin = provider.get(args.getNonOptionArgs().get(1), args);
+        Supplier<OutputPlugin> outputPlugin = provider.get(args.getNonOptionArgs().get(1), args);
         if (outputPlugin!=null)
           outputPlugins.add(outputPlugin);
       } catch (Exception e) {
@@ -160,7 +161,7 @@ public class Main implements ApplicationRunner {
     if (outputPlugins.size() != 1)
       throw new Exception("ambiguous targets!");
 
-    OutputPlugin outputPlugin = outputPlugins.get(0);
+      Supplier<OutputPlugin> outputPlugin = outputPlugins.get(0);
 
     // ----------------------------------------------------------------------
     // main loop
@@ -171,7 +172,7 @@ public class Main implements ApplicationRunner {
       in.addAndGet(Iterables.size(jsonElements));
       log("in", in, "out", out);
 
-      var lf = outputPlugin.write(jsonElements);
+      var lf = outputPlugin.get().write(jsonElements);
       lf.addListener(()->{
 
         out.addAndGet(Iterables.size(jsonElements));

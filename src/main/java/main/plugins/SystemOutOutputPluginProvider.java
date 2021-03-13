@@ -41,9 +41,9 @@ class SystemOutOutputPlugin implements OutputPlugin {
 public class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
   @Override
-  public OutputPlugin get(String arg, ApplicationArguments args) throws Exception {
+  public Supplier<OutputPlugin> get(String arg, ApplicationArguments args) throws Exception {
     if ("-".equals(arg))
-      return new SystemOutOutputPlugin(System.out);
+      return ()->new SystemOutOutputPlugin(System.out);
     // File f = new File(arg);
     // if (f.exists())
     //   return new SystemOutOutputPlugin(new PrintStream(f));

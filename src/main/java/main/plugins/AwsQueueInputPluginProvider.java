@@ -58,13 +58,6 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
         if (arg.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) {
             String queueUrl = arg;
             int concurrency = Runtime.getRuntime().availableProcessors();
-            //###TODO
-            //###TODO
-            //###TODO
-            concurrency = 1;
-            //###TODO
-            //###TODO
-            //###TODO
             return new AwsQueueInputPlugin(new AwsQueueMessageReceiver(queueUrl, concurrency));
         }
         return null;

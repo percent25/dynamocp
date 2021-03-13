@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -209,15 +210,12 @@ public class DynamoOutputPlugin implements OutputPlugin {
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
-  public OutputPlugin get(String arg, ApplicationArguments args) throws Exception {
+  public Supplier<OutputPlugin> get(String arg, ApplicationArguments args) throws Exception {
     if (arg.startsWith("dynamo:")) {
-      
       String tableName = arg.substring(arg.indexOf(":")+1);
 
       DynamoOptions options = Options.parse(args, DynamoOptions.class);
-
       options.infer();
-      
       log("options", options);
     
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
@@ -238,9 +236,9 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       //###TODO get some sort of inputPlugin concurrency hint here
       //###TODO get some sort of inputPlugin concurrency hint here
   
-      return new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue);
-      }
-      return null;
+      return () -> new DynamoOutputPlugin(client, tableName, writeLimiter, permitsQueue);
+    }
+    return null;
   }
 
   private void log(Object... args) {
