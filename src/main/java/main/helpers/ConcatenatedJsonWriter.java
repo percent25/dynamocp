@@ -124,6 +124,7 @@ public class ConcatenatedJsonWriter {
      * @return
      */
     public ListenableFuture<?> flush() {
+        log("flush");
         return new FutureRunner() {
             FlushRecord record = new FlushRecord();
             {
@@ -166,8 +167,8 @@ public class ConcatenatedJsonWriter {
         return baos.toByteArray();
     }
 
-    private static void log(Object... args) {
-        new LogHelper(ConcatenatedJsonWriter.class).log(args);
+    private void log(Object... args) {
+        new LogHelper(this).log(args);
     }
 
 }

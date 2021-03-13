@@ -1,5 +1,6 @@
 package main.plugins;
 
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
@@ -19,10 +20,12 @@ class AwsTopicOutputPlugin implements OutputPlugin {
     private final ConcatenatedJsonWriter writer;
 
     public AwsTopicOutputPlugin(ConcatenatedJsonWriter writer) {
+        log("ctor");
         this.writer = writer;
     }
     @Override
     public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
+        log("write", Iterables.size(jsonElements));
         for (JsonElement jsonElement : jsonElements) {
             var lf = writer.write(jsonElement);
             lf.addListener(()->{
