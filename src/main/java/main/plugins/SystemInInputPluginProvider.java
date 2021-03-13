@@ -20,7 +20,7 @@ import main.helpers.LogHelper;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
-public class SystemInInputPlugin implements InputPlugin {
+class SystemInInputPlugin implements InputPlugin {
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
@@ -77,7 +77,7 @@ public class SystemInInputPlugin implements InputPlugin {
 }
 
 @Service
-class SystemInInputPluginProvider implements InputPluginProvider {
+public class SystemInInputPluginProvider implements InputPluginProvider {
 
   @Override
   public InputPlugin get(String arg, ApplicationArguments args) throws Exception {

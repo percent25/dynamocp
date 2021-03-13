@@ -12,7 +12,7 @@ import main.OutputPluginProvider;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
-public class SystemOutOutputPlugin implements OutputPlugin {
+class SystemOutOutputPlugin implements OutputPlugin {
 
   @Override
   public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
@@ -30,7 +30,7 @@ public class SystemOutOutputPlugin implements OutputPlugin {
 }
 
 @Service
-class SystemOutOutputPluginProvider implements OutputPluginProvider {
+public class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public OutputPlugin get(String arg, ApplicationArguments args) throws Exception {
