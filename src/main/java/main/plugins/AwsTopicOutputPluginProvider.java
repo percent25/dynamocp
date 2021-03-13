@@ -47,12 +47,13 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
 
     @Override
     public OutputPlugin get(String arg, ApplicationArguments args) throws Exception {
-        if (arg.startsWith("sns:")) {
+        if (arg.startsWith("sns:"))
+            arg = arg.substring(arg.indexOf(":")+1);
+        if (arg.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)")) {
+            String topicArn = arg;
             SnsAsyncClient client = SnsAsyncClient.create();
-            String topicArn = arg.substring(arg.indexOf(":")+1);
             ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(client, topicArn);
             return new AwsTopicOutputPlugin(new ConcatenatedJsonWriter(transport));
-
         }
         return null;
     }
