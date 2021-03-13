@@ -10,17 +10,17 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
  * ConcatenatedJsonWriterTransportAwsTopic
  */
 public class ConcatenatedJsonWriterTransportAwsTopic implements ConcatenatedJsonWriter.Transport {
-    private final SnsAsyncClient snsClient;
+    private final SnsAsyncClient client;
     private final String topicArn;
 
     /**
      * ctor
      * 
-     * @param snsClient
+     * @param client
      * @param topicArn
      */
-    public ConcatenatedJsonWriterTransportAwsTopic(SnsAsyncClient snsClient, String topicArn) {
-        this.snsClient = snsClient;
+    public ConcatenatedJsonWriterTransportAwsTopic(SnsAsyncClient client, String topicArn) {
+        this.client = client;
         this.topicArn = topicArn;
     }
 
@@ -32,7 +32,7 @@ public class ConcatenatedJsonWriterTransportAwsTopic implements ConcatenatedJson
     @Override
     public ListenableFuture<?> send(String message) {
         PublishRequest publishRequest = PublishRequest.builder().topicArn(topicArn).message(message).build();
-        return CompletableFuturesExtra.toListenableFuture(snsClient.publish(publishRequest));
+        return CompletableFuturesExtra.toListenableFuture(client.publish(publishRequest));
     }
 
 }
