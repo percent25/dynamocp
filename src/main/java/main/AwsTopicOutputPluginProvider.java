@@ -12,7 +12,7 @@ import main.helpers.ConcatenatedJsonWriterTransportAwsTopic;
 import main.helpers.LogHelper;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
 
-public class AwsTopicOutputPlugin implements OutputPlugin {
+class AwsTopicOutputPlugin implements OutputPlugin {
 
     private final ConcatenatedJsonWriter writer;
 
@@ -41,7 +41,7 @@ public class AwsTopicOutputPlugin implements OutputPlugin {
 }
 
 @Service
-class AwsTopicOutputPluginProvider implements OutputPluginProvider{
+public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
 
     @Override
     public OutputPlugin get(String arg, ApplicationArguments args) throws Exception {
