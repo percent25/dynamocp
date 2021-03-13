@@ -60,14 +60,14 @@ public class DynamoInputPlugin implements InputPlugin {
    * @param rcuLimit
    */
   public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int rcuLimit, int totalSegments) {
-    log("ctor", client, tableName, rcuLimit, totalSegments);
+    log("ctor", "tableName", tableName, "rcuLimit", rcuLimit, "totalSegments", totalSegments);
 
     this.client = client;
     this.tableName = tableName;
     this.rcuLimit = rcuLimit;
     this.totalSegments = totalSegments;
   
-    this.readLimiter = RateLimiter.create(rcuLimit);
+    this.readLimiter = RateLimiter.create(rcuLimit==0?Integer.MAX_VALUE:rcuLimit);
 
     permitsQueue = Queues.newArrayBlockingQueue(totalSegments);
 
@@ -212,16 +212,28 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     if (arg.startsWith("dynamo:")) {
       String tableName = arg.substring(arg.indexOf(":")+1);
 
-      DynamoOptions options = Options.parse(args, DynamoOptions.class);
-
-      options.infer();
-  
+      DynamoOptions options = Options.parse(args, DynamoOptions.class);  
       log("options", options);
   
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
       DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
       DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
-      // describeTableResponse.table().
+
+      int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
+      int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
+
+      options.infer(provisionedRcu, provisionedWcu);
+      log("options", options);
+
+      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+      RateLimiter readLimiter = RateLimiter.create(options.rcuLimit==0?Integer.MAX_VALUE:options.rcuLimit);
+      log("readLimiter", readLimiter);
+      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+
       return new DynamoInputPlugin(client, tableName, options.rcuLimit, options.totalSegments);
     }
     return null;

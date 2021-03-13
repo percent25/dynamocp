@@ -215,14 +215,19 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       String tableName = arg.substring(arg.indexOf(":")+1);
 
       DynamoOptions options = Options.parse(args, DynamoOptions.class);
-      options.infer();
       log("options", options);
     
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
       DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
       DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
-  
-      RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit);
+
+      int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
+      int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
+
+      options.infer(provisionedRcu, provisionedWcu);
+      log("options", options);
+
+      RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit==0?Integer.MAX_VALUE:options.wcuLimit);
       log("writeLimiter", writeLimiter);
     
       // thundering herd

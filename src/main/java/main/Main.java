@@ -170,13 +170,13 @@ public class Main implements ApplicationRunner {
     inputPlugin.setListener(jsonElements->{
 
       in.addAndGet(Iterables.size(jsonElements));
-      log("in", in, "out", out);
+      log("in", in, "out", out, "[read]");
 
       var lf = outputPlugin.get().write(jsonElements);
       lf.addListener(()->{
 
         out.addAndGet(Iterables.size(jsonElements));
-        log("in", in, "out", out);
+        log("in", in, "out", out, "[write]");
 
       }, MoreExecutors.directExecutor());
       return lf;
