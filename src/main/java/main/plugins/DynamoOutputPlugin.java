@@ -53,7 +53,7 @@ public class DynamoOutputPlugin implements OutputPlugin {
   //###TODO
   //###TODO
   //###TODO
-  private final Semaphore sem = new Semaphore(15);
+  private final Semaphore sem = new Semaphore(Runtime.getRuntime().availableProcessors());
   //###TODO
   //###TODO
   //###TODO
