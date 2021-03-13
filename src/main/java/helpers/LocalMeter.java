@@ -1,4 +1,4 @@
-package main.helpers;
+package helpers;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;

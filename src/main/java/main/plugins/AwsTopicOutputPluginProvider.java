@@ -7,14 +7,15 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
 
+import helpers.ConcatenatedJsonWriter;
+import helpers.ConcatenatedJsonWriterTransportAwsTopic;
+import helpers.LogHelper;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
 import main.OutputPlugin;
 import main.OutputPluginProvider;
-import main.helpers.ConcatenatedJsonWriter;
-import main.helpers.ConcatenatedJsonWriterTransportAwsTopic;
-import main.helpers.LogHelper;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
 
 class AwsTopicOutputPlugin implements OutputPlugin {

@@ -16,10 +16,10 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
+import helpers.FutureRunner;
+import helpers.LogHelper;
 import main.InputPlugin;
 import main.InputPluginProvider;
-import main.helpers.FutureRunner;
-import main.helpers.LogHelper;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;

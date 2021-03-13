@@ -1,4 +1,4 @@
-package main.helpers;
+package helpers;
 
 import java.time.Duration;
 import java.util.List;

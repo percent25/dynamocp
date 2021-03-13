@@ -1,4 +1,4 @@
-package main.helpers;
+package helpers;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.futures.CompletableFuturesExtra;

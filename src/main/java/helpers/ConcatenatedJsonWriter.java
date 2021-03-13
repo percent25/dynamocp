@@ -1,4 +1,4 @@
-package main.helpers;
+package helpers;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;

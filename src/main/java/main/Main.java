@@ -13,7 +13,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-import main.helpers.LogHelper;
+import helpers.LogHelper;
 import main.plugins.SystemOutOutputPluginProvider;
 
 import org.springframework.boot.ApplicationArguments;
