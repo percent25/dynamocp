@@ -1,4 +1,17 @@
-[ssm-user@ip-10-0-131-97 dynamocat]$ ./dynamocat.jar out.txt arn:aws:sns:us-east-1:343892718819:Dev-Myservice-MyTopic86869434-15ADVC9V4NAHB^C
+
+======================================================================
+OPEN
+======================================================================
+
+FOR SYSTEMINPLUGIN.. WOULD BE NICE TO HAVE A FORMAL/NATIVE "FILE NOT FOUND" ERROR
+
+======================================================================
+CLOSED
+======================================================================
+
+[ssm-user@ip-10-0-131-97 dynamocat]$ ./dynamocat.jar out.txt arn:aws:sns:us-east-1:343892718819:Dev-Myservice-MyTopic86869434-15ADVC9V4NAHB
+
+rrizun@rrizuns-MacBook-Air dynamocat % ./dynamocat.jar xaa arn:aws:sns:us-east-1:343892718819:Dev-Myservice-MyTopic86869434-15ADVC9V4NAHB
 
 main.helpers.ConcatenatedJsonWriter@6d1310f6 ctor
 main.plugins.AwsTopicOutputPlugin@3228d990 ctor
