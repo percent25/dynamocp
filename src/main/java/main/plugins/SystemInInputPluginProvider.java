@@ -18,6 +18,7 @@ import com.google.gson.JsonStreamParser;
 
 import main.InputPlugin;
 import main.InputPluginProvider;
+import main.helpers.FutureRunner;
 import main.helpers.LogHelper;
 
 import org.springframework.boot.ApplicationArguments;
@@ -36,7 +37,6 @@ class SystemInInputPlugin implements InputPlugin {
   //###TODO
   //###TODO
   //###TODO
-  private final Object lock = new Object();
 
   public SystemInInputPlugin(InputStream in) {
     this.in = in;
@@ -49,40 +49,29 @@ class SystemInInputPlugin implements InputPlugin {
 
   @Override
   public ListenableFuture<?> read() throws Exception {
-    final BufferedReader br = new BufferedReader(new InputStreamReader(in));
-    try {
+    return new FutureRunner() {
       List<JsonElement> partition = new ArrayList<>();
-      JsonStreamParser parser = new JsonStreamParser(br);
-      while (parser.hasNext()) {
-
-        partition.add(parser.next());
-
-        if (!parser.hasNext() || partition.size() == 1000) { // mtu
-          try {
-            // STEP 1
-            sem.acquire();
-            // STEP 2
-            listener.apply(partition).addListener(()->{
-              sem.release();
-              synchronized (lock) {
-                lock.notify();
-              }
-            }, MoreExecutors.directExecutor());
-          } catch (Exception e) {
-            log(e);
+      {
+        final BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        try {
+          JsonStreamParser parser = new JsonStreamParser(br);
+          while (parser.hasNext()) {
+            partition.add(parser.next());
+            if (!parser.hasNext() || partition.size() == 1000) { // mtu
+              sem.acquire();
+              run(() -> {
+                return listener.apply(partition);
+              }, () -> { // finally
+                sem.release();
+              });
+              partition = new ArrayList<>();
+            }
           }
-          partition = new ArrayList<>();
+        } finally {
+          br.close();
         }
       }
-      synchronized (lock) {
-        while (sem.availablePermits() < concurrency) {
-          lock.wait();
-        }
-      }
-    } finally {
-      br.close();
-    }
-    return Futures.immediateVoidFuture();
+    }.get();
   }
 
   private void log(Object... args) {
