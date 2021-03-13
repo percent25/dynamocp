@@ -1,0 +1,14 @@
+[ssm-user@ip-10-0-131-97 dynamocat]$ ./dynamocat.jar out.txt arn:aws:sns:us-east-1:343892718819:Dev-Myservice-MyTopic86869434-15ADVC9V4NAHB^C
+
+main.helpers.ConcatenatedJsonWriter@6d1310f6 ctor
+main.plugins.AwsTopicOutputPlugin@3228d990 ctor
+main.plugins.AwsTopicOutputPlugin@3228d990 write 1000
+main.helpers.ConcatenatedJsonWriter@6d1310f6 flush
+main.Main$$EnhancerBySpringCGLIB$$ac85f331@52e7a6b2 in 102355 out 95000 [read]
+main.helpers.ConcatenatedJsonWriter@50b8ae8d ctor
+main.plugins.AwsTopicOutputPlugin@255990cc ctor
+main.plugins.AwsTopicOutputPlugin@255990cc write 355
+main.helpers.ConcatenatedJsonWriter@50b8ae8d flush
+main.Main$$EnhancerBySpringCGLIB$$ac85f331@52e7a6b2 in 102355 out 96000 [write]
+main.Main$$EnhancerBySpringCGLIB$$ac85f331@52e7a6b2 in 102355 out 97000 [write]
+main.Main$$EnhancerBySpringCGLIB$$ac85f331@52e7a6b2 input.read().get();222
