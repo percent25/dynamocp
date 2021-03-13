@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import main.helpers.LogHelper;
+import main.plugins.SystemOutOutputPluginProvider;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -47,7 +48,7 @@ class AppState {
 public class Main implements ApplicationRunner {
 
   public static void main(String[] args) throws Exception {
-    // args= new String[]{"Dlcm-qa_MetaStore","Dlcm-dev_MetaStore","--rcu-limit=1024"};
+    // args= new String[]{"dynamo:MyTabl  eOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
     SpringApplication.run(Main.class, args);
   }
 
@@ -80,12 +81,15 @@ public class Main implements ApplicationRunner {
 
     try {
 
+    String source = args.getNonOptionArgs().get(0);
+    String target = args.getNonOptionArgs().get(1);
+
     // input plugin
 
     List<InputPlugin> inputPlugins = new ArrayList<>();
     for (InputPluginProvider provider : inputPluginProviders) {
       try {
-        InputPlugin inputPlugin = provider.get(args.getNonOptionArgs().get(0), args);
+        InputPlugin inputPlugin = provider.get(source, args);
         if (inputPlugin!=null)
           inputPlugins.add(inputPlugin);
       } catch (Exception e) {
@@ -105,7 +109,7 @@ public class Main implements ApplicationRunner {
     List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
     for (OutputPluginProvider provider : outputPluginProviders) {
       try {
-        Supplier<OutputPlugin> outputPlugin = provider.get(args.getNonOptionArgs().get(1), args);
+        Supplier<OutputPlugin> outputPlugin = provider.get(target, args);
         if (outputPlugin!=null)
           outputPlugins.add(outputPlugin);
       } catch (Exception e) {
@@ -113,7 +117,7 @@ public class Main implements ApplicationRunner {
       }
     }
     if (outputPlugins.size() == 0)
-      throw new Exception("no target!");
+      outputPlugins.add(new SystemOutOutputPluginProvider().get("-", args));
     if (outputPlugins.size() != 1)
       throw new Exception("ambiguous targets!");
 

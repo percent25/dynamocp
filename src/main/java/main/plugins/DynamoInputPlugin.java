@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
+import main.Args;
 import main.InputPlugin;
 import main.InputPluginProvider;
 import main.Options;
@@ -210,9 +211,10 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   @Override
   public InputPlugin get(String arg, ApplicationArguments args) throws Exception {
     if (arg.startsWith("dynamo:")) {
-      String tableName = arg.substring(arg.indexOf(":")+1);
 
-      DynamoOptions options = Options.parse(args, DynamoOptions.class);  
+      String tableName = Args.parseArg(arg).split(":")[1];
+
+      DynamoOptions options = Options.parse(arg, DynamoOptions.class);  
       log("options", options);
   
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
@@ -222,19 +224,19 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
       int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
-      options.infer(provisionedRcu, provisionedWcu);
+      options.infer(Runtime.getRuntime().availableProcessors(), provisionedRcu, provisionedWcu);
       log("options", options);
 
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
-      RateLimiter readLimiter = RateLimiter.create(options.rcuLimit==0?Integer.MAX_VALUE:options.rcuLimit);
+      RateLimiter readLimiter = RateLimiter.create(options.rcu==0?Integer.MAX_VALUE:options.rcu);
       log("readLimiter", readLimiter);
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
 
-      return new DynamoInputPlugin(client, tableName, options.rcuLimit, options.totalSegments);
+      return new DynamoInputPlugin(client, tableName, options.rcu, options.totalSegments());
     }
     return null;
   }

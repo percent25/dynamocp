@@ -5,26 +5,32 @@ import com.google.gson.Gson;
 public class DynamoOptions {
   //
   public boolean debug;
-  // reading
-  public int rcuLimit;
-  // writing
-  public int wcuLimit;
+  // // reading
+  // public int rcuLimit;
+  // // writing
+  // public int wcuLimit;
   //
-  public int totalSegments;
+  // public int totalSegments;
   //
   public String resume; // base64 encoded gzipped json state
-  //
-  public String transform_expression;
 
+  public int c; // totalSegments
+  public int rcu; // input
+  public int wcu; // output
+  public boolean delete; // output
+
+  public int totalSegments() {
+    return c;
+  }
+  
   // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-  public void infer(int provisionedRcu, int provisionedWcu) {
-    int concurrency = Runtime.getRuntime().availableProcessors();
-    if (rcuLimit == 0)
-      rcuLimit = provisionedRcu;
-    if (wcuLimit == 0)
-      wcuLimit = provisionedWcu;
-    if (totalSegments == 0) {
-      totalSegments = rcuLimit == 0 ? concurrency : Math.max(rcuLimit / 128, 1);
+  public void infer(int concurrency, int provisionedRcu, int provisionedWcu) {
+    if (rcu == 0)
+      rcu = provisionedRcu;
+    if (wcu == 0)
+      wcu = provisionedWcu;
+    if (c == 0) {
+      c = rcu == 0 ? concurrency : Math.max(rcu / 128, 1);
     }
   }
 

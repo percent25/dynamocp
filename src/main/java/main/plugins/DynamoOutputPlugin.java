@@ -1,7 +1,6 @@
 package main.plugins;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +22,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
+import main.Args;
 import main.Options;
 import main.OutputPlugin;
 import main.OutputPluginProvider;
@@ -212,9 +212,9 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   @Override
   public Supplier<OutputPlugin> get(String arg, ApplicationArguments args) throws Exception {
     if (arg.startsWith("dynamo:")) {
-      String tableName = arg.substring(arg.indexOf(":")+1);
+      String tableName = Args.parseArg(arg).split(":")[1];
 
-      DynamoOptions options = Options.parse(args, DynamoOptions.class);
+      DynamoOptions options = Options.parse(arg, DynamoOptions.class);
       log("options", options);
     
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
@@ -224,19 +224,19 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
       int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
-      options.infer(provisionedRcu, provisionedWcu);
+      options.infer(Runtime.getRuntime().availableProcessors(), provisionedRcu, provisionedWcu);
       log("options", options);
 
-      RateLimiter writeLimiter = RateLimiter.create(options.wcuLimit==0?Integer.MAX_VALUE:options.wcuLimit);
+      RateLimiter writeLimiter = RateLimiter.create(options.wcu == 0 ? Integer.MAX_VALUE : options.wcu);
       log("writeLimiter", writeLimiter);
     
       // thundering herd
       //###TODO get some sort of inputPlugin concurrency hint here
       //###TODO get some sort of inputPlugin concurrency hint here
       //###TODO get some sort of inputPlugin concurrency hint here
-      ArrayBlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(options.totalSegments); //###TODO get some sort of inputPlugin concurrency hint here
+      ArrayBlockingQueue<Number> permitsQueue = Queues.newArrayBlockingQueue(options.totalSegments()); //###TODO get some sort of inputPlugin concurrency hint here
       while (permitsQueue.remainingCapacity()>0)
-        permitsQueue.add(options.wcuLimit); // stagger to work around thundering herd problem?
+        permitsQueue.add(options.wcu); // stagger to work around thundering herd problem?
       //###TODO get some sort of inputPlugin concurrency hint here
       //###TODO get some sort of inputPlugin concurrency hint here
       //###TODO get some sort of inputPlugin concurrency hint here
