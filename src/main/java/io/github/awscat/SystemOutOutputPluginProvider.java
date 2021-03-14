@@ -1,4 +1,4 @@
-package main;
+package io.github.awscat;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -8,8 +8,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 
-import main.OutputPlugin;
-import main.OutputPluginProvider;
+import io.github.awscat.OutputPlugin;
+import io.github.awscat.OutputPluginProvider;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;

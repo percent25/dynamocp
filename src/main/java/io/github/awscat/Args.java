@@ -1,4 +1,4 @@
-package main;
+package io.github.awscat;
 
 // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
 public class Args {

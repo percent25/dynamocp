@@ -1,4 +1,4 @@
-package main;
+package io.github.awscat;
 
 import org.springframework.boot.ApplicationArguments;
 

@@ -1,4 +1,4 @@
-package main;
+package io.github.awscat;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;

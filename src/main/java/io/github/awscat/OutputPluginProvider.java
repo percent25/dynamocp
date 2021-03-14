@@ -1,4 +1,4 @@
-package main;
+package io.github.awscat;
 
 import java.util.function.Supplier;
 

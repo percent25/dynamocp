@@ -1,4 +1,4 @@
-package main.experimental;
+package io.github.awscat.contrib;
 
 import java.time.Duration;
 import java.time.Instant;

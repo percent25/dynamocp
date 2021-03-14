@@ -1,4 +1,4 @@
-package main.plugins;
+package io.github.awscat.plugins;
 
 import java.io.File;
 import java.util.function.Supplier;
@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 
 import helpers.ConcatenatedJsonWriter;
 import helpers.ConcatenatedJsonWriterTransportAwsS3;
-import main.OutputPlugin;
-import main.OutputPluginProvider;
+import io.github.awscat.OutputPlugin;
+import io.github.awscat.OutputPluginProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 @Service

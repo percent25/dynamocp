@@ -1,4 +1,4 @@
-package main;
+package io.github.awscat;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -18,8 +18,8 @@ import com.google.gson.JsonStreamParser;
 
 import helpers.FutureRunner;
 import helpers.LogHelper;
-import main.InputPlugin;
-import main.InputPluginProvider;
+import io.github.awscat.InputPlugin;
+import io.github.awscat.InputPluginProvider;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;

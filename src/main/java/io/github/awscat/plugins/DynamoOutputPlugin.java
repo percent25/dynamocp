@@ -1,4 +1,4 @@
-package main.plugins;
+package io.github.awscat.plugins;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,10 +28,10 @@ import com.google.gson.JsonElement;
 import helpers.FutureRunner;
 import helpers.LocalMeter;
 import helpers.LogHelper;
-import main.Args;
-import main.Options;
-import main.OutputPlugin;
-import main.OutputPluginProvider;
+import io.github.awscat.Args;
+import io.github.awscat.Options;
+import io.github.awscat.OutputPlugin;
+import io.github.awscat.OutputPluginProvider;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;

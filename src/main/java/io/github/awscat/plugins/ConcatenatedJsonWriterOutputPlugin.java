@@ -1,4 +1,4 @@
-package main.plugins;
+package io.github.awscat.plugins;
 
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -7,7 +7,7 @@ import com.google.gson.JsonElement;
 
 import helpers.ConcatenatedJsonWriter;
 import helpers.LogHelper;
-import main.OutputPlugin;
+import io.github.awscat.OutputPlugin;
 
 class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
 

@@ -1,4 +1,4 @@
-package main;
+package io.github.awscat;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;

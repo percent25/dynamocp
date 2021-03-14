@@ -1,4 +1,4 @@
-package main.plugins;
+package io.github.awscat.plugins;
 
 import com.google.gson.Gson;
 
@@ -8,7 +8,7 @@ public class DynamoOptions {
   // //
   // public String resume; // base64 encoded gzipped json state
 
-  public int c; // totalSegments
+  public int c; // concurrency, aka totalSegments
   public int rcu; // input
   public int wcu; // output
   public boolean delete; // output
