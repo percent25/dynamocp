@@ -1,0 +1,45 @@
+plugins {
+	id "org.springframework.boot" version "2.4.3"
+}
+
+apply plugin: "java"
+apply plugin: "application" // for mainClassName
+apply plugin: "io.spring.dependency-management"
+
+sourceCompatibility = 11
+targetCompatibility = 11
+
+repositories {
+	jcenter()
+}
+
+dependencies {
+	implementation "com.google.code.gson:gson:+"
+	implementation "org.springframework.boot:spring-boot-starter"
+
+	implementation "com.google.guava:guava:+"
+	implementation "com.spotify:futures-extra:+"
+
+// aws sdk 2
+	implementation platform("software.amazon.awssdk:bom:+")
+	implementation "software.amazon.awssdk:dynamodb"
+	implementation "software.amazon.awssdk:s3"
+	implementation "software.amazon.awssdk:sns"
+	implementation "software.amazon.awssdk:sqs"
+	// implementation "software.amazon.awssdk:cloudwatch-metric-publisher"
+    //  implementation 'software.amazon.awssdk:netty-nio-client'
+}
+
+springBoot {
+	buildInfo()
+}
+
+bootJar {
+	archiveName="dynamocat.jar"
+	destinationDir = file(".")
+	launchScript {
+		script = file("custom.script")
+	}
+}
+
+// mainClassName = "app.DynamoExperiment2"
