@@ -75,13 +75,7 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
       work.options = Options.parse(work.arg, SystemOutOptions.class);
       PrintStream out = "-".equals(work.target) ? System.out : new PrintStream(new FileOutputStream(work.target, work.options.append));
       work.success = true;
-      return () -> {
-        try {
-          return new SystemOutOutputPlugin(out);
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      };
+      return () -> new SystemOutOutputPlugin(out);
     } catch (Exception e) {
       e.printStackTrace();
       work.failureMessage = ""+e;
