@@ -23,21 +23,16 @@ class SystemOutOutputPlugin implements OutputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
-    try {
-      for (JsonElement jsonElement : jsonElements)
-        out.println(jsonElement);
-    } finally {
-      out.flush();
-    }
+  public ListenableFuture<?> write(JsonElement jsonElement) {
+    out.println(jsonElement);
     return Futures.immediateVoidFuture();
   }
 
-  // @Override
-  // public ListenableFuture<?> flush() {
-  //   System.out.flush();
-  //   return Futures.immediateVoidFuture();
-  // }
+  @Override
+  public ListenableFuture<?> flush() {
+    out.flush();
+    return Futures.immediateVoidFuture();
+  }
 
   private void log(Object... args) {
     new LogHelper(this).log(args);

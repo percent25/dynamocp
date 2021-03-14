@@ -12,8 +12,9 @@ import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 
+import helpers.FutureRunner;
 import helpers.LogHelper;
 
 import org.springframework.boot.ApplicationArguments;
@@ -74,7 +75,9 @@ public class Main implements ApplicationRunner {
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
   AtomicLong in = new AtomicLong();
+  // AtomicLong inErr = new AtomicLong();
   AtomicLong out = new AtomicLong();
+  // AtomicLong outErr = new AtomicLong();
 
   /**
    * run
@@ -125,7 +128,7 @@ public class Main implements ApplicationRunner {
     }
 
     InputPlugin inputPlugin = inputPlugins.get(0);
-    Supplier<OutputPlugin> outputPlugin = outputPlugins.get(0);
+    Supplier<OutputPlugin> outputPluginSupplier = outputPlugins.get(0);
 
     // ----------------------------------------------------------------------
     // main loop
@@ -133,29 +136,53 @@ public class Main implements ApplicationRunner {
 
     inputPlugin.setListener(jsonElements->{
 
-      in.addAndGet(Iterables.size(jsonElements));
-      log("in", in, "out", out, "[read]");
+      return new FutureRunner(){
+        class IncrementalWork {
+          boolean success;
+          String failureMessage;
+          final Number in;
+          final Number out;
+          public String toString() {
+            return getClass().getSimpleName()+new Gson().toJson(this);
+          }
+          IncrementalWork(Number in, Number out) {
+            this.in = in;
+            this.out = out;
+          }
+        }
+        IncrementalWork work = new IncrementalWork(in, out);
+        {
+          run(()->{
+            OutputPlugin outputPlugin = outputPluginSupplier.get();
+            for (JsonElement jsonElement : jsonElements) {
+              run(()->{
+                // ++work.in;
+                in.incrementAndGet();
+                return outputPlugin.write(jsonElement);
+              }, result->{
+                // ++work.out;
+                out.incrementAndGet();
+              }, e->{
+                //###TODO dlq
+                //###TODO dlq
+                //###TODO dlq
+                work.failureMessage=""+e;
+                // inErr.incrementAndGet();
+              // }, ()->{
+              });
+            }
+            return outputPlugin.flush();
+          }, result->{
+            work.success=true;
+          }, e->{
+            work.failureMessage = ""+e;
+          }, ()->{
+            log(work);
+            // log("in", in, "out", out);
+          });
+        }
+      }.get();
 
-      var lf = outputPlugin.get().write(jsonElements);
-      lf.addListener(()->{
-
-        out.addAndGet(Iterables.size(jsonElements));
-        log("in", in, "out", out, "[write]");
-
-      }, MoreExecutors.directExecutor());
-      return lf;
-          // for (JsonElement jsonElement : jsonElements) {
-          //   // log(jsonElement);
-          //   ListenableFuture<?> lf = outputPlugin.write(jsonElement);
-          //   lf.addListener(()->{
-          //     try {
-          //       lf.get();
-          //     } catch (Exception e) {
-          //       log(e);
-          //     }
-          //   }, MoreExecutors.directExecutor());
-          // }
-          // return outputPlugin.flush();
     });
 
     // % dynamocat MyTable MyQueue

@@ -76,14 +76,15 @@ public class DynamoOutputPlugin implements OutputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
+  public ListenableFuture<?> write(JsonElement jsonElement) {
     // log("write", jsonElement);
     return new FutureRunner() {
       int num;
       {
         // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem requests.
         // The total size of all the items written cannot exceed 16 MB.
-        for (Iterable<JsonElement> partition : Iterables.partition(jsonElements, 25)) {
+        // for (Iterable<JsonElement> partition : Iterables.partition(jsonElements, 25))
+        {
 
           // pre-throttle
             // writeLimiter.acquire(25);
@@ -93,7 +94,8 @@ public class DynamoOutputPlugin implements OutputPlugin {
             sem.acquire();
 
             List<WriteRequest> requestItems = new ArrayList<>();
-            for (JsonElement jsonElement : partition) {
+            // for (JsonElement jsonElement : partition)
+            {
               Map<String, AttributeValue> item = render(jsonElement);
               PutRequest putRequest = PutRequest.builder().item(item).build();
               WriteRequest writeRequest = WriteRequest.builder().putRequest(putRequest).build();
@@ -120,6 +122,11 @@ public class DynamoOutputPlugin implements OutputPlugin {
         }
       }
     }.get();
+  }
+
+  @Override
+  public ListenableFuture<?> flush() {
+    return Futures.immediateVoidFuture();
   }
 
     class BatchWriteItemRecord {

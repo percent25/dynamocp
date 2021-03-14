@@ -18,20 +18,14 @@ class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
     }
 
     @Override
-    public ListenableFuture<?> write(Iterable<JsonElement> jsonElements) {
-        log("write", Iterables.size(jsonElements));
-        for (JsonElement jsonElement : jsonElements) {
-            var lf = writer.write(jsonElement);
-            lf.addListener(()->{
-                try {
-                    lf.get();
-                } catch (Exception e) {
-                    log(e);
-                }
-            }, MoreExecutors.directExecutor());
-        }
-        return writer.flush();
+    public ListenableFuture<?> write(JsonElement jsonElement) {
+        return writer.write(jsonElement);
     }
+
+    @Override
+    public ListenableFuture<?> flush() {
+        return writer.flush();
+    }    
 
     private void log(Object... args) {
         new LogHelper(this).log(args);
