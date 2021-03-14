@@ -66,7 +66,6 @@ public class ConcatenatedJsonWriter {
     class WriteRecord {
         public boolean success;
         public String failureMessage;
-        public String value;
         public String toString() {
             return new Gson().toJson(this);
         }
@@ -83,9 +82,6 @@ public class ConcatenatedJsonWriter {
             WriteRecord record = new WriteRecord();
             {
                 run(() -> {
-                    // for fun
-                    record.value = Ascii.truncate(jsonElement.toString(), 20, "...");
-
                     byte[] bytes = render(jsonElement);
                     if (bytes.length > transport.mtu())
                         throw new IllegalArgumentException("jsonElement more than mtu");

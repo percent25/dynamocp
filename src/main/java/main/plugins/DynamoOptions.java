@@ -3,10 +3,10 @@ package main.plugins;
 import com.google.gson.Gson;
 
 public class DynamoOptions {
-  //
-  public boolean debug;
-  //
-  public String resume; // base64 encoded gzipped json state
+  // //
+  // public boolean debug;
+  // //
+  // public String resume; // base64 encoded gzipped json state
 
   public int c; // totalSegments
   public int rcu; // input

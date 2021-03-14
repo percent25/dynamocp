@@ -97,11 +97,11 @@ public class Main implements ApplicationRunner {
         log(e);
       }
     }
-    InputPlugin inputPlugin = new SystemInInputPlugin(new FileInputStream(source));
-    if (inputPlugins.size() == 1)
-      inputPlugin = inputPlugins.get(0);
-    else if (inputPlugins.size() > 1)
+    if (inputPlugins.size() == 0)
+      inputPlugins.add(new SystemInInputPlugin(new FileInputStream(source)));
+    if (inputPlugins.size() != 1)
       throw new Exception("ambiguous sources!");
+    InputPlugin inputPlugin = inputPlugins.get(0);
 
     // output plugin
     List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
