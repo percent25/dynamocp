@@ -49,6 +49,7 @@ public class Main implements ApplicationRunner {
 
   public static void main(String[] args) throws Exception {
     System.err.println("main"+Arrays.asList(args));
+    // args = new String[]{"in.txt"};
     // args= new String[]{"dynamo:MyTabl  eOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
     SpringApplication.run(Main.class, args);
   }
@@ -84,42 +85,46 @@ public class Main implements ApplicationRunner {
 
     try {
 
-    // input plugin
-    String source = args.getNonOptionArgs().get(0);
     List<InputPlugin> inputPlugins = new ArrayList<>();
-    for (InputPluginProvider provider : inputPluginProviders) {
-      try {
-        InputPlugin inputPlugin = provider.get(source, args);
-        if (inputPlugin!=null)
-          inputPlugins.add(inputPlugin);
-      } catch (Exception e) {
-        log(e);
-      }
-    }
-    if (inputPlugins.size() == 0)
-      inputPlugins.add(new SystemInInputPlugin(new FileInputStream(source)));
-    if (inputPlugins.size() != 1)
-      throw new Exception("ambiguous sources!");
-    InputPlugin inputPlugin = inputPlugins.get(0);
-
-    // output plugin
     List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
-    if (args.getNonOptionArgs().size()>1) {
-      String target = args.getNonOptionArgs().get(1);
+
+    // STEP 1 input plugin
+    if (args.getNonOptionArgs().size() > 0) {
+      String source = args.getNonOptionArgs().get(0);
+      for (InputPluginProvider provider : inputPluginProviders) {
+        try {
+          InputPlugin inputPlugin = provider.get(source, args);
+          if (inputPlugin!=null)
+            inputPlugins.add(inputPlugin);
+        } catch (Exception e) {
+          log(e);
+        }
+      }
+      if (inputPlugins.size() == 0)
+        inputPlugins.add(new SystemInInputPluginProvider().get(source, args));
+      if (inputPlugins.size() != 1)
+        throw new Exception("ambiguous sources!");
+
+      // STEP 2 output plugin
+      String target = "-";
+      if (args.getNonOptionArgs().size() > 1)
+        target = args.getNonOptionArgs().get(1);
       for (OutputPluginProvider provider : outputPluginProviders) {
         try {
           Supplier<OutputPlugin> outputPlugin = provider.get(target, args);
-          if (outputPlugin!=null)
+          if (outputPlugin != null)
             outputPlugins.add(outputPlugin);
         } catch (Exception e) {
           log(e);
         }
-      }  
+      }
+      if (outputPlugins.size() == 0)
+        outputPlugins.add(new SystemOutOutputPluginProvider().get(target, args));
+      if (outputPlugins.size() != 1)
+        throw new Exception("ambiguous targets!");
     }
-    if (outputPlugins.size() == 0)
-      outputPlugins.add(new SystemOutOutputPluginProvider().get("-", args));
-    if (outputPlugins.size() != 1)
-      throw new Exception("ambiguous targets!");
+
+    InputPlugin inputPlugin = inputPlugins.get(0);
     Supplier<OutputPlugin> outputPlugin = outputPlugins.get(0);
 
     // ----------------------------------------------------------------------

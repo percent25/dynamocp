@@ -1,7 +1,6 @@
 package io.github.awscat;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -10,19 +9,14 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
+import org.springframework.boot.ApplicationArguments;
+
 import helpers.FutureRunner;
 import helpers.LogHelper;
-import io.github.awscat.InputPlugin;
-import io.github.awscat.InputPluginProvider;
-
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.stereotype.Service;
 
 class SystemInInputPlugin implements InputPlugin {
 
@@ -39,6 +33,7 @@ class SystemInInputPlugin implements InputPlugin {
   //###TODO
 
   public SystemInInputPlugin(InputStream in) {
+    log("ctor");
     this.in = in;
   }
 
@@ -79,17 +74,17 @@ class SystemInInputPlugin implements InputPlugin {
   }
 }
 
-@Service
+// @Service
 public class SystemInInputPluginProvider implements InputPluginProvider {
 
   @Override
-  public InputPlugin get(String arg, ApplicationArguments args) throws Exception {
-    if ("-".equals(arg))
-      return new SystemInInputPlugin(System.in);
-    // File f = new File(arg);
-    // if (f.exists())
-    //   return new SystemInInputPlugin(new FileInputStream(f));
-    return null;
+  public InputPlugin get(String source, ApplicationArguments args) throws Exception {
+    log("get", source);
+    return new SystemInInputPlugin("-".equals(source) ? System.in : new FileInputStream(source));
+  }
+
+  private void log(Object... args) {
+    new LogHelper(this).log(args);
   }
 
 }
