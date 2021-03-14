@@ -48,6 +48,7 @@ class SystemOutOutputPlugin implements OutputPlugin {
 // @Service
 public class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
+  // out.txt,append=true
   class SystemOutOptions {
     boolean append;
   }
