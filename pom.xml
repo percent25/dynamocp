@@ -75,9 +75,13 @@
 
 	<build>
 		<plugins>
-           <plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<executable>true</executable>
+	        <embeddedLaunchScript>custom.script</embeddedLaunchScript>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
