@@ -3,6 +3,27 @@
 OPEN
 ======================================================================
 
+permits queue
+
+logging.. .debug(..) not working??
+
+counters in/out still wierd never shows in greater than out
+
+input plugins: limit?
+
+
+
+s3InputPlugin
+  - ,keysOnly=true
+  - render key first ?
+
+s3outputplugin
+ - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DataExport.Output.html
+ - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.LowLevelAPI.html
+  - { Key: {...}} -or- { Item: {...} } -also- { Count:1, Items: [{"foo":{"S":"bar"}}] }
+ - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html#Scan.FilterExpression
+
+
 [#1] go back to individual JsonElement in main loop.. this is for "dlq" in the main loop
  - this'll also help with the thundering herd impulse problem..
   - ./dynamocat.jar dynamo:MyTableOnDemand dynamo:MyTableOnDemand,wcu=500
@@ -11,7 +32,10 @@ OPEN
 
 
 
-SpEL based transform expressions?
+SpEL based filter/transform expressions?
+ --filter=id?.s?.startsWith('tax:')
+ --action=delete ??
+ --transform={Item:"#{#in}"}
 
 
 
@@ -31,6 +55,8 @@ dynamo resume state
 print unrecognized options
 
 
+
+Zero or more output targets? (i.e., tee)
 
 ======================================================================
 CLOSED
