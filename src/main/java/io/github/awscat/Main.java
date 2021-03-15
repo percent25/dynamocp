@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import helpers.FutureRunner;
+import helpers.LocalMeter;
 import helpers.LogHelper;
 
 import org.springframework.boot.ApplicationArguments;
@@ -53,9 +54,12 @@ public class Main implements ApplicationRunner {
   AtomicLong out = new AtomicLong();
   // AtomicLong outErr = new AtomicLong();
 
+  private final LocalMeter rate = new LocalMeter();
+
   class Progress {
     final Number in;
     final Number out;
+    String rate;
     public String toString() {
       return getClass().getSimpleName()+new Gson().toJson(this);
     }
@@ -140,7 +144,9 @@ public class Main implements ApplicationRunner {
                 //###TODO dlq
                 //###TODO dlq
                 // inErr.incrementAndGet();
-              // }, ()->{
+              }, ()->{
+                rate.mark(1);
+                work.rate = rate.toString();
               });
             }
             return outputPlugin.flush();
