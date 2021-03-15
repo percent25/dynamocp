@@ -184,8 +184,4 @@ public class FutureRunner {
         }
     }
 
-    private void log(Object... args) {
-        new LogHelper(this).log(args);
-    }
-
 }
