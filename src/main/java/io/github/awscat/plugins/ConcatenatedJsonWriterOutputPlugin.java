@@ -27,8 +27,8 @@ class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
         return writer.flush();
     }    
 
-    private void log(Object... args) {
-        new LogHelper(this).log(args);
+    private void debug(Object... args) {
+        new LogHelper(this).debug(args);
     }
 
 }

@@ -27,7 +27,7 @@ public class ConcatenatedJsonWriterTransportAwsS3 implements ConcatenatedJsonWri
      * @param topicArn
      */
     public ConcatenatedJsonWriterTransportAwsS3(S3AsyncClient client, String bucket, String deliveryStreamName) {
-        log("ctor", bucket);
+        debug("ctor", client, bucket, deliveryStreamName);
         this.client = client;
         this.bucket = bucket;
         this.deliveryStreamName = deliveryStreamName;
@@ -63,8 +63,8 @@ public class ConcatenatedJsonWriterTransportAwsS3 implements ConcatenatedJsonWri
         return Hashing.sha256().hashInt(new SecureRandom().nextInt()).toString().substring(0, 7);
     }
 
-    private void log(Object... args) {
-        new LogHelper(this).log(args);
+    private void debug(Object... args) {
+        new LogHelper(this).debug(args);
     }
 
     public static void main(String... args) {

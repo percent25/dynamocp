@@ -48,7 +48,7 @@ public class AwsQueueMessageReceiver {
    * @param queueUrl
    */
   public AwsQueueMessageReceiver(String queueUrl, int concurrency) {
-    log("ctor", queueUrl);
+    debug("ctor", queueUrl, concurrency);
     this.queueUrl = queueUrl;
     this.concurrency = concurrency;
   }
@@ -66,7 +66,7 @@ public class AwsQueueMessageReceiver {
    * start
    */
   public void start() {
-    log("start", queueUrl);
+    debug("start", queueUrl);
     running = true;
     for (int i = 0; i < concurrency; ++i)
       doReceiveMessage(i);
@@ -76,7 +76,7 @@ public class AwsQueueMessageReceiver {
    * close
    */
   public void close() {
-    log("close", queueUrl);
+    debug("close", queueUrl);
     running = false;
     // executorService.shutdownNow();
     // futures.forEach(f->f.cancel(true));
@@ -131,15 +131,15 @@ public class AwsQueueMessageReceiver {
                 }, e->{ // listener
                   record.failureMessage = ""+e;
                 }, ()->{
-                  log(record);
+                  debug(record);
                 });
               }, e->{ // deleteMessage
-                log(e);
+                debug(e);
               });
             }
           }
         }, e->{ // receiveMessage
-          log(e);
+          debug(e);
           run(()->{
             // backoff
             return Futures.scheduleAsync(()->Futures.immediateVoidFuture(), Duration.ofSeconds(25), executorService);
@@ -155,8 +155,8 @@ public class AwsQueueMessageReceiver {
     }
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 
 }

@@ -33,17 +33,19 @@ class SystemInInputPlugin implements InputPlugin {
   //###TODO
 
   public SystemInInputPlugin(InputStream in) {
-    log("ctor");
+    debug("ctor");
     this.in = in;
   }
 
   @Override
   public void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener) {
+    debug("setListener");
     this.listener = listener;
   }
 
   @Override
   public ListenableFuture<?> read() throws Exception {
+    debug("read");
     return new FutureRunner() {
       List<JsonElement> partition = new ArrayList<>();
       {
@@ -69,8 +71,8 @@ class SystemInInputPlugin implements InputPlugin {
     }.get();
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 }
 
@@ -79,12 +81,12 @@ public class SystemInInputPluginProvider implements InputPluginProvider {
 
   @Override
   public InputPlugin get(String source, ApplicationArguments args) throws Exception {
-    log("get", source);
+    debug("get", source, args);
     return new SystemInInputPlugin("-".equals(source) ? System.in : new FileInputStream(source));
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 
 }

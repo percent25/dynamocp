@@ -23,7 +23,7 @@ class AwsQueueInputPlugin implements InputPlugin {
     private final AwsQueueMessageReceiver queueReceiver;
 
     public AwsQueueInputPlugin(AwsQueueMessageReceiver queueReceiver) {
-        log("ctor");
+        debug("ctor");
         this.queueReceiver = queueReceiver;
         queueReceiver.setListener(json->{
             return listener.apply(Lists.newArrayList(new JsonStreamParser(json)));
@@ -42,8 +42,8 @@ class AwsQueueInputPlugin implements InputPlugin {
         this.listener = listener;
     }
 
-    private void log(Object... args) {
-        new LogHelper(this).log(args);
+    private void debug(Object... args) {
+        new LogHelper(this).debug(args);
     }
 
 }
