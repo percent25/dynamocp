@@ -5,6 +5,8 @@ rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java
 OPEN
 ======================================================================
 
+at start, have plugins report their desired/reported
+
 dynamo scan: permits queue necessary?
 
 counters in/out still wierd never shows in greater than out
@@ -20,7 +22,7 @@ s3outputplugin
 
 [#1] go back to individual JsonElement in main loop.. this is for "dlq" in the main loop
  - this'll also help with the thundering herd impulse problem..
-  - ./dynamocat.jar dynamo:MyTableOnDemand dynamo:MyTableOnDemand,wcu=500
+          awscat.jar dynamo:MyTableOnDemand dynamo:MyTableOnDemand,wcu=500
   - update: maybe don't need to go this far.. would not be able to leverage 'natural' source batching, e.g., sqs receiveMessage, dynamo scan, etc..
   - InputPlugins deliver in terms of their natural batching.. outputPlugins can write individual JsonElement objects in terms of their natural batching
 
@@ -84,3 +86,5 @@ input plugins: limit?
 DynamoInputPlugin
   - ,keys=true
   - render key first ?
+
+custom.script
