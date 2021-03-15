@@ -10,10 +10,11 @@ public class DynamoOptions {
 
   //###TODO rename to parallelism or totalSegments ?
   public int c; // concurrency, aka totalSegments
-  public int rcu; // input
-  public int wcu; // output
-  public int limit; // input
-  public boolean delete; // output
+  public int rcu; // input plugin
+  public int wcu; // output plugin
+  public boolean keys; // input plugin
+  public int limit; // input plugin
+  public boolean delete; // output plugin
 
   public int totalSegments() {
     return c;
