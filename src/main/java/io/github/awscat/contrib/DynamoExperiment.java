@@ -83,7 +83,7 @@ public class DynamoExperiment {
           BatchWriteItemResponse batchWriteItemResponse = client.batchWriteItem(batchWriteItemRequest).get();
     
           Number consumedCapacityUnits = batchWriteItemResponse.consumedCapacity().iterator().next().capacityUnits();
-          consumedCapacityUnitsMeter.mark(consumedCapacityUnits.longValue());
+          consumedCapacityUnitsMeter.add(consumedCapacityUnits.longValue());
           if (consumedCapacityUnits.intValue() > 0)
             rateLimiter.acquire(consumedCapacityUnits.intValue());
     

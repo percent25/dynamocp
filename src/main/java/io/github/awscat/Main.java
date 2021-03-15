@@ -145,7 +145,7 @@ public class Main implements ApplicationRunner {
                 //###TODO dlq
                 // inErr.incrementAndGet();
               }, ()->{
-                rate.mark(1);
+                rate.add(1);
                 work.rate = rate.toString();
               });
             }

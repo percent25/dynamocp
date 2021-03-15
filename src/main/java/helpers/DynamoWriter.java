@@ -167,7 +167,7 @@ public class DynamoWriter {
         }, batchWriteItemResponse -> {
 
           for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
-            wcuMeter.mark(consumedCapacity.capacityUnits().longValue());
+            wcuMeter.add(consumedCapacity.capacityUnits().longValue());
             work.consumedCapacityUnits += consumedCapacity.capacityUnits().intValue();
             int permits = consumedCapacity.capacityUnits().intValue();
             if (permits > 0)

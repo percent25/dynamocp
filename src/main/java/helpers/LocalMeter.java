@@ -13,10 +13,10 @@ public class LocalMeter {
     return System.currentTimeMillis();
   }
 
-  public void mark(Number value) {
-    mark(value, now());
+  public void add(Number value) {
+    add(value, now());
   }
-  public void mark(Number value, long now) {
+  public void add(Number value, long now) {
     values.headMap(now - windowSeconds * 1000).clear();
     values.compute(now, (k, v) -> {
       return (v == null ? 0.0 : v) + value.doubleValue();
