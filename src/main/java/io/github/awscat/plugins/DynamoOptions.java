@@ -8,6 +8,7 @@ public class DynamoOptions {
   // //
   // public String resume; // base64 encoded gzipped json state
 
+  //###TODO rename to parallelism or totalSegments ?
   public int c; // concurrency, aka totalSegments
   public int rcu; // input
   public int wcu; // output
