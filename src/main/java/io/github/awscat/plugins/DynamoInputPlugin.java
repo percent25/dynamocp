@@ -3,6 +3,7 @@ package io.github.awscat.plugins;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -41,6 +42,7 @@ public class DynamoInputPlugin implements InputPlugin {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
+  private final Iterable<String> keySchema;
   private final int rcuLimit;
   private final int totalSegments;
   private final int limit;
@@ -62,11 +64,12 @@ public class DynamoInputPlugin implements InputPlugin {
    * @param totalSegments
    * @param limit
    */
-  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int rcuLimit, int totalSegments, int limit) {
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, int rcuLimit, int totalSegments, int limit) {
     debug("ctor", "tableName", tableName, "rcuLimit", rcuLimit, "totalSegments", totalSegments, "limit", limit);
 
     this.client = client;
     this.tableName = tableName;
+    this.keySchema = keySchema;
     this.rcuLimit = rcuLimit;
     this.totalSegments = totalSegments;
     this.limit = limit;
@@ -191,14 +194,28 @@ public class DynamoInputPlugin implements InputPlugin {
     }.get();
   }
 
-  private JsonElement parse(Map<String, AttributeValue> item) {
-    return new Gson().toJsonTree(Maps.transformValues(item, value -> {
+  private JsonElement parse(Map<String, AttributeValue> itemIn) {
+    
+    // aesthetics
+    var itemOut = new LinkedHashMap<String, AttributeValue>();
+    for (var key : keySchema)
+      itemOut.put(key, itemIn.get(key));
+    itemOut.putAll(itemIn);
+    
+    var jsonElement = new Gson().toJsonTree(Maps.transformValues(itemOut, value -> {
       try {
         return new Gson().fromJson(new ObjectMapper().writeValueAsString(value.toBuilder()), JsonElement.class);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
     }));
+
+        // // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DataExport.Output.html
+        // var jsonLine = new JsonObject();
+        // jsonLine.add("Item", jsonElement);
+        // return jsonLine;
+
+    return jsonElement;
   }
 
   private void debug(Object... args) {
@@ -223,6 +240,8 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
       DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
 
+      Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
+
       int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
       int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
@@ -238,7 +257,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
 
-      return new DynamoInputPlugin(client, tableName, options.rcu, options.totalSegments(), options.limit);
+      return new DynamoInputPlugin(client, tableName, keySchema, options.rcu, options.totalSegments(), options.limit);
     }
     return null;
   }
