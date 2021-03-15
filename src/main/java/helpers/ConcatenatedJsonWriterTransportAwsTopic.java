@@ -20,7 +20,7 @@ public class ConcatenatedJsonWriterTransportAwsTopic implements ConcatenatedJson
      * @param topicArn
      */
     public ConcatenatedJsonWriterTransportAwsTopic(SnsAsyncClient client, String topicArn) {
-        log("ctor", topicArn);
+        debug("ctor", client, topicArn);
         this.client = client;
         this.topicArn = topicArn;
     }
@@ -36,8 +36,8 @@ public class ConcatenatedJsonWriterTransportAwsTopic implements ConcatenatedJson
         return CompletableFuturesExtra.toListenableFuture(client.publish(publishRequest));
     }
 
-    private void log(Object... args) {
-        new LogHelper(this).log(args);
+    private void debug(Object... args) {
+        new LogHelper(this).debug(args);
     }
 
 }
