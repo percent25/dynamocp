@@ -21,7 +21,10 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
         if (arg.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)")) {
             String topicArn = arg;
             SnsAsyncClient client = SnsAsyncClient.create();
+            // sns transport is thread-safe
             ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(client, topicArn);
+            // ConcatenatedJsonWriter is not thread-safe
+            // which makes ConcatenatedJsonWriterOutputPlugin not thread-safe
             return ()->new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
         }
         return null;
