@@ -43,9 +43,7 @@ public class DynamoInputPlugin implements InputPlugin {
   private final DynamoDbAsyncClient client;
   private final String tableName;
   private final Iterable<String> keySchema;
-  private final int rcuLimit;
-  private final int totalSegments;
-  private final int limit;
+  private final DynamoOptions options;
   private final RateLimiter readLimiter;
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
@@ -60,29 +58,26 @@ public class DynamoInputPlugin implements InputPlugin {
    * 
    * @param client
    * @param tableName
-   * @param rcuLimit ###TODO PASS RATELIMITER HERE INSTEAD OF RCULIMIT
-   * @param totalSegments
-   * @param limit
+   * @param keySchema
+   * @param options
    */
-  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, int rcuLimit, int totalSegments, int limit) {
-    debug("ctor", "tableName", tableName, "rcuLimit", rcuLimit, "totalSegments", totalSegments, "limit", limit);
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, DynamoOptions options) {
+    debug("ctor", tableName, keySchema, options);
 
     this.client = client;
     this.tableName = tableName;
     this.keySchema = keySchema;
-    this.rcuLimit = rcuLimit;
-    this.totalSegments = totalSegments;
-    this.limit = limit;
+    this.options = options;
   
-    this.readLimiter = RateLimiter.create(rcuLimit==0?Integer.MAX_VALUE:rcuLimit);
+    this.readLimiter = RateLimiter.create(options.rcu==0?Integer.MAX_VALUE:options.rcu);
 
-    permitsQueue = Queues.newArrayBlockingQueue(totalSegments);
+    permitsQueue = Queues.newArrayBlockingQueue(options.totalSegments());
 
-    for (int i = 0; i < totalSegments; ++i)
+    for (int i = 0; i < options.totalSegments(); ++i)
       permitsQueue.add(128); // not rcuLimit
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    exclusiveStartKeys.addAll(Collections.nCopies(totalSegments, null));
+    exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments(), null));
 
   }
 
@@ -95,7 +90,7 @@ public class DynamoInputPlugin implements InputPlugin {
   public ListenableFuture<?> read() throws Exception {
     return new FutureRunner() {
       {
-        for (int segment = 0; segment < totalSegments; ++segment)
+        for (int segment = 0; segment < options.totalSegments(); ++segment)
           doSegment(segment);
       }
       void doSegment(int segment) {
@@ -129,14 +124,14 @@ public class DynamoInputPlugin implements InputPlugin {
                 //
                 .segment(segment)
                 //
-                .totalSegments(totalSegments)
+                .totalSegments(options.totalSegments())
                 //
                 // .limit(256)
                 //
                 .build();
 
-            if (limit > 0)
-              scanRequest = scanRequest.toBuilder().limit(limit).build();
+            if (options.limit > 0)
+              scanRequest = scanRequest.toBuilder().limit(options.limit).build();
   
             debug(segment, "scanRequest", scanRequest);
   
@@ -200,7 +195,8 @@ public class DynamoInputPlugin implements InputPlugin {
     var itemOut = new LinkedHashMap<String, AttributeValue>();
     for (var key : keySchema)
       itemOut.put(key, itemIn.get(key));
-    itemOut.putAll(itemIn);
+    if (!options.keys)
+      itemOut.putAll(itemIn);
     
     var jsonElement = new Gson().toJsonTree(Maps.transformValues(itemOut, value -> {
       try {
@@ -257,7 +253,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
 
-      return new DynamoInputPlugin(client, tableName, keySchema, options.rcu, options.totalSegments(), options.limit);
+      return new DynamoInputPlugin(client, tableName, keySchema, options);
     }
     return null;
   }
