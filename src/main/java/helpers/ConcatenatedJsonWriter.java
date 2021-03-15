@@ -63,14 +63,6 @@ public class ConcatenatedJsonWriter {
         this.transport = transport;
     }
 
-    class WriteRecord {
-        public boolean success;
-        public String failureMessage;
-        public String toString() {
-            return new Gson().toJson(this);
-        }
-    }
-
     /**
      * write
      * 
@@ -79,7 +71,6 @@ public class ConcatenatedJsonWriter {
      */
     public ListenableFuture<?> write(JsonElement jsonElement) {
         return new FutureRunner() {
-            WriteRecord record = new WriteRecord();
             {
                 run(() -> {
                     byte[] bytes = render(jsonElement);
@@ -92,19 +83,12 @@ public class ConcatenatedJsonWriter {
                     VoidFuture lf = new VoidFuture();
                     partitions.put(baos, lf); // track futures on a per-baos/partition basis
                     return lf;
-                }, result->{
-                    record.success = true;
-                }, e->{
-                    record.failureMessage = e.toString();
-                    throw new RuntimeException(e); // propagate to caller
-                }, ()->{
-                    // log(record);
                 });
             }
         }.get();
     }
 
-    class FlushRecord {
+    class FlushWork {
         long in;
         long inErr;
         long out;
@@ -120,17 +104,19 @@ public class ConcatenatedJsonWriter {
      * @return
      */
     public ListenableFuture<?> flush() {
-        debug("flush");
         return new FutureRunner() {
-            FlushRecord record = new FlushRecord();
+            FlushWork work = new FlushWork();
             {
                 run(() -> {
                     if (baos.size() > 0)
                         baos = flush(baos, partitions.get(baos));
                     return Futures.successfulAsList(partitions.values());
-                }, () -> {
-                    // log(record);
+                // }, () -> {
                 });
+            }
+            @Override
+            protected void onListen() {
+                debug(work);
             }
         }.get();
     }
