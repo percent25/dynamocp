@@ -59,7 +59,7 @@ public class ConcatenatedJsonWriter {
      * @param tags
      */
     public ConcatenatedJsonWriter(Transport transport) {
-        log("ctor");
+        debug("ctor");
         this.transport = transport;
     }
 
@@ -120,7 +120,7 @@ public class ConcatenatedJsonWriter {
      * @return
      */
     public ListenableFuture<?> flush() {
-        log("flush");
+        debug("flush");
         return new FutureRunner() {
             FlushRecord record = new FlushRecord();
             {
@@ -163,8 +163,8 @@ public class ConcatenatedJsonWriter {
         return baos.toByteArray();
     }
 
-    private void log(Object... args) {
-        new LogHelper(this).log(args);
+    private void debug(Object... args) {
+        new LogHelper(this).debug(args);
     }
 
 }
