@@ -1,6 +1,5 @@
 package io.github.awscat;
 
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,9 +7,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-import com.google.common.base.CaseFormat;
-import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
@@ -23,26 +19,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationContext;
-
-///###TODO --hash=Metric/
-///###TODO --hash=Metric/
-///###TODO --hash=Metric/
-
-///###TODO --warmup-period=300
-///###TODO --warmup-period=300
-///###TODO --warmup-period=300
-
-//###TODO --filter{javascript snippet??} (similar to --hash)
-//###TODO --transform={javascript snippet??} (transform is a generalization of --filter)
-
-class AppState {
-  public final AtomicLong count = new AtomicLong();
-  // public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
-
-  public String toString() {
-    return new Gson().toJson(this);
-  }
-}
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
@@ -57,8 +33,6 @@ public class Main implements ApplicationRunner {
 
   private final ApplicationContext context;
   private final Optional<BuildProperties> buildProperties;
-
-  private AppState appState = new AppState();
   
   /**
    * ctor
