@@ -43,6 +43,7 @@ public class DynamoInputPlugin implements InputPlugin {
   private final String tableName;
   private final int rcuLimit;
   private final int totalSegments;
+  private final int limit;
   private final RateLimiter readLimiter;
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
@@ -57,16 +58,18 @@ public class DynamoInputPlugin implements InputPlugin {
    * 
    * @param client
    * @param tableName
+   * @param rcuLimit ###TODO PASS RATELIMITER HERE INSTEAD OF RCULIMIT
    * @param totalSegments
-   * @param rcuLimit
+   * @param limit
    */
-  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int rcuLimit, int totalSegments) {
-    log("ctor", "tableName", tableName, "rcuLimit", rcuLimit, "totalSegments", totalSegments);
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int rcuLimit, int totalSegments, int limit) {
+    debug("ctor", "tableName", tableName, "rcuLimit", rcuLimit, "totalSegments", totalSegments, "limit", limit);
 
     this.client = client;
     this.tableName = tableName;
     this.rcuLimit = rcuLimit;
     this.totalSegments = totalSegments;
+    this.limit = limit;
   
     this.readLimiter = RateLimiter.create(rcuLimit==0?Integer.MAX_VALUE:rcuLimit);
 
@@ -128,6 +131,9 @@ public class DynamoInputPlugin implements InputPlugin {
                 // .limit(256)
                 //
                 .build();
+
+            if (limit > 0)
+              scanRequest = scanRequest.toBuilder().limit(limit).build();
   
             debug(segment, "scanRequest", scanRequest);
   
@@ -195,13 +201,9 @@ public class DynamoInputPlugin implements InputPlugin {
     }));
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
-  }
   private void debug(Object... args) {
-    // new LogHelper(this).debug(args);
+    new LogHelper(this).debug(args);
   }
-
 
 }
 
@@ -215,7 +217,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       String tableName = Args.parseArg(arg).split(":")[1];
 
       DynamoOptions options = Options.parse(arg, DynamoOptions.class);  
-      log("desired", options);
+      debug("desired", options);
   
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
       DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
@@ -225,24 +227,24 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
       options.infer(Runtime.getRuntime().availableProcessors(), provisionedRcu, provisionedWcu);
-      log("reported", options);
+      debug("reported", options);
 
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       RateLimiter readLimiter = RateLimiter.create(options.rcu==0?Integer.MAX_VALUE:options.rcu);
-      log("readLimiter", readLimiter);
+      debug("readLimiter", readLimiter);
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
 
-      return new DynamoInputPlugin(client, tableName, options.rcu, options.totalSegments());
+      return new DynamoInputPlugin(client, tableName, options.rcu, options.totalSegments(), options.limit);
     }
     return null;
   }
   
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 
 }
