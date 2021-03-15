@@ -41,9 +41,9 @@ public class DynamoWriter {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
-  private final RateLimiter writeLimiter;
+  private final Iterable<String> keySchema;
   private final boolean delete; // PutItem vs DeleteItem
-  private final Iterable<String> keySchema; // iff delete
+  private final RateLimiter writeLimiter;
 
   // ###TODO
   // ###TODO
@@ -64,12 +64,13 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, boolean delete, Iterable<String> keySchema) {
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, boolean delete, RateLimiter writeLimiter) {
+    debug("ctor", client, tableName, keySchema, delete, writeLimiter);
     this.client = client;
     this.tableName = tableName;
-    this.writeLimiter = writeLimiter;
-    this.delete = delete;
     this.keySchema = keySchema;
+    this.delete = delete;
+    this.writeLimiter = writeLimiter;
   }
 
   public ListenableFuture<?> write(JsonElement jsonElement) {
@@ -202,7 +203,7 @@ public class DynamoWriter {
           work.success = true;
 
         }, e -> {
-          log(e);
+          debug(e);
           e.printStackTrace();
           work.failureMessage = "" + e;
           partition.values().forEach(lf -> {
@@ -217,7 +218,7 @@ public class DynamoWriter {
 
       @Override
       protected void onListen() {
-        log(work);
+        debug(work);
       }
     }.get();
     batchWriteItemFutures.add(lf);
@@ -234,8 +235,8 @@ public class DynamoWriter {
     return item;
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 
 }

@@ -24,8 +24,9 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoWriter writer;
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, RateLimiter writeLimiter, boolean delete, Iterable<String> keySchema) {
-    this.writer = new DynamoWriter(client, tableName, writeLimiter, delete, keySchema);
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, boolean delete, RateLimiter writeLimiter) {
+    debug("ctor");
+    this.writer = new DynamoWriter(client, tableName, keySchema, delete, writeLimiter);
   }
 
   @Override
@@ -38,8 +39,8 @@ public class DynamoOutputPlugin implements OutputPlugin {
     return writer.flush();
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 }
 
@@ -56,7 +57,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       String tableName = Args.parseArg(arg).split(":")[1];
 
       DynamoOptions options = Options.parse(arg, DynamoOptions.class);
-      log("desired", options);
+      debug("desired", options);
     
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
       DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
@@ -74,18 +75,18 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       //###TODO CONCURRENCY HERE??
       //###TODO CONCURRENCY HERE??
       //###TODO CONCURRENCY HERE??
-      log("reported", options);
+      debug("reported", options);
 
       RateLimiter writeLimiter = RateLimiter.create(options.wcu == 0 ? Integer.MAX_VALUE : options.wcu);
-      log("writeLimiter", writeLimiter);
+      debug("writeLimiter", writeLimiter);
       
-      return () -> new DynamoOutputPlugin(client, tableName, writeLimiter, options.delete, keySchema);
+      return () -> new DynamoOutputPlugin(client, tableName, keySchema, options.delete, writeLimiter);
     }
     return null;
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 
 }
