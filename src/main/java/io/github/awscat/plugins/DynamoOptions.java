@@ -12,6 +12,7 @@ public class DynamoOptions {
   public int c; // concurrency, aka totalSegments
   public int rcu; // input
   public int wcu; // output
+  public int limit; // input
   public boolean delete; // output
 
   public int totalSegments() {
