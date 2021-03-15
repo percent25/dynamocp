@@ -18,7 +18,7 @@ class SystemOutOutputPlugin implements OutputPlugin {
   private final PrintStream out;
 
   public SystemOutOutputPlugin(PrintStream out) {
-    log("ctor");
+    debug("ctor");
     this.out = out;
   }
 
@@ -34,8 +34,8 @@ class SystemOutOutputPlugin implements OutputPlugin {
     return Futures.immediateVoidFuture();
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 
 }
@@ -76,12 +76,12 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
       work.failureMessage = ""+e;
       throw e;
     } finally {
-      log(work);
+      debug(work);
     }
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
   }
 
 }
