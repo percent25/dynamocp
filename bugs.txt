@@ -5,6 +5,11 @@ rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java
 OPEN
 ======================================================================
 
+"random" source
+ - rrizun@rrizuns-MacBook-Air dynamocat % awscat in.json,loop=true,limit=1000 dynamo:MyTable --transform="{id:{s:'#{#uuid()}'}}"
+
+
+
 at start, have plugins report their desired/reported
 
 dynamo scan: permits queue necessary?
