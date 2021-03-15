@@ -1,20 +1,25 @@
 package helpers;
 
-import java.util.*;
+import java.util.List;
+
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+
+import org.slf4j.LoggerFactory;
 
 /**
  * LogHelper
  */
 public class LogHelper {
-  private final Object object;
+  private final Object self;
 
   /**
    * ctor
    * 
-   * @param object
+   * @param self
    */
-  public LogHelper(Object object) {
-    this.object = object;
+  public LogHelper(Object self) {
+    this.self = self;
   }
 
   /**
@@ -23,23 +28,17 @@ public class LogHelper {
    * @param args
    */
   public void log(Object... args) {
-    List<String> parts = new ArrayList<>();
+    List<String> parts = Lists.newArrayList();
     // parts.add(new Date().toString());
     // parts.add(String.format("[%s]", Thread.currentThread().getName()));
-    parts.add(object.getClass().getSimpleName());
+    parts.add(self.getClass().getSimpleName());
     for (Object arg : args)
       parts.add("" + arg);
     System.err.println(String.join(" ", parts));
   }
 
   public void debug(Object... args) {
-    List<String> parts = new ArrayList<>();
-    // parts.add(new Date().toString());
-    // parts.add(String.format("[%s]", Thread.currentThread().getName()));
-    parts.add(object.getClass().getSimpleName());
-    for (Object arg : args)
-      parts.add("" + arg);
-    // System.err.println(String.join(" ", parts));
+    LoggerFactory.getLogger(self.getClass()).debug(Strings.repeat("{} ", args.length), args);
   }
 
 }
