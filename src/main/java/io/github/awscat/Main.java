@@ -79,6 +79,18 @@ public class Main implements ApplicationRunner {
   AtomicLong out = new AtomicLong();
   // AtomicLong outErr = new AtomicLong();
 
+  class Progress {
+    final Number in;
+    final Number out;
+    public String toString() {
+      return getClass().getSimpleName()+new Gson().toJson(this);
+    }
+    Progress(Number in, Number out) {
+      this.in = in;
+      this.out = out;
+    }
+  }
+
   /**
    * run
    */
@@ -137,20 +149,7 @@ public class Main implements ApplicationRunner {
     inputPlugin.setListener(jsonElements->{
 
       return new FutureRunner(){
-        class IncrementalWork {
-          boolean success;
-          String failureMessage;
-          final Number in;
-          final Number out;
-          public String toString() {
-            return getClass().getSimpleName()+new Gson().toJson(this);
-          }
-          IncrementalWork(Number in, Number out) {
-            this.in = in;
-            this.out = out;
-          }
-        }
-        IncrementalWork work = new IncrementalWork(in, out);
+        Progress work = new Progress(in, out);
         {
           run(()->{
             OutputPlugin outputPlugin = outputPluginSupplier.get();
@@ -166,16 +165,15 @@ public class Main implements ApplicationRunner {
                 //###TODO dlq
                 //###TODO dlq
                 //###TODO dlq
-                work.failureMessage=""+e;
                 // inErr.incrementAndGet();
               // }, ()->{
               });
             }
             return outputPlugin.flush();
-          }, result->{
-            work.success=true;
-          }, e->{
-            work.failureMessage = ""+e;
+          // }, result->{
+          //   work.success=true;
+          // }, e->{
+          //   work.failureMessage = ""+e;
           }, ()->{
             log(work);
             // log("in", in, "out", out);
