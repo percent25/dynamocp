@@ -11,10 +11,6 @@ counters in/out still wierd never shows in greater than out
 
 
 
-s3InputPlugin
-  - ,keysOnly=true
-  - render key first ?
-
 s3outputplugin
  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DataExport.Output.html
  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.LowLevelAPI.html
@@ -84,3 +80,7 @@ dynamo delete [done]
 logging.. .debug(..) not working??
 
 input plugins: limit?
+
+DynamoInputPlugin
+  - ,keys=true
+  - render key first ?
