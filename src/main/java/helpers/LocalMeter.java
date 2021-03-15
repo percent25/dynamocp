@@ -10,32 +10,24 @@ public class LocalMeter {
   private final ConcurrentSkipListMap<Long, Double> values = new ConcurrentSkipListMap<>();
 
   private long now() {
-    return System.currentTimeMillis();
+    return System.currentTimeMillis()/1000;
   }
 
   public void add(Number value) {
-    add(value, now());
-  }
-  public void add(Number value, long now) {
-    values.headMap(now - windowSeconds * 1000).clear();
+    final long now = now();
+    values.headMap(now - windowSeconds).clear();
     values.compute(now, (k, v) -> {
       return (v == null ? 0.0 : v) + value.doubleValue();
     });
   }
 
   public Number avg(long windowSeconds) {
-    return avg(windowSeconds, now());
-  }
-  public Number avg(long windowSeconds, long now) {
-    return sum(windowSeconds, now).doubleValue() / windowSeconds;
+    return sum(windowSeconds).doubleValue() / windowSeconds;
   }
 
   public Number sum(long windowSeconds) {
-    return sum(windowSeconds, now());
-  }
-  public Number sum(long windowSeconds, long now) {
-    // values.headMap(now - windowSeconds * 1000).clear();
-    long fromKey = now - windowSeconds * 1000;
+    final long now = now();
+    long fromKey = now - windowSeconds;
     long toKey = now;
     long sum = 0;
     for (double value : values.subMap(fromKey, true, toKey, false).values())

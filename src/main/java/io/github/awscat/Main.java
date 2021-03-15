@@ -1,5 +1,8 @@
 package io.github.awscat;
 
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -7,6 +10,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
+import com.google.common.base.Suppliers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
@@ -120,6 +124,15 @@ public class Main implements ApplicationRunner {
     InputPlugin inputPlugin = inputPlugins.get(0);
     Supplier<OutputPlugin> outputPluginSupplier = outputPlugins.get(0);
 
+    // lazy
+    var dlq = Suppliers.memoize(()->{
+      try {
+        return new PrintStream(Files.createTempFile(Paths.get("."), "dlq", ".json").toFile());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
+
     // ----------------------------------------------------------------------
     // main loop
     // ----------------------------------------------------------------------
@@ -140,9 +153,13 @@ public class Main implements ApplicationRunner {
                 // ++work.out;
                 out.incrementAndGet();
               }, e->{
-                //###TODO dlq
-                //###TODO dlq
-                //###TODO dlq
+                //###TODO dlq NEEDS FLUSH
+                //###TODO dlq NEEDS FLUSH
+                //###TODO dlq NEEDS FLUSH
+                dlq.get().println(jsonElement.toString());
+                //###TODO dlq NEEDS FLUSH
+                //###TODO dlq NEEDS FLUSH
+                //###TODO dlq NEEDS FLUSH
                 // inErr.incrementAndGet();
               }, ()->{
                 rate.add(1);

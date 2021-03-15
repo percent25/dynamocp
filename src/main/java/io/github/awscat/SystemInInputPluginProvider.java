@@ -54,6 +54,9 @@ class SystemInInputPlugin implements InputPlugin {
           JsonStreamParser parser = new JsonStreamParser(br);
           while (parser.hasNext()) {
             partition.add(parser.next());
+            //###TODDO 1000
+            //###TODDO 1000
+            //###TODDO 1000
             if (!parser.hasNext() || partition.size() == 1000) { // mtu
               sem.acquire();
               run(() -> {

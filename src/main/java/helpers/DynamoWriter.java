@@ -1,6 +1,6 @@
 package helpers;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -226,7 +226,7 @@ public class DynamoWriter {
   }
 
   private Map<String, AttributeValue> render(JsonElement jsonElement) throws Exception {
-    var item = new HashMap<String, AttributeValue>();
+    var item = new LinkedHashMap<String, AttributeValue>();
     for (var entry : jsonElement.getAsJsonObject().entrySet()) {
       var key = entry.getKey();
       var attributeValue = new ObjectMapper().readValue(entry.getValue().toString(), AttributeValue.serializableBuilderClass()).build();

@@ -164,7 +164,7 @@ public class DynamoExperiment2 {
             var instantRate = Double.valueOf(1000.0 * consumedCapacityUnits / serviceCallDuration[0] * concurrency).doubleValue();
             myRecord.instantRate = instantRate;
 
-            reportedMeter.add(consumedCapacityUnits.longValue(), t0);
+            reportedMeter.add(consumedCapacityUnits.longValue());
 
             var fastRate = reportedMeter.avg(fastWindow).doubleValue();
             myRecord.fastRate = reportedMeter.avg(fastWindow).doubleValue();
