@@ -7,14 +7,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import helpers.FutureRunner;
+import helpers.GsonTransform;
 import helpers.LocalMeter;
 import helpers.LogHelper;
 
@@ -31,10 +34,16 @@ public class Main implements ApplicationRunner {
 
   public static void main(String[] args) throws Exception {
     System.err.println("main"+Arrays.asList(args));
-    // args = new String[]{"in.txt"};
+    // args = new String[]{"zzz.txt"};
     // args= new String[]{"dynamo:MyTabl  eOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
     SpringApplication.run(Main.class, args);
   }
+
+  static class TransformUtils {
+    public static String uuid() {
+      return UUID.randomUUID().toString();
+    }
+  };
 
   private final ApplicationContext context;
   private final Optional<BuildProperties> buildProperties;
@@ -52,6 +61,8 @@ public class Main implements ApplicationRunner {
 
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
+
+  private JsonObject transformExpressions = new JsonObject();
 
   AtomicLong in = new AtomicLong();
   // AtomicLong inErr = new AtomicLong();
@@ -133,6 +144,18 @@ public class Main implements ApplicationRunner {
       }
     });
 
+    var values = args.getOptionValues("transform");
+    if (values != null) {
+      if (values.iterator().hasNext()) {
+        var value = values.iterator().next();
+
+         transformExpressions = new Gson().fromJson(value, JsonObject.class);
+        // JsonObject transformExpressions = new Gson().fromJson("{'id.s':'#{ #uuid() }'}", JsonObject.class);
+
+      }
+    }
+
+
     // ----------------------------------------------------------------------
     // main loop
     // ----------------------------------------------------------------------
@@ -148,11 +171,16 @@ public class Main implements ApplicationRunner {
               run(()->{
                 // ++work.in;
                 in.incrementAndGet();
-                return outputPlugin.write(jsonElement);
+
+                JsonElement jsonElementOut = jsonElement;
+                jsonElementOut = new GsonTransform(transformExpressions, TransformUtils.class).transform(jsonElementOut);
+
+                return outputPlugin.write(jsonElementOut);
               }, result->{
                 // ++work.out;
                 out.incrementAndGet();
               }, e->{
+                log(e);
                 //###TODO dlq NEEDS FLUSH
                 //###TODO dlq NEEDS FLUSH
                 //###TODO dlq NEEDS FLUSH
