@@ -1,9 +1,28 @@
 
 rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java -jar target/awscat-0.0.1-SNAPSHOT.jar dynamo:MyTableOnDemand
 
+
+acquire(128)
+
+release(128-consumed)
+
 ======================================================================
 OPEN
 ======================================================================
+
+dynamo: from aws sdk javascript AWS.DynamoDB.Converter.marshall/unmarshall ? i.e., parse/render dynamo records?
+ - https://github.com/aws/aws-sdk-js-v3/tree/main/lib/lib-dynamodb use graalvm/js ?
+ - https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/dynamodb-example-dynamodb-utilities.html
+  
+
+
+fix mvn compile warning
+
+
+
+dynamoOutputPlugin: handle unprocessedItems
+
+
 
 "random" source
  - rrizun@rrizuns-MacBook-Air dynamocat % awscat in.json,loop=true,limit=1000 dynamo:MyTable --transform="{id:{s:'#{#uuid()}'}}"

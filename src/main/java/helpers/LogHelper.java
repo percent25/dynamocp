@@ -6,6 +6,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
 import org.slf4j.LoggerFactory;
+import org.springframework.util.ClassUtils;
 
 /**
  * LogHelper
@@ -31,7 +32,7 @@ public class LogHelper {
     List<String> parts = Lists.newArrayList();
     // parts.add(new Date().toString());
     // parts.add(String.format("[%s]", Thread.currentThread().getName()));
-    parts.add(self.getClass().getSimpleName());
+    parts.add(ClassUtils.getShortName(self.getClass()));
     for (Object arg : args)
       parts.add("" + arg);
     System.err.println(String.join(" ", parts));

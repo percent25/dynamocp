@@ -7,7 +7,10 @@ import java.util.concurrent.Semaphore;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
@@ -53,7 +56,17 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
 
-  private Multimap<WriteRequest, VoidFuture> partition = ArrayListMultimap.create();
+  private class PartitionValue {
+    public final Map<String, AttributeValue> item;
+    public final WriteRequest writeRequest;
+    public final VoidFuture lf;
+    public PartitionValue(Map<String, AttributeValue> item, WriteRequest writeRequest, VoidFuture lf) {
+      this.item = item;
+      this.writeRequest = writeRequest;
+      this.lf = lf;
+    }
+  }
+  private Multimap<Map<String, AttributeValue>/*key*/, PartitionValue> partition = ArrayListMultimap.create();
   private final List<ListenableFuture<?>> batchWriteItemFutures = Lists.newCopyOnWriteArrayList();
 
   // ###TODO
@@ -79,16 +92,16 @@ public class DynamoWriter {
         run(() -> {
 
           Map<String, AttributeValue> item = render(jsonElement);
+          Map<String, AttributeValue> key = Maps.toMap(keySchema, k -> item.get(k));
           PutRequest putRequest = PutRequest.builder().item(item).build();
           WriteRequest writeRequest = WriteRequest.builder().putRequest(putRequest).build();
           if (delete) {
-            Map<String, AttributeValue> key = Maps.toMap(keySchema, k -> item.get(k));
             DeleteRequest deleteRequest = DeleteRequest.builder().key(key).build();
             writeRequest = WriteRequest.builder().deleteRequest(deleteRequest).build();
           }
 
           VoidFuture lf = new VoidFuture();
-          partition.put(writeRequest, lf);
+          partition.put(key, new PartitionValue(item, writeRequest, lf));
 
           // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem
           // requests. The total size of all the items written cannot exceed 16 MB.
@@ -125,9 +138,10 @@ public class DynamoWriter {
     }
   }
 
-  private Multimap<WriteRequest, VoidFuture> doBatchWriteItem(Multimap<WriteRequest, VoidFuture> partition) {
+  // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html
+  private Multimap<Map<String, AttributeValue>/*key*/, PartitionValue> doBatchWriteItem(Multimap<Map<String, AttributeValue>/*key*/, PartitionValue> partition) {
 
-    //###TODO use semaphore??
+    //###TODO use semaphore?? ans: no.. pre-throttle works
 
     // run(()->{
     //   sem.acquire();
@@ -151,12 +165,31 @@ public class DynamoWriter {
 
     var lf = new FutureRunner() {
       DoBatchWriteItemWork work = new DoBatchWriteItemWork();
+      BiMap<Map<String, AttributeValue>/*key*/, WriteRequest> writeRequests = HashBiMap.create();
       {
         run(() -> {
 
+          var items = new LinkedHashMap<Map<String, AttributeValue>/*key*/,Map<String, AttributeValue>/*item*/>();
+          partition.keySet().forEach(key->{
+            var partitionValue = Iterables.getLast(partition.get(key)); // last one wins
+            items.put(key, partitionValue.item);
+            writeRequests.put(key, partitionValue.writeRequest);
+          });
+
+          // pre-throttle
+          // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+          int permits = 0;
+          for (var item : items.values()) {
+            int size = MuchDynamo.itemSize(item);
+            permits += size/writeLimiter.getRate() + 1;
+          }
+          System.out.println("permits="+permits);
+          if (permits > 0)
+            writeLimiter.acquire(permits);
+
           BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
               //
-              .requestItems(ImmutableMap.of(tableName, partition.keySet()))
+              .requestItems(ImmutableMap.of(tableName, writeRequests.values()))
               //
               .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
               //
@@ -170,8 +203,8 @@ public class DynamoWriter {
             wcuMeter.add(consumedCapacity.capacityUnits().longValue());
             work.consumedCapacityUnits += consumedCapacity.capacityUnits().intValue();
             int permits = consumedCapacity.capacityUnits().intValue();
-            if (permits > 0)
-              writeLimiter.acquire(permits);
+            // if (permits > 0)
+            //   writeLimiter.acquire(permits);
           }
 
           // failure 500
@@ -187,17 +220,18 @@ public class DynamoWriter {
               //###TODO re-submit unprocessedItems
 
               for (WriteRequest writeRequest : unprocessedItems) {
-                partition.removeAll(writeRequest).forEach(lf -> {
+                var key = writeRequests.inverse().get(writeRequest);
+                partition.removeAll(key).forEach(partitionValue -> {
                   ++work.unprocessedItems;
-                  lf.setException(new Exception("unprocessedItem"));
+                  partitionValue.lf.setException(new Exception("unprocessedItem="+writeRequest));
                 });
               }
             }
           }
 
           // success 200
-          partition.values().forEach(lf -> {
-            lf.setVoid();
+          partition.values().forEach(partitionValue -> {
+            partitionValue.lf.setVoid();
           });
 
           work.success = true;
@@ -206,8 +240,8 @@ public class DynamoWriter {
           debug(e);
           e.printStackTrace();
           work.failureMessage = "" + e;
-          partition.values().forEach(lf -> {
-            lf.setException(e);
+          partition.values().forEach(partitionValue -> {
+            partitionValue.lf.setException(e);
           });
           // throw e;
         }, () -> {
