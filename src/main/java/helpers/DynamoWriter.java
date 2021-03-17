@@ -180,7 +180,7 @@ public class DynamoWriter {
           // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
           int permits = 0;
           for (var item : items.values()) {
-            int size = MuchDynamo.itemSize(item);
+            int size = MoreDynamo.itemSize(item);
             permits += size/writeLimiter.getRate() + 1;
           }
           System.out.println("permits="+permits);

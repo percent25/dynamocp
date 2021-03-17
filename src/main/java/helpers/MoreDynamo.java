@@ -4,7 +4,7 @@ import java.util.Map;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-public class MuchDynamo {
+public class MoreDynamo {
 
   // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
   public static int itemSize(Map<String, AttributeValue> item) {

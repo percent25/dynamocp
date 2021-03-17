@@ -22,13 +22,13 @@ public class GsonTransform {
   private final Class<?> classOfUtils;
 
   public GsonTransform(JsonObject transformExpressions, Class<?> classOfUtils) {
-    this.transformExpressions = MoreGson.toMap(transformExpressions);
+    this.transformExpressions = ObjectHelper.toMap(transformExpressions);
     this.classOfUtils = classOfUtils;
   }
 
   public JsonElement transform(JsonElement in) {
     // context
-    StandardEvaluationContext context = new StandardEvaluationContext(MoreGson.toObject(in));
+    StandardEvaluationContext context = new StandardEvaluationContext(ObjectHelper.toObject(in));
     context.addPropertyAccessor(new MapAccessor());
     for (Method method : classOfUtils.getMethods()) {
       if (Modifier.isStatic(method.getModifiers()))

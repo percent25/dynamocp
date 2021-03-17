@@ -10,7 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-public class MoreGson {
+public class ObjectHelper {
 
   // general
   public static Object toObject(JsonElement jsonElement) {
