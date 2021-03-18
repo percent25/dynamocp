@@ -10,7 +10,7 @@ public class Args {
      * @param arg e.g., "dynamo:MyTable,c=1,delete=true,wcu=5"
      * @return e.g., "dynamo:MyTable"
      */
-    public static String parseArg(String arg) {
+    public static String base(String arg) {
 
         // name,foo=1,bar=2
         // ns:name,foo=1,bar=2

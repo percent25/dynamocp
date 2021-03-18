@@ -66,7 +66,7 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
   public Supplier<OutputPlugin> get(String arg, ApplicationArguments args) throws Exception {
     GetWork work = new GetWork(arg);
     try {
-      work.target = Args.parseArg(work.arg);
+      work.target = Args.base(work.arg);
       work.options = Options.parse(work.arg, SystemOutOptions.class);
       PrintStream out = "-".equals(work.target) ? System.out : new PrintStream(new FileOutputStream(work.target, work.options.append));
       work.success = true;

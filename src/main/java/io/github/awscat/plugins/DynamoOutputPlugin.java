@@ -55,7 +55,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   public Supplier<OutputPlugin> get(String arg, ApplicationArguments args) throws Exception {
     //arn:aws:dynamodb:us-east-1:102938475610:table/MyTable
     if (arg.startsWith("dynamo:")) {
-      String tableName = Args.parseArg(arg).split(":")[1];
+      String tableName = Args.base(arg).split(":")[1];
 
       DynamoOptions options = Options.parse(arg, DynamoOptions.class);
       debug("desired", options);

@@ -243,8 +243,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     //arn:aws:dynamodb:us-east-1:102938475610:table/MyTable
     // if (arg.startsWith("dynamo:"))
     {
-
-      String tableName = Args.parseArg(arg).split(":")[1];
+      String tableName = Args.base(arg).split(":")[1];
 
       DynamoOptions options = Options.parse(arg, DynamoOptions.class);  
       debug("desired", options);

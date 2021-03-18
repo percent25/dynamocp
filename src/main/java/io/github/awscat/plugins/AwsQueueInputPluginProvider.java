@@ -60,7 +60,7 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
 
     @Override
     public boolean canActivate() {
-        return Args.parseArg(args.getNonOptionArgs().get(0)).matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)");
+        return Args.base(args.getNonOptionArgs().get(0)).matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)");
     }
 
     @Override
