@@ -32,7 +32,7 @@ public class LogHelper {
     List<String> parts = Lists.newArrayList();
     // parts.add(new Date().toString());
     // parts.add(String.format("[%s]", Thread.currentThread().getName()));
-    parts.add(ClassUtils.getShortName(self.getClass()));
+    // parts.add(ClassUtils.getShortName(self.getClass()));
     for (Object arg : args)
       parts.add("" + arg);
     System.err.println(String.join(" ", parts));

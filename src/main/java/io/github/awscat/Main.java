@@ -141,6 +141,7 @@ public class Main implements ApplicationRunner {
         // InputPlugin inputPlugin = inputPluginProviders.get(0).get();
         log("inputPlugin", inputPlugin);
         Supplier<OutputPlugin> outputPluginSupplier = outputPlugins.get(0);
+        log("outputPlugin", outputPluginSupplier);
 
         // lazy
         var dlq = Suppliers.memoize(()->{
