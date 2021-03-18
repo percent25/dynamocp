@@ -51,10 +51,19 @@ class AwsQueueInputPlugin implements InputPlugin {
 @Service
 public class AwsQueueInputPluginProvider implements InputPluginProvider {
 
+    private final ApplicationArguments args;
+
+    public AwsQueueInputPluginProvider(ApplicationArguments args) {
+        this.args = args;
+    }
+
+    public boolean canActivate() {
+        return args.getNonOptionArgs().get(0).matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)");
+    }
+
     @Override
-    public InputPlugin get(String arg, ApplicationArguments args) throws Exception {
-        if (arg.startsWith("sqs:"))
-            arg = arg.substring(arg.indexOf(":") + 1);
+    public InputPlugin get() throws Exception {
+        String arg = args.getNonOptionArgs().get(0);
         if (arg.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) {
             String queueUrl = arg;
             int concurrency = Runtime.getRuntime().availableProcessors();

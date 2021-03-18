@@ -82,9 +82,15 @@ class SystemInInputPlugin implements InputPlugin {
 // @Service
 public class SystemInInputPluginProvider implements InputPluginProvider {
 
+  private final ApplicationArguments args;
+
+  public SystemInInputPluginProvider(ApplicationArguments args) {
+    this.args = args;
+  }
+
   @Override
-  public InputPlugin get(String source, ApplicationArguments args) throws Exception {
-    debug("get", source, args);
+  public InputPlugin get() throws Exception {
+    String source = args.getNonOptionArgs().get(0);
     return new SystemInInputPlugin("-".equals(source) ? System.in : new FileInputStream(source));
   }
 

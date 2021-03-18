@@ -213,6 +213,10 @@ public class DynamoInputPlugin implements InputPlugin {
     return jsonElement;
   }
 
+  public String toString() {
+    return tableName + keySchema + options;
+  }
+
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
   }
@@ -222,8 +226,15 @@ public class DynamoInputPlugin implements InputPlugin {
 @Service
 class DynamoInputPluginProvider implements InputPluginProvider {
 
+  private final ApplicationArguments args;
+
+  public DynamoInputPluginProvider(ApplicationArguments args) {
+    this.args = args;
+  }
+
   @Override
-  public InputPlugin get(String arg, ApplicationArguments args) throws Exception {
+  public InputPlugin get() throws Exception {
+    String arg = args.getNonOptionArgs().get(0);
     //arn:aws:dynamodb:us-east-1:102938475610:table/MyTable
     if (arg.startsWith("dynamo:")) {
 

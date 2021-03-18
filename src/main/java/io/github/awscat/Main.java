@@ -34,8 +34,8 @@ public class Main implements ApplicationRunner {
 
   public static void main(String[] args) throws Exception {
     System.err.println("main"+Arrays.asList(args));
-    // args = new String[]{"zzz.txt"};
-    // args= new String[]{"dynamo:MyTabl  eOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
+    // args = new String[]{"dynamo:MyTable"};
+    // args= new String[]{"dynamo:MyTableOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
     SpringApplication.run(Main.class, args);
   }
 
@@ -48,17 +48,6 @@ public class Main implements ApplicationRunner {
   private final ApplicationContext context;
   private final Optional<BuildProperties> buildProperties;
   
-  /**
-   * ctor
-   */
-  public Main(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
-    log("ctor");
-    this.context = context;
-    this.buildProperties = buildProperties;
-    this.inputPluginProviders.addAll(inputPluginProviders);
-    this.outputPluginProviders.addAll(outputPluginProviders);
-  }
-
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
@@ -84,6 +73,20 @@ public class Main implements ApplicationRunner {
     }
   }
 
+  // resolved input plugin
+  private InputPlugin inputPlugin;
+
+  /**
+   * ctor
+   */
+  public Main(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
+    log("ctor");
+    this.context = context;
+    this.buildProperties = buildProperties;
+    this.inputPluginProviders.addAll(inputPluginProviders);
+    this.outputPluginProviders.addAll(outputPluginProviders);
+  }
+
   /**
    * run
    */
@@ -93,133 +96,139 @@ public class Main implements ApplicationRunner {
 
     try {
 
-    List<InputPlugin> inputPlugins = new ArrayList<>();
-    List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
+      // List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
+      List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
 
-    // STEP 1 input plugin
-    if (args.getNonOptionArgs().size() > 0) {
-      String source = args.getNonOptionArgs().get(0);
-      for (InputPluginProvider provider : inputPluginProviders) {
-        try {
-          InputPlugin inputPlugin = provider.get(source, args);
-          if (inputPlugin!=null)
-            inputPlugins.add(inputPlugin);
-        } catch (Exception e) {
-          log(e);
+      // STEP 1 input plugin
+      if (args.getNonOptionArgs().size() > 0) {
+        // String source = args.getNonOptionArgs().get(0);
+        for (InputPluginProvider provider : inputPluginProviders) {
+          try {
+            //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
+            //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
+            //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
+            // if (provider.canActivate())
+              inputPlugin = provider.get();
+            if (inputPlugin != null)
+              break;
+            // if (inputPluginProviders.size() != 1)
+            //   throw new Exception("ambiguous sources!");
+          } catch (Exception e) {
+            log(e);
+          }
         }
-      }
-      if (inputPlugins.size() == 0)
-        inputPlugins.add(new SystemInInputPluginProvider().get(source, args));
-      if (inputPlugins.size() != 1)
-        throw new Exception("ambiguous sources!");
+        if (inputPlugin == null)
+          inputPlugin = new SystemInInputPluginProvider(args).get();
 
-      // STEP 2 output plugin
-      String target = "-";
-      if (args.getNonOptionArgs().size() > 1)
-        target = args.getNonOptionArgs().get(1);
-      for (OutputPluginProvider provider : outputPluginProviders) {
-        try {
-          Supplier<OutputPlugin> outputPlugin = provider.get(target, args);
-          if (outputPlugin != null)
-            outputPlugins.add(outputPlugin);
-        } catch (Exception e) {
-          log(e);
+        // STEP 2 output plugin
+        String target = "-";
+        if (args.getNonOptionArgs().size() > 1)
+          target = args.getNonOptionArgs().get(1);
+        for (OutputPluginProvider provider : outputPluginProviders) {
+          try {
+            Supplier<OutputPlugin> outputPlugin = provider.get(target, args);
+            if (outputPlugin != null)
+              outputPlugins.add(outputPlugin);
+          } catch (Exception e) {
+            log(e);
+          }
         }
-      }
-      if (outputPlugins.size() == 0)
-        outputPlugins.add(new SystemOutOutputPluginProvider().get(target, args));
-      if (outputPlugins.size() != 1)
-        throw new Exception("ambiguous targets!");
-    }
+        if (outputPlugins.size() == 0)
+          outputPlugins.add(new SystemOutOutputPluginProvider().get(target, args));
+        if (outputPlugins.size() != 1)
+          throw new Exception("ambiguous targets!");
 
-    InputPlugin inputPlugin = inputPlugins.get(0);
-    Supplier<OutputPlugin> outputPluginSupplier = outputPlugins.get(0);
+        // InputPlugin inputPlugin = inputPluginProviders.get(0).get();
+        log("inputPlugin", inputPlugin);
+        Supplier<OutputPlugin> outputPluginSupplier = outputPlugins.get(0);
 
-    // lazy
-    var dlq = Suppliers.memoize(()->{
-      try {
-        return new PrintStream(Files.createTempFile(Paths.get("."), "dlq", ".json").toFile());
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+        // lazy
+        var dlq = Suppliers.memoize(()->{
+          try {
+            return new PrintStream(Files.createTempFile(Paths.get("."), "dlq", ".json").toFile());
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
 
-    var values = args.getOptionValues("transform");
-    if (values != null) {
-      if (values.iterator().hasNext()) {
-        var value = values.iterator().next();
+        var values = args.getOptionValues("transform");
+        if (values != null) {
+          if (values.iterator().hasNext()) {
+            var value = values.iterator().next();
 
-         transformExpressions = new Gson().fromJson(value, JsonObject.class);
-        // JsonObject transformExpressions = new Gson().fromJson("{'id.s':'#{ #uuid() }'}", JsonObject.class);
+            transformExpressions = new Gson().fromJson(value, JsonObject.class);
+            // JsonObject transformExpressions = new Gson().fromJson("{'id.s':'#{ #uuid() }'}", JsonObject.class);
 
-      }
-    }
+          }
+        }
 
+        // ----------------------------------------------------------------------
+        // main loop
+        // ----------------------------------------------------------------------
 
-    // ----------------------------------------------------------------------
-    // main loop
-    // ----------------------------------------------------------------------
+        inputPlugin.setListener(jsonElements->{
 
-    inputPlugin.setListener(jsonElements->{
-
-      return new FutureRunner(){
-        Progress work = new Progress(in, out);
-        {
-          run(()->{
-            OutputPlugin outputPlugin = outputPluginSupplier.get();
-            for (JsonElement jsonElement : jsonElements) {
+          return new FutureRunner(){
+            Progress work = new Progress(in, out);
+            {
               run(()->{
-                // ++work.in;
-                in.incrementAndGet();
+                OutputPlugin outputPlugin = outputPluginSupplier.get();
+                for (JsonElement jsonElement : jsonElements) {
+                  run(()->{
+                    // ++work.in;
+                    in.incrementAndGet();
 
-                JsonElement jsonElementOut = jsonElement;
-                jsonElementOut = new GsonTransform(transformExpressions, TransformUtils.class).transform(jsonElementOut);
+                    JsonElement jsonElementOut = jsonElement;
+                    jsonElementOut = new GsonTransform(transformExpressions, TransformUtils.class).transform(jsonElementOut);
 
-                return outputPlugin.write(jsonElementOut);
-              }, result->{
-                // ++work.out;
-                out.incrementAndGet();
-              }, e->{
-                log(e);
-                //###TODO dlq NEEDS FLUSH
-                //###TODO dlq NEEDS FLUSH
-                //###TODO dlq NEEDS FLUSH
-                dlq.get().println(jsonElement.toString());
-                //###TODO dlq NEEDS FLUSH
-                //###TODO dlq NEEDS FLUSH
-                //###TODO dlq NEEDS FLUSH
-                // inErr.incrementAndGet();
+                    return outputPlugin.write(jsonElementOut);
+                  }, result->{
+                    // ++work.out;
+                    out.incrementAndGet();
+                  }, e->{
+                    log(e);
+                    //###TODO dlq NEEDS FLUSH
+                    //###TODO dlq NEEDS FLUSH
+                    //###TODO dlq NEEDS FLUSH
+                    dlq.get().println(jsonElement.toString());
+                    //###TODO dlq NEEDS FLUSH
+                    //###TODO dlq NEEDS FLUSH
+                    //###TODO dlq NEEDS FLUSH
+                    // inErr.incrementAndGet();
+                  }, ()->{
+                    rate.add(1);
+                    work.rate = rate.toString();
+                  });
+                }
+                return outputPlugin.flush();
+              // }, result->{
+              //   work.success=true;
+              // }, e->{
+              //   work.failureMessage = ""+e;
               }, ()->{
-                rate.add(1);
-                work.rate = rate.toString();
+                log(work);
+                // log("in", in, "out", out);
               });
             }
-            return outputPlugin.flush();
-          // }, result->{
-          //   work.success=true;
-          // }, e->{
-          //   work.failureMessage = ""+e;
-          }, ()->{
-            log(work);
-            // log("in", in, "out", out);
-          });
-        }
-      }.get();
+          }.get();
 
-    });
+        });
 
-    // % dynamocat MyTable MyQueue
-    log("input.read().get();111");
-    inputPlugin.read().get();
-    log("input.read().get();222");
+        // % dynamocat MyTable MyQueue
+        log("input.read().get();111");
+        inputPlugin.read().get();
+        log("input.read().get();222");
 
-    // log("output.flush().get();111");
-    // outputPlugin.flush().get();
-    // log("output.flush().get();222");
+        // log("output.flush().get();111");
+        // outputPlugin.flush().get();
+        // log("output.flush().get();222");
 
-  } catch (Exception e) {
-    log(e.getMessage());
-  }
+      } else
+        throw new Exception("missing source!");
+
+    } catch (Exception e) {
+      log(e);
+    }
   }
 
   // private static AppState parseState(String base64) throws Exception {
