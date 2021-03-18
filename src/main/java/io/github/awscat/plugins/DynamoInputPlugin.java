@@ -1,7 +1,6 @@
 package io.github.awscat.plugins;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,7 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
@@ -196,7 +195,7 @@ public class DynamoInputPlugin implements InputPlugin {
     for (var key : keySchema)
       itemOut.put(key, itemIn.get(key));
     if (!options.keys)
-      itemOut.putAll(itemIn);
+      itemOut.putAll(ImmutableSortedMap.copyOf(itemIn));
     
     var jsonElement = new Gson().toJsonTree(Maps.transformValues(itemOut, value -> {
       try {
