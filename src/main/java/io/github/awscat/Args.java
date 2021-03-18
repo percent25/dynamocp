@@ -1,5 +1,10 @@
 package io.github.awscat;
 
+import java.util.HashMap;
+
+import com.google.common.base.Splitter;
+import com.google.gson.Gson;
+
 import org.springframework.boot.ApplicationArguments;
 
 // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
@@ -24,6 +29,16 @@ public class Args {
         return arg;
     }
 
+    // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
+    public static <T> T options(String arg, Class<T> classOfT) {
+        var options = new HashMap<String, String>();
+        int index = arg.indexOf(",");
+        if (index != -1) {
+        options.putAll(Splitter.on(",").trimResults().withKeyValueSeparator("=").split(arg.substring(index+1)));
+        }
+        return new Gson().fromJson(new Gson().toJson(options), classOfT);
+    }
+  
     // public static String source(ApplicationArguments args) {
     //     return parseArg(args.getNonOptionArgs().get(0));
     // }

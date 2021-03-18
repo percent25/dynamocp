@@ -245,7 +245,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     {
       String tableName = Args.base(arg).split(":")[1];
 
-      DynamoOptions options = Options.parse(arg, DynamoOptions.class);  
+      DynamoOptions options = Args.options(arg, DynamoOptions.class);  
       debug("desired", options);
   
       DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
