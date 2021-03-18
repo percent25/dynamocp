@@ -1,18 +1,45 @@
 
 rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java -jar target/awscat-0.0.1-SNAPSHOT.jar dynamo:MyTableOnDemand
 
-
-acquire(128)
-
-release(128-consumed)
-
 ======================================================================
 OPEN
 ======================================================================
 
++ target/awscat-0.0.1-SNAPSHOT.jar -
+main[-]
+ctor
+run
+inputPlugin io.github.awscat.SystemInInputPlugin@3d1cfad4
+outputPlugin io.github.awscat.SystemOutOutputPluginProvider$$Lambda$381/0x0000000800d112e0@62230c58
+input.read().get();111
+asdf
+1
+2
+3
+java.lang.IllegalStateException: Not a JSON Object: "asdf"
+java.lang.IllegalStateException: Not a JSON Object: 1
+java.lang.IllegalStateException: Not a JSON Object: 2
+java.lang.IllegalStateException: Not a JSON Object: 3
+Progress{"in":4,"out":0,"rate":"0/0/0 0/0/0"}
+input.read().get();222
+rrizun@rrizuns-MacBook-Air dynamocat % 
+
+
+
+table to topic not working??
+ - works on macbook air w/default c=4
+ - does not work on c5.8xlarge w/c=32.. didn't seem to work w/c=1 either ?!?
+ 
+
+//###BADIDEA
+//###BADIDEA
+//###BADIDEA
 dynamo: from aws sdk javascript AWS.DynamoDB.Converter.marshall/unmarshall ? i.e., parse/render dynamo records?
  - https://github.com/aws/aws-sdk-js-v3/tree/main/lib/lib-dynamodb use graalvm/js ?
  - https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/dynamodb-example-dynamodb-utilities.html
+//###BADIDEA
+//###BADIDEA
+//###BADIDEA
   
 
 
@@ -20,16 +47,30 @@ fix mvn compile warning
 
 
 
-dynamoOutputPlugin: handle unprocessedItems
+dynamoOutputPlugin: handle unprocessedItems.. dlq or retry?
+
+
+
+DLQ: log to dlq pre-transform or post-transform?
 
 
 
 "random" source
  - rrizun@rrizuns-MacBook-Air dynamocat % awscat in.json,loop=true,limit=1000 dynamo:MyTable --transform="{id:{s:'#{#uuid()}'}}"
+ 
+
+
+transform is a little bit weird atm.. inplace transform? vs output=transform(input)
+ --transform={"asdf":"#{#input}"}
+ --apply={...}
 
 
 
-at start, have plugins report their desired/reported
+--filter
+
+
+
+at start, have plugins report their desired/reported [50%]
 
 dynamo scan: permits queue necessary?
 
