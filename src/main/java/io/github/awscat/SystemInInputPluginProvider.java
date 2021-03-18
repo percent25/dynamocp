@@ -89,6 +89,11 @@ public class SystemInInputPluginProvider implements InputPluginProvider {
   }
 
   @Override
+  public boolean canActivate() {
+    return true;
+  }
+
+  @Override
   public InputPlugin get() throws Exception {
     String source = args.getNonOptionArgs().get(0);
     return new SystemInInputPlugin("-".equals(source) ? System.in : new FileInputStream(source));

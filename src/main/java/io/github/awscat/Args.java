@@ -1,5 +1,7 @@
 package io.github.awscat;
 
+import org.springframework.boot.ApplicationArguments;
+
 // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
 public class Args {
     /**
@@ -21,4 +23,12 @@ public class Args {
             arg = arg.substring(0, index);
         return arg;
     }
+
+    // public static String source(ApplicationArguments args) {
+    //     return parseArg(args.getNonOptionArgs().get(0));
+    // }
+
+    // public static String target(ApplicationArguments args) {
+    //     return parseArg(args.getNonOptionArgs().get(1));
+    // }
 }

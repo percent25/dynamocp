@@ -233,10 +233,16 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   }
 
   @Override
+  public boolean canActivate() {
+    return "dynamo".equals(args.getNonOptionArgs().get(0).split(":")[0]);
+  }
+
+  @Override
   public InputPlugin get() throws Exception {
     String arg = args.getNonOptionArgs().get(0);
     //arn:aws:dynamodb:us-east-1:102938475610:table/MyTable
-    if (arg.startsWith("dynamo:")) {
+    // if (arg.startsWith("dynamo:"))
+    {
 
       String tableName = Args.parseArg(arg).split(":")[1];
 
@@ -266,7 +272,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
 
       return new DynamoInputPlugin(client, tableName, keySchema, options);
     }
-    return null;
+    // return null;
   }
   
   private void debug(Object... args) {

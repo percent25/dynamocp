@@ -10,6 +10,7 @@ import com.google.gson.JsonStreamParser;
 
 import helpers.AwsQueueMessageReceiver;
 import helpers.LogHelper;
+import io.github.awscat.Args;
 import io.github.awscat.InputPlugin;
 import io.github.awscat.InputPluginProvider;
 
@@ -57,8 +58,9 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
         this.args = args;
     }
 
+    @Override
     public boolean canActivate() {
-        return args.getNonOptionArgs().get(0).matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)");
+        return Args.parseArg(args.getNonOptionArgs().get(0)).matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)");
     }
 
     @Override

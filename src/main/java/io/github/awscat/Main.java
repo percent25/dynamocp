@@ -113,19 +113,15 @@ public class Main implements ApplicationRunner {
       if (args.getNonOptionArgs().size() > 0) {
         // String source = args.getNonOptionArgs().get(0);
         for (InputPluginProvider provider : inputPluginProviders) {
-          try {
-            //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
-            //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
-            //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
-            // if (provider.canActivate())
-              inputPlugin = provider.get();
-            if (inputPlugin != null)
-              break;
-            // if (inputPluginProviders.size() != 1)
-            //   throw new Exception("ambiguous sources!");
-          } catch (Exception e) {
-            log(e);
-          }
+          //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
+          //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
+          //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
+          if (provider.canActivate())
+            inputPlugin = provider.get(); // activate
+          if (inputPlugin != null)
+            break;
+          // if (inputPluginProviders.size() != 1)
+          //   throw new Exception("ambiguous sources!");
         }
         if (inputPlugin == null)
           inputPlugin = new SystemInInputPluginProvider(args).get();
