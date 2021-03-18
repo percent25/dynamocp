@@ -76,6 +76,16 @@ public class Main implements ApplicationRunner {
   // resolved input plugin
   private InputPlugin inputPlugin;
 
+  // lazy
+  private PrintStream dlqPrivate;
+  private final Supplier<PrintStream> dlq = Suppliers.memoize(()->{
+    try {
+      return dlqPrivate = new PrintStream(Files.createTempFile(Paths.get("."), "dlq", ".json").toFile());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  });
+
   /**
    * ctor
    */
@@ -143,21 +153,12 @@ public class Main implements ApplicationRunner {
         Supplier<OutputPlugin> outputPluginSupplier = outputPlugins.get(0);
         log("outputPlugin", outputPluginSupplier);
 
-        // lazy
-        var dlq = Suppliers.memoize(()->{
-          try {
-            return new PrintStream(Files.createTempFile(Paths.get("."), "dlq", ".json").toFile());
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        });
+        var transformValues = args.getOptionValues("transform");
+        if (transformValues != null) {
+          if (transformValues.iterator().hasNext()) {
+            var transformValue = transformValues.iterator().next();
 
-        var values = args.getOptionValues("transform");
-        if (values != null) {
-          if (values.iterator().hasNext()) {
-            var value = values.iterator().next();
-
-            transformExpressions = new Gson().fromJson(value, JsonObject.class);
+            transformExpressions = new Gson().fromJson(transformValue, JsonObject.class);
             // JsonObject transformExpressions = new Gson().fromJson("{'id.s':'#{ #uuid() }'}", JsonObject.class);
 
           }
@@ -188,13 +189,7 @@ public class Main implements ApplicationRunner {
                     out.incrementAndGet();
                   }, e->{
                     log(e);
-                    //###TODO dlq NEEDS FLUSH
-                    //###TODO dlq NEEDS FLUSH
-                    //###TODO dlq NEEDS FLUSH
-                    dlq.get().println(jsonElement.toString());
-                    //###TODO dlq NEEDS FLUSH
-                    //###TODO dlq NEEDS FLUSH
-                    //###TODO dlq NEEDS FLUSH
+                    dlq.get().println(jsonElement.toString()); //###TODO write before-transform? or post-transform?
                     // inErr.incrementAndGet();
                   }, ()->{
                     rate.add(1);
@@ -229,6 +224,11 @@ public class Main implements ApplicationRunner {
 
     } catch (Exception e) {
       log(e);
+    } finally {
+      
+      if (dlqPrivate != null)
+        dlqPrivate.close();
+
     }
   }
 
