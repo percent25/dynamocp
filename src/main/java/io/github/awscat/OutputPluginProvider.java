@@ -5,5 +5,6 @@ import java.util.function.Supplier;
 import org.springframework.boot.ApplicationArguments;
 
 public interface OutputPluginProvider {
-  Supplier<OutputPlugin> get(String target, ApplicationArguments args) throws Exception;
+  boolean canActivate();
+  Supplier<OutputPlugin> get() throws Exception;
 }

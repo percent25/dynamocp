@@ -75,6 +75,8 @@ public class Main implements ApplicationRunner {
 
   // resolved input plugin
   private InputPlugin inputPlugin;
+  // resolved output plugin
+  private Supplier<OutputPlugin> outputPluginSupplier;
 
   // lazy
   private PrintStream dlqPrivate;
@@ -89,12 +91,14 @@ public class Main implements ApplicationRunner {
   /**
    * ctor
    */
-  public Main(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
+  public Main(ApplicationArguments args, List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
     log("ctor");
     this.context = context;
     this.buildProperties = buildProperties;
     this.inputPluginProviders.addAll(inputPluginProviders);
+    this.inputPluginProviders.add(new SystemInInputPluginProvider(args));
     this.outputPluginProviders.addAll(outputPluginProviders);
+    this.outputPluginProviders.add(new SystemOutOutputPluginProvider(args));
   }
 
   /**
@@ -107,7 +111,7 @@ public class Main implements ApplicationRunner {
     try {
 
       // List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
-      List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
+      // List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
 
       // STEP 1 input plugin
       if (args.getNonOptionArgs().size() > 0) {
@@ -116,37 +120,47 @@ public class Main implements ApplicationRunner {
           //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
           //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
           //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
-          if (provider.canActivate())
+          boolean canActivate = false;
+          try {
+            canActivate = provider.canActivate();
+          } catch (Exception e) {
+            log(e);
+          }
+          if (canActivate)
             inputPlugin = provider.get(); // activate
           if (inputPlugin != null)
             break;
           // if (inputPluginProviders.size() != 1)
           //   throw new Exception("ambiguous sources!");
         }
-        if (inputPlugin == null)
-          inputPlugin = new SystemInInputPluginProvider(args).get();
+        // if (inputPlugin == null)
+        //   inputPlugin = new SystemInInputPluginProvider(args).get();
 
         // STEP 2 output plugin
-        String target = "-";
-        if (args.getNonOptionArgs().size() > 1)
-          target = args.getNonOptionArgs().get(1);
+        // String target = "-";
+        // if (args.getNonOptionArgs().size() > 1)
+        //   target = args.getNonOptionArgs().get(1);
         for (OutputPluginProvider provider : outputPluginProviders) {
+          //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
+          //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
+          //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
+          boolean canActivate = false;
           try {
-            Supplier<OutputPlugin> outputPlugin = provider.get(target, args);
-            if (outputPlugin != null)
-              outputPlugins.add(outputPlugin);
+            canActivate = provider.canActivate();
           } catch (Exception e) {
             log(e);
           }
+          if (canActivate)
+            outputPluginSupplier = provider.get(); // activate
+          if (outputPluginSupplier != null)
+            break;
         }
-        if (outputPlugins.size() == 0)
-          outputPlugins.add(new SystemOutOutputPluginProvider().get(target, args));
-        if (outputPlugins.size() != 1)
-          throw new Exception("ambiguous targets!");
+        // if (outputPlugins.size() == 0)
+        //   outputPlugins.add(new SystemOutOutputPluginProvider(args).get());
+        // if (outputPlugins.size() != 1)
+        //   throw new Exception("ambiguous targets!");
 
-        // InputPlugin inputPlugin = inputPluginProviders.get(0).get();
         log("inputPlugin", inputPlugin);
-        Supplier<OutputPlugin> outputPluginSupplier = outputPlugins.get(0);
         log("outputPlugin", outputPluginSupplier);
 
         var transformValues = args.getOptionValues("transform");
@@ -261,4 +275,7 @@ public class Main implements ApplicationRunner {
     new LogHelper(this).log(args);
   }
 
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
+  }
 }

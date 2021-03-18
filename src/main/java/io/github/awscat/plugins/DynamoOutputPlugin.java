@@ -47,14 +47,27 @@ public class DynamoOutputPlugin implements OutputPlugin {
 @Service
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
+  private final ApplicationArguments args;
+
+  public DynamoOutputPluginProvider(ApplicationArguments args) {
+    this.args = args;
+  }
+
+  @Override
+  public boolean canActivate() {
+    return "dynamo".equals(args.getNonOptionArgs().get(1).split(":")[0]);
+  }
+
   class DynamoOutputPluginProviderWork {
 
   }
 
   @Override
-  public Supplier<OutputPlugin> get(String arg, ApplicationArguments args) throws Exception {
+  public Supplier<OutputPlugin> get() throws Exception {
+    String arg = args.getNonOptionArgs().get(1);
     //arn:aws:dynamodb:us-east-1:102938475610:table/MyTable
-    if (arg.startsWith("dynamo:")) {
+    // if (arg.startsWith("dynamo:"))
+    {
       String tableName = Args.base(arg).split(":")[1];
 
       DynamoOptions options = Args.options(arg, DynamoOptions.class);
@@ -83,7 +96,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       
       return () -> new DynamoOutputPlugin(client, tableName, keySchema, options.delete, writeLimiter);
     }
-    return null;
+    // return null;
   }
 
   private void debug(Object... args) {

@@ -43,6 +43,17 @@ class SystemOutOutputPlugin implements OutputPlugin {
 // @Service
 public class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
+  private final ApplicationArguments args;
+
+  public SystemOutOutputPluginProvider(ApplicationArguments args) {
+    this.args = args;
+  }
+
+  @Override
+  public boolean canActivate() {
+    return args.getNonOptionArgs().size()>0;
+  }
+
   // out.txt,append=true
   class SystemOutOptions {
     boolean append;
@@ -51,21 +62,21 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
   class GetWork {
     boolean success;
     String failureMessage;
-    final String arg;
+    String arg;
     String target;
     SystemOutOptions options;
-    public GetWork(String arg) {
-      this.arg = arg;
-    }
     public String toString() {
       return getClass().getSimpleName()+new Gson().toJson(this);
     }
   }
 
   @Override
-  public Supplier<OutputPlugin> get(String arg, ApplicationArguments args) throws Exception {
-    GetWork work = new GetWork(arg);
+  public Supplier<OutputPlugin> get() throws Exception {
+    GetWork work = new GetWork();
     try {
+      work.arg = "-";
+      if (args.getNonOptionArgs().size() > 1)
+        work.arg = args.getNonOptionArgs().get(1);
       work.target = Args.base(work.arg);
       work.options = Args.options(work.arg, SystemOutOptions.class);
       PrintStream out = "-".equals(work.target) ? System.out : new PrintStream(new FileOutputStream(work.target, work.options.append));

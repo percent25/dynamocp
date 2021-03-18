@@ -90,7 +90,7 @@ public class SystemInInputPluginProvider implements InputPluginProvider {
 
   @Override
   public boolean canActivate() {
-    return true;
+    return args.getNonOptionArgs().size()>0;
   }
 
   @Override
