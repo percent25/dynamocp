@@ -134,8 +134,8 @@ public class DynamoInputPlugin implements InputPlugin {
           run(()->{
             return listener.apply(jsonElements);
           }, ()->{ // finally
-            if (!exclusiveStartKeys.get(segment).isEmpty())
-              doSegment(segment); // consume permits
+            if (!exclusiveStartKeys.get(segment).isEmpty()) //###TODO check for null here?
+              doSegment(segment);
           });
 
         }, e->{
