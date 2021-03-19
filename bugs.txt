@@ -31,27 +31,13 @@ table to topic not working??
  - does not work on c5.8xlarge w/c=32.. didn't seem to work w/c=1 either ?!?
  
 
-//###BADIDEA
-//###BADIDEA
-//###BADIDEA
-dynamo: from aws sdk javascript AWS.DynamoDB.Converter.marshall/unmarshall ? i.e., parse/render dynamo records?
- - https://github.com/aws/aws-sdk-js-v3/tree/main/lib/lib-dynamodb use graalvm/js ?
- - https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/dynamodb-example-dynamodb-utilities.html
-//###BADIDEA
-//###BADIDEA
-//###BADIDEA
-  
-
-
-fix mvn compile warning
-
-
 
 dynamoOutputPlugin: handle unprocessedItems.. dlq or retry?
 
 
 
 DLQ: log to dlq pre-transform or post-transform?
+ - ans: pre-transform.. why? because there could've been an error during transform so therefore u wouldn't have the post-transform
 
 
 
@@ -71,8 +57,6 @@ transform is a little bit weird atm.. inplace transform? vs output=transform(inp
 
 
 at start, have plugins report their desired/reported [50%]
-
-dynamo scan: permits queue necessary?
 
 counters in/out still wierd never shows in greater than out
 
@@ -97,6 +81,8 @@ SpEL based filter/transform expressions?
  --filter=id?.s?.startsWith('tax:')
  --action=delete ??
  --transform={Item:"#{#in}"}
+
+ --action={Item:"#{ #this }"} --action={"Item.id.s":"#uuid()"}
 
 
 
@@ -153,3 +139,17 @@ DynamoInputPlugin
   - render key first ?
 
 custom.script
+
+dlq filename: embed timestamp in filename
+
+//###BADIDEA
+//###BADIDEA
+//###BADIDEA
+dynamo: from aws sdk javascript AWS.DynamoDB.Converter.marshall/unmarshall ? i.e., parse/render dynamo records?
+ - https://github.com/aws/aws-sdk-js-v3/tree/main/lib/lib-dynamodb use graalvm/js ?
+ - https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/dynamodb-example-dynamodb-utilities.html
+//###BADIDEA
+//###BADIDEA
+//###BADIDEA
+
+dynamo scan: permits queue necessary?
