@@ -88,19 +88,19 @@ public class Main implements ApplicationRunner {
   private Supplier<OutputPlugin> outputPluginSupplier;
 
   // lazy
-  private PrintStream dlqPrivate;
-  private final Supplier<PrintStream> dlq = Suppliers.memoize(()->{
+  private final Supplier<PrintStream> failures = Suppliers.memoize(()->{
     try {
       String now = Instant.now().toString().substring(0,20);
       String timestamp = CharMatcher.inRange('0','9').retainFrom(now);
       Path dir = Paths.get(".");
-      String prefix = String.format("dlq-%s-", timestamp);
+      String prefix = String.format("failures-%s-", timestamp);
       String suffix = ".json";
-      return dlqPrivate = new PrintStream(Files.createTempFile(dir, prefix, suffix).toFile());
+      return failuresPrintStream = new PrintStream(Files.createTempFile(dir, prefix, suffix).toFile());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   });
+  private PrintStream failuresPrintStream;
 
   /**
    * ctor
@@ -213,31 +213,31 @@ public class Main implements ApplicationRunner {
                     success.incrementAndGet();
                   }, e->{
                     log(e);
-                    dlq.get().println(jsonElement.toString()); //###TODO write before-transform? or post-transform?
                     failure.incrementAndGet();
+                    //###TODO write before-transform? or post-transform?
+                    //###TODO write before-transform? or post-transform?
+                    //###TODO write before-transform? or post-transform?
+                    failures.get().println(jsonElement.toString()); //###TODO write before-transform? or post-transform?
+                    //###TODO write before-transform? or post-transform?
+                    //###TODO write before-transform? or post-transform?
+                    //###TODO write before-transform? or post-transform?
                   }, ()->{
                     rate.add(1);
                     work.rate = rate.toString();
                   });
                 }
                 return outputPlugin.flush();
-              // }, result->{
-              //   work.success=true;
-              // }, e->{
-              //   work.failureMessage = ""+e;
               }, ()->{
                 log(work);
-                // log("in", in, "out", out);
               });
             }
           }.get();
 
         });
 
-        // % dynamocat MyTable MyQueue
-        log("input.read().get();111");
+        log("start");
         inputPlugin.read().get();
-        log("input.read().get();222");
+        log("finish");
 
         // log("output.flush().get();111");
         // outputPlugin.flush().get();
@@ -250,8 +250,8 @@ public class Main implements ApplicationRunner {
       log(e);
     } finally {
       
-      if (dlqPrivate != null)
-        dlqPrivate.close();
+      if (failuresPrintStream != null)
+        failuresPrintStream.close();
 
     }
   }
