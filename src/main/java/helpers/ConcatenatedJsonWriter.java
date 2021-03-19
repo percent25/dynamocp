@@ -52,7 +52,7 @@ public class ConcatenatedJsonWriter {
     private final Transport transport;
 
     private ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    private final Multimap<ByteArrayOutputStream, VoidFuture> partitions = Multimaps.synchronizedMultimap(LinkedListMultimap.create());
+    private final Multimap<ByteArrayOutputStream, VoidFuture> partitions = LinkedListMultimap.create();
     private final List<ListenableFuture<?>> flushFutures = Lists.newCopyOnWriteArrayList();
 
     /**
