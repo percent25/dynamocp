@@ -1,4 +1,15 @@
 
+sudo yum install java-11 -y
+#sudo yum groupinstall "Development Tools" -y
+mkdir git
+git -C git clone https://github.com/percent25/awscat.git
+
+export LOGGING_LEVEL_HELPERS=DEBUG
+export LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG
+
+export LOGGING_LEVEL_HELPERS=TRACE
+export LOGGING_LEVEL_IO_GITHUB_AWSCAT=TRACE
+
 rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java -jar target/awscat-0.0.1-SNAPSHOT.jar dynamo:MyTableOnDemand
 
 ======================================================================
@@ -26,12 +37,6 @@ rrizun@rrizuns-MacBook-Air dynamocat %
 
 
 
-table to topic not working??
- - works on macbook air w/default c=4
- - does not work on c5.8xlarge w/c=32.. didn't seem to work w/c=1 either ?!?
- 
-
-
 dynamoOutputPlugin: handle unprocessedItems.. dlq or retry?
 
 
@@ -52,6 +57,8 @@ at start, have plugins report their desired/reported [50%]
 
 
 counters in/out still wierd never shows in greater than out
+ - its because only printed stats in finally block
+ - if printing stats at 'request' time then u would see requests vs success/failure difference
 
 
 
@@ -149,3 +156,40 @@ dynamo scan: permits queue necessary?
 
 DLQ: log to dlq pre-transform or post-transform?
  - ans: pre-transform.. why? because there could've been an error during transform so therefore u wouldn't have the post-transform
+
+
+
+table to topic not working??
+ - works on macbook air w/default c=4
+ - does not work on c5.8xlarge w/c=32.. didn't seem to work w/c=1 either ?!?
+ - when source table is limit=200 then it works
+ - typical source table batch size is 6000 or so2021-03-19 14:59:15,375 [DynamoInputPlugin] doSegment 0 
+2021-03-19 14:59:15,386 [DynamoInputPlugin] doSegment 0 ScanRequest(TableName=MyTableOnDemand, TotalSegments=1, Segment=0) 
+2021-03-19 14:59:15,663 [DynamoInputPlugin] doSegment 0 6483 
+2021-03-19 14:59:17,877 [Main$$EnhancerBySpringCGLIB$$6a7d9466] listener 6483 
+ - looks like concatenatedJsonWriter/awsTopicWriter cannot handle 6000ish at-a-time
+ - continuing investigation
+ - looks like it seizes up at 1829
+ Fri Mar 19 15:19:44 UTC 2021 Progress{"request":1829,"success":0,"failure":0}
+2021-03-19 15:19:44,162 [ConcatenatedJsonWriterOutputPlugin] write {"id":{"s":"0a27fc83-b794-4158-8d8f-e268637d679c"},"val1":{"s":"651cca41-6bda-41b4-8c53-5919d5c3ec87"},"val2":{"s":"3dea400e-adb9-4b83-a875-23b408ddbeca"},"val3":{"s":"8ac42862-b89a-4ce5-ae8a-146ea912a674"}} 
+ - so in other words, right at the first batch.. so its a len>mtu() cross over boundary condition
+
+2021-03-19 15:50:16,609 [DynamoInputPlugin] doSegment 30 
+2021-03-19 15:50:16,609 [DynamoInputPlugin] doSegment 30 ScanRequest(TableName=MyTableOnDemand, TotalSegments=32, Segment=30) 
+2021-03-19 15:50:16,610 [DynamoInputPlugin] doSegment 31 
+2021-03-19 15:50:16,610 [DynamoInputPlugin] doSegment 31 ScanRequest(TableName=MyTableOnDemand, TotalSegments=32, Segment=31) 
+2021-03-19 15:50:17,117 [DynamoInputPlugin] doSegment 14 5948 
+2021-03-19 15:50:19,431 [Main$$EnhancerBySpringCGLIB$$6a7d9466] listener 5948 
+2021-03-19 15:50:19,447 [ConcatenatedJsonWriter] ctor 
+2021-03-19 15:50:19,448 [ConcatenatedJsonWriterOutputPlugin] ctor 
+2021-03-19 15:50:19,641 [ConcatenatedJsonWriter] flush 262038 
+2021-03-19 15:50:19,642 [ConcatenatedJsonWriterTransportAwsTopic] send 262038 
+2021-03-19 15:50:19,803 [ConcatenatedJsonWriter] flush 262032 
+2021-03-19 15:50:19,803 [ConcatenatedJsonWriterTransportAwsTopic] send 262032 
+
+ - sigh.. still not working
+ ^C[ssm-user@ip-10-0-232-10 awscat]$ ./x dynamo:MyTableOnDemand,c=1 arn:aws:sns:us-east-1:343892718819:Dev-Myservice-MyTopic86869434-15ADVC9V4NAHB 2>&1^C
+
+ - fixed: ConcatenatedJsonWriter nasty deadlock bug
+
+
