@@ -49,9 +49,6 @@ public class DynamoInputPlugin implements InputPlugin {
 
   public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
 
-  // thundering herd
-  private final BlockingQueue<Number> permitsQueue;
-
   /**
    * ctor
    * 
@@ -59,21 +56,16 @@ public class DynamoInputPlugin implements InputPlugin {
    * @param tableName
    * @param keySchema
    * @param options
+   * @param readLimiter
    */
-  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, DynamoOptions options) {
-    debug("ctor", tableName, keySchema, options);
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, DynamoOptions options, RateLimiter readLimiter) {
+    debug("ctor", this);
 
     this.client = client;
     this.tableName = tableName;
     this.keySchema = keySchema;
-    this.options = options;
-  
-    this.readLimiter = RateLimiter.create(options.rcu==0?Integer.MAX_VALUE:options.rcu);
-
-    permitsQueue = Queues.newArrayBlockingQueue(options.totalSegments());
-
-    for (int i = 0; i < options.totalSegments(); ++i)
-      permitsQueue.add(128); // not rcuLimit
+    this.options = options;  
+    this.readLimiter = readLimiter;
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments(), null));
@@ -94,110 +86,78 @@ public class DynamoInputPlugin implements InputPlugin {
       }
       void doSegment(int segment) {
         
-        debug(segment, "doSegment");
+        debug("doSegment", segment);
 
-        int[] permits = new int[1];
-        List<JsonElement> jsonElements = new ArrayList<>();
+        run(() -> {
+  
+          // pre-throttle
+          readLimiter.acquire(128);
 
-        run(()->{
-          return Futures.submit(()->{
-            return permitsQueue.take();
-          }, MoreExecutors.directExecutor());
-        }, number->{
+          // STEP 1 Do the scan
+          ScanRequest scanRequest = ScanRequest.builder()
+              //
+              .tableName(tableName)
+              //
+              .exclusiveStartKey(exclusiveStartKeys.get(segment))
+              //
+              // .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+              //
+              .segment(segment)
+              //
+              .totalSegments(options.totalSegments())
+              //
+              // .limit(256)
+              //
+              .build();
 
-          permits[0]=number.intValue();
+          if (options.limit > 0)
+            scanRequest = scanRequest.toBuilder().limit(options.limit).build();
 
-          run(() -> {
-  
-            if (permits[0] > 0)
-              readLimiter.acquire(permits[0]);
-  
-            // STEP 1 Do the scan
-            ScanRequest scanRequest = ScanRequest.builder()
-                //
-                .tableName(tableName)
-                //
-                .exclusiveStartKey(exclusiveStartKeys.get(segment))
-                //
-                .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-                //
-                .segment(segment)
-                //
-                .totalSegments(options.totalSegments())
-                //
-                // .limit(256)
-                //
-                .build();
+          debug("doSegment", segment, scanRequest);
 
-            if (options.limit > 0)
-              scanRequest = scanRequest.toBuilder().limit(options.limit).build();
-  
-            debug(segment, "scanRequest", scanRequest);
-  
-            return lf(client.scan(scanRequest));
-          }, scanResponse -> {
-  
-            debug(segment, "scanResponse", scanResponse.items().size());
-  
-            exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
-  
-            permits[0] = scanResponse.consumedCapacity().capacityUnits().intValue();
-  
-            // STEP 2 Process results here
-  
-            // readCount.addAndGet(scanResponse.items().size());
-  
-            for (Map<String, AttributeValue> item : scanResponse.items()) {
-              jsonElements.add(parse(item));
-              // System.out.println(render(item));
-            }
-  
-                  // log(readCount.get(),
-                  //     //
-                  //     String.format("%s/%s", Double.valueOf(rcuMeter().getMeanRate()).intValue(),
-                  //         Double.valueOf(wcuMeter().getMeanRate()).intValue()),
-                  //     //
-                  //     renderState(appState));
-  
-                // System.err.println(renderState(appState));
-  
-          }, e->{
-            debug(e);
-            e.printStackTrace();
-            throw new RuntimeException(e);
-          }, ()->{
-            try {
-              permitsQueue.put(permits[0]); // produce permits
-            } catch (Exception e) {
-              debug(segment, e);
-              e.printStackTrace();
-              throw new RuntimeException(e);
-            } finally {
-              run(()->{
-                return listener.apply(jsonElements);
-              }, ()->{ // finally
-                if (!exclusiveStartKeys.get(segment).isEmpty())
-                  doSegment(segment); // consume permits
-              });
-            }
+          return lf(client.scan(scanRequest));
+        }, scanResponse -> {
+
+          debug("doSegment", segment, scanResponse.items().size());
+
+          exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
+
+          // STEP 2 Process the scan
+
+          // readCount.addAndGet(scanResponse.items().size());
+
+          List<JsonElement> jsonElements = new ArrayList<>();
+
+          for (Map<String, AttributeValue> item : scanResponse.items())
+            jsonElements.add(parse(item));
+
+          run(()->{
+            return listener.apply(jsonElements);
+          }, ()->{ // finally
+            if (!exclusiveStartKeys.get(segment).isEmpty())
+              doSegment(segment); // consume permits
           });
-  
+
+        }, e->{
+          debug("doSegment", segment, e);
+          e.printStackTrace();
+          throw new RuntimeException(e);
         });
 
       }
     }.get();
   }
 
-  private JsonElement parse(Map<String, AttributeValue> itemIn) {
+  private JsonElement parse(Map<String, AttributeValue> item) {
     
     // aesthetics
-    var itemOut = new LinkedHashMap<String, AttributeValue>();
+    var sortedItem = new LinkedHashMap<String, AttributeValue>();
     for (var key : keySchema)
-      itemOut.put(key, itemIn.get(key));
+      sortedItem.put(key, item.get(key));
     if (!options.keys)
-      itemOut.putAll(ImmutableSortedMap.copyOf(itemIn));
+      sortedItem.putAll(ImmutableSortedMap.copyOf(item));
     
-    var jsonElement = new Gson().toJsonTree(Maps.transformValues(itemOut, value -> {
+    var jsonElement = new Gson().toJsonTree(Maps.transformValues(sortedItem, value -> {
       try {
         return new Gson().fromJson(new ObjectMapper().writeValueAsString(value.toBuilder()), JsonElement.class);
       } catch (Exception e) {
@@ -214,7 +174,7 @@ public class DynamoInputPlugin implements InputPlugin {
   }
 
   public String toString() {
-    return tableName + keySchema + options;
+    return tableName + keySchema + options + readLimiter;
   }
 
   private void debug(Object... args) {
@@ -269,7 +229,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
       //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
 
-      return new DynamoInputPlugin(client, tableName, keySchema, options);
+      return new DynamoInputPlugin(client, tableName, keySchema, options, readLimiter);
     }
     // return null;
   }
