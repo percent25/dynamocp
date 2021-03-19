@@ -2,9 +2,7 @@ package io.github.awscat;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +14,7 @@ import java.util.function.Supplier;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Suppliers;
+import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -90,12 +89,9 @@ public class Main implements ApplicationRunner {
   // lazy
   private final Supplier<PrintStream> failures = Suppliers.memoize(()->{
     try {
-      String now = Instant.now().toString().substring(0,20);
-      String timestamp = CharMatcher.inRange('0','9').retainFrom(now);
-      Path dir = Paths.get(".");
-      String prefix = String.format("failures-%s-", timestamp);
-      String suffix = ".json";
-      return failuresPrintStream = new PrintStream(Files.createTempFile(dir, prefix, suffix).toFile());
+      String now = CharMatcher.anyOf("1234567890").retainFrom(Instant.now().toString().substring(0, 20));
+      String randomString = Hashing.sha256().hashInt(new SecureRandom().nextInt()).toString().substring(0, 7);
+      return failuresPrintStream = new PrintStream(new File(String.format("failures-%s-%s.json", now, randomString)));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
