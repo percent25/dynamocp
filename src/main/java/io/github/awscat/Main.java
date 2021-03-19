@@ -1,8 +1,11 @@
 package io.github.awscat;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -11,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Suppliers;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -82,7 +86,12 @@ public class Main implements ApplicationRunner {
   private PrintStream dlqPrivate;
   private final Supplier<PrintStream> dlq = Suppliers.memoize(()->{
     try {
-      return dlqPrivate = new PrintStream(Files.createTempFile(Paths.get("."), "dlq", ".json").toFile());
+      String now = Instant.now().toString().substring(0,20);
+      String timestamp = CharMatcher.inRange('0','9').retainFrom(now);
+      Path dir = Paths.get(".");
+      String prefix = String.format("dlq-%s-", timestamp);
+      String suffix = ".json";
+      return dlqPrivate = new PrintStream(Files.createTempFile(dir, prefix, suffix).toFile());
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
