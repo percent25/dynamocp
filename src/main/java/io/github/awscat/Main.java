@@ -57,23 +57,28 @@ public class Main implements ApplicationRunner {
 
   private JsonObject transformExpressions = new JsonObject();
 
-  AtomicLong in = new AtomicLong();
+  // AtomicLong in = new AtomicLong();
   // AtomicLong inErr = new AtomicLong();
-  AtomicLong out = new AtomicLong();
+  // AtomicLong out = new AtomicLong();
   // AtomicLong outErr = new AtomicLong();
+  AtomicLong request = new AtomicLong();
+  AtomicLong success = new AtomicLong();
+  AtomicLong failure = new AtomicLong();
 
   private final LocalMeter rate = new LocalMeter();
 
   class Progress {
-    final Number in;
-    final Number out;
+    final Number request;
+    final Number success;
+    final Number failure;
     String rate;
     public String toString() {
       return getClass().getSimpleName()+new Gson().toJson(this);
     }
-    Progress(Number in, Number out) {
-      this.in = in;
-      this.out = out;
+    Progress(Number request, Number success, Number failure) {
+      this.request = request;
+      this.success = success;
+      this.failure = failure;
     }
   }
 
@@ -190,14 +195,14 @@ public class Main implements ApplicationRunner {
         inputPlugin.setListener(jsonElements->{
 
           return new FutureRunner(){
-            Progress work = new Progress(in, out);
+            Progress work = new Progress(request, success, failure);
             {
               run(()->{
                 OutputPlugin outputPlugin = outputPluginSupplier.get();
                 for (JsonElement jsonElement : jsonElements) {
                   run(()->{
                     // ++work.in;
-                    in.incrementAndGet();
+                    request.incrementAndGet();
 
                     JsonElement jsonElementOut = jsonElement;
                     jsonElementOut = new GsonTransform(transformExpressions, TransformUtils.class).transform(jsonElementOut);
@@ -205,11 +210,11 @@ public class Main implements ApplicationRunner {
                     return outputPlugin.write(jsonElementOut);
                   }, result->{
                     // ++work.out;
-                    out.incrementAndGet();
+                    success.incrementAndGet();
                   }, e->{
                     log(e);
                     dlq.get().println(jsonElement.toString()); //###TODO write before-transform? or post-transform?
-                    // inErr.incrementAndGet();
+                    failure.incrementAndGet();
                   }, ()->{
                     rate.add(1);
                     work.rate = rate.toString();
