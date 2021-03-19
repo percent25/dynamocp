@@ -55,4 +55,8 @@ public class LogHelper {
     LoggerFactory.getLogger(self.getClass()).debug(Strings.repeat("{} ", args.length), args);
   }
 
+  public void trace(Object... args) {
+    LoggerFactory.getLogger(self.getClass()).trace(Strings.repeat("{} ", args.length), args);
+  }
+
 }
