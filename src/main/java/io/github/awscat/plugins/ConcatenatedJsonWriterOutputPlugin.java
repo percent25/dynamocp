@@ -14,16 +14,19 @@ class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
     private final ConcatenatedJsonWriter writer;
 
     public ConcatenatedJsonWriterOutputPlugin(ConcatenatedJsonWriter writer) {
+        debug("ctor");
         this.writer = writer;
     }
 
     @Override
     public ListenableFuture<?> write(JsonElement jsonElement) {
+        debug("write");
         return writer.write(jsonElement);
     }
 
     @Override
     public ListenableFuture<?> flush() {
+        debug("flush");
         return writer.flush();
     }    
 

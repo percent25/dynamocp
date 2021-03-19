@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.Iterables;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -189,7 +190,7 @@ public class Main implements ApplicationRunner {
         // ----------------------------------------------------------------------
 
         inputPlugin.setListener(jsonElements->{
-
+          debug("listener", Iterables.size(jsonElements));
           return new FutureRunner(){
             Progress work = new Progress(request, success, failure);
             {
