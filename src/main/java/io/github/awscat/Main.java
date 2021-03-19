@@ -210,13 +210,7 @@ public class Main implements ApplicationRunner {
                   }, e->{
                     log(e);
                     failure.incrementAndGet();
-                    //###TODO write before-transform? or post-transform?
-                    //###TODO write before-transform? or post-transform?
-                    //###TODO write before-transform? or post-transform?
-                    failures.get().println(jsonElement.toString()); //###TODO write before-transform? or post-transform?
-                    //###TODO write before-transform? or post-transform?
-                    //###TODO write before-transform? or post-transform?
-                    //###TODO write before-transform? or post-transform?
+                    failures.get().println(jsonElement); // pre-transform
                   }, ()->{
                     rate.add(1);
                     work.rate = rate.toString();
