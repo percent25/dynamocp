@@ -1,8 +1,10 @@
 package helpers;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import com.google.common.util.concurrent.AbstractFuture;
@@ -26,7 +28,7 @@ public class FutureRunner {
         }
     }
       
-    private int running; // aka inFlight
+    private int running = 1; // aka inFlight
     private final Object lock = new Object();
     private final VoidFuture facade = new VoidFuture();
     private final List<ListenableFuture<?>> insideFutures = new CopyOnWriteArrayList<>();
@@ -44,6 +46,7 @@ public class FutureRunner {
 
     public ListenableFuture<?> get() {
         synchronized (lock) {
+            --running;
             doFinally(); // safety
             return facade;
         }
@@ -117,13 +120,13 @@ public class FutureRunner {
                             try {
                                 perRequestResponseCatch.accept(e); // throws
                             } catch (Exception e1) {
-                                doException(e1);
+                                doCatch(e1);
                             }
                         } finally {
                             try {
                                 perRequestResponseFinally.run(); // throws
                             } catch (Exception e2) {
-                                doException(e2);
+                                doCatch(e2);
                             } finally {
                                 doFinally();
                             }
@@ -136,13 +139,13 @@ public class FutureRunner {
                     try {
                         perRequestResponseCatch.accept(e); // throws
                     } catch (Exception e1) {
-                        doException(e1);
+                        doCatch(e1);
                     }
                 } finally {
                     try {
                         perRequestResponseFinally.run(); // throws
                     } catch (Exception e2) {
-                        doException(e2);
+                        doCatch(e2);
                     } finally {
                         doFinally();
                     }
@@ -163,7 +166,7 @@ public class FutureRunner {
 
     // ----------------------------------------------------------------------
 
-    private void doException(Exception e) {
+    private void doCatch(Exception e) {
         if (firstException == null)
             firstException = e;
     }
@@ -174,13 +177,54 @@ public class FutureRunner {
             try {
                 onListen();
             } catch (Exception e) {
-                doException(e);
+                doCatch(e);
             } finally {
                 if (firstException == null)
                     facade.setVoid();
                 else
                     facade.setException(firstException);
             }
+        }
+    }
+
+    public static void main(String... args) throws Exception {
+        var executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        try {
+            var lf = new FutureRunner() {
+                int count;
+                int listenCount;
+                {
+                    // run(() -> {
+                        for (int i = 0; i < 12; ++i) {
+                            ++count;
+                            System.out.println("count:"+count);
+                            // run(() -> {
+                            //     return Futures.immediateVoidFuture();
+                            // });
+                            if (new SecureRandom().nextInt() < Integer.MAX_VALUE / 2) {
+                                run(() -> {
+                                    return Futures.immediateVoidFuture();
+                                });
+                            } else {
+                                run(() -> {
+                                    return Futures.submit(()->{
+                                        return Futures.immediateVoidFuture();
+                                    }, executor);
+                                });
+                            }
+                        }
+                        // return Futures.immediateVoidFuture();
+                    // });
+                }
+                @Override
+                protected void onListen() {
+                    ++listenCount;
+                    System.out.println("onListen:"+listenCount);
+                }
+            }.get().get();
+            System.out.println(lf);
+        } finally {
+            executor.shutdown();
         }
     }
 
