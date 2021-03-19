@@ -127,6 +127,7 @@ public class ConcatenatedJsonWriter {
 
     // returns new baos
     private ByteArrayOutputStream flush(ByteArrayOutputStream baos, Iterable<VoidFuture> partition) {
+        debug("flush", baos.toString().length());
         var lf = new FutureRunner() {
             {
                 run(() -> {
