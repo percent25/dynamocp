@@ -2,10 +2,12 @@ package helpers;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.List;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Defaults;
 import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.util.concurrent.AbstractFuture;
@@ -51,6 +53,7 @@ public class ConcatenatedJsonWriter {
 
     private ByteArrayOutputStream baos = new ByteArrayOutputStream();
     private final Multimap<ByteArrayOutputStream, VoidFuture> partitions = Multimaps.synchronizedMultimap(LinkedListMultimap.create());
+    private final List<ListenableFuture<?>> flushFutures = Lists.newCopyOnWriteArrayList();
 
     /**
      * ctor
@@ -110,8 +113,7 @@ public class ConcatenatedJsonWriter {
                 run(() -> {
                     if (baos.size() > 0)
                         baos = flush(baos, partitions.get(baos));
-                    return Futures.successfulAsList(partitions.values());
-                // }, () -> {
+                    return Futures.successfulAsList(flushFutures);
                 });
             }
             @Override
@@ -123,10 +125,7 @@ public class ConcatenatedJsonWriter {
 
     // returns new baos
     private ByteArrayOutputStream flush(ByteArrayOutputStream baos, Iterable<VoidFuture> partition) {
-        //###TODO really a fire-forget? e.g., what if want to cancel??
-        //###TODO really a fire-forget? e.g., what if want to cancel??
-        //###TODO really a fire-forget? e.g., what if want to cancel??
-        new FutureRunner() { // front facade not interesting.. inside futures interesting
+        var lf = new FutureRunner() {
             {
                 run(() -> {
                     // request
@@ -139,7 +138,8 @@ public class ConcatenatedJsonWriter {
                     partition.forEach(lf -> lf.setException(e));
                 });
             }
-        };
+        }.get();
+        flushFutures.add(lf);
         return new ByteArrayOutputStream();
     }
 
