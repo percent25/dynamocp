@@ -20,7 +20,7 @@ class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
 
     @Override
     public ListenableFuture<?> write(JsonElement jsonElement) {
-        debug("write");
+        trace("write", jsonElement);
         return writer.write(jsonElement);
     }
 
@@ -32,6 +32,10 @@ class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
 
     private void debug(Object... args) {
         new LogHelper(this).debug(args);
+    }
+
+    private void trace(Object... args) {
+        new LogHelper(this).trace(args);
     }
 
 }

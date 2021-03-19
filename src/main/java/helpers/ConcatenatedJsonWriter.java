@@ -73,6 +73,7 @@ public class ConcatenatedJsonWriter {
      * @return
      */
     public ListenableFuture<?> write(JsonElement jsonElement) {
+        trace("write", jsonElement);
         return new FutureRunner() {
             {
                 run(() -> {
@@ -107,6 +108,7 @@ public class ConcatenatedJsonWriter {
      * @return
      */
     public ListenableFuture<?> flush() {
+        debug("flush");
         return new FutureRunner() {
             FlushWork work = new FlushWork();
             {
@@ -151,6 +153,10 @@ public class ConcatenatedJsonWriter {
 
     private void debug(Object... args) {
         new LogHelper(this).debug(args);
+    }
+
+    private void trace(Object... args) {
+        new LogHelper(this).trace(args);
     }
 
 }
