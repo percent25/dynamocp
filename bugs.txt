@@ -36,11 +36,6 @@ dynamoOutputPlugin: handle unprocessedItems.. dlq or retry?
 
 
 
-DLQ: log to dlq pre-transform or post-transform?
- - ans: pre-transform.. why? because there could've been an error during transform so therefore u wouldn't have the post-transform
-
-
-
 "random" source
  - rrizun@rrizuns-MacBook-Air dynamocat % awscat in.json,loop=true,limit=1000 dynamo:MyTable --transform="{id:{s:'#{#uuid()}'}}"
  
@@ -52,11 +47,9 @@ transform is a little bit weird atm.. inplace transform? vs output=transform(inp
 
 
 
---filter
-
-
-
 at start, have plugins report their desired/reported [50%]
+
+
 
 counters in/out still wierd never shows in greater than out
 
@@ -153,3 +146,6 @@ dynamo: from aws sdk javascript AWS.DynamoDB.Converter.marshall/unmarshall ? i.e
 //###BADIDEA
 
 dynamo scan: permits queue necessary?
+
+DLQ: log to dlq pre-transform or post-transform?
+ - ans: pre-transform.. why? because there could've been an error during transform so therefore u wouldn't have the post-transform
