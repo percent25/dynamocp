@@ -183,7 +183,7 @@ public class DynamoWriter {
             int size = MoreDynamo.itemSize(item);
             permits += size/writeLimiter.getRate() + 1;
           }
-          System.out.println("permits="+permits);
+          // System.out.println("permits="+permits);
           if (permits > 0)
             writeLimiter.acquire(permits);
 
