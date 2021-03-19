@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 public class LocalMeter {
 
-  private final int windowSeconds = 900;
+  private final long windowSeconds = 900;
   private final ConcurrentSkipListMap<Long, Double> values = new ConcurrentSkipListMap<>();
 
   private long now() {
@@ -14,7 +14,7 @@ public class LocalMeter {
   }
 
   public void add(Number value) {
-    final long now = now();
+    long now = now();
     values.headMap(now - windowSeconds).clear();
     values.compute(now, (k, v) -> {
       return (v == null ? 0.0 : v) + value.doubleValue();
@@ -26,10 +26,10 @@ public class LocalMeter {
   }
 
   public Number sum(long windowSeconds) {
-    final long now = now();
+    double sum = 0;
+    long now = now();
     long fromKey = now - windowSeconds;
     long toKey = now;
-    long sum = 0;
     for (double value : values.subMap(fromKey, true, toKey, false).values())
       sum += value;
     return sum;
@@ -41,10 +41,11 @@ public class LocalMeter {
       num(avg(60)), num(avg(300)), num(avg(900)));
   }
 
-  private String num(Number src) {
-    DecimalFormat df = new DecimalFormat("#.#");
-    df.setRoundingMode(RoundingMode.HALF_EVEN);
-    return df.format(src);
+  private Number num(Number num) {
+    return num.longValue();
+    // DecimalFormat df = new DecimalFormat("#.#");
+    // df.setRoundingMode(RoundingMode.HALF_EVEN);
+    // return df.format(num);
   }
 
 }
