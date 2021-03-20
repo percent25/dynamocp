@@ -1,14 +1,13 @@
 package io.github.awscat.plugins;
 
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import org.springframework.boot.ApplicationArguments;
@@ -57,7 +56,11 @@ public class DynamoOutputPlugin implements OutputPlugin {
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   class Options {
-    
+    public int wcu;
+    public boolean delete;
+    public String toString() {
+      return new Gson().toJson(this);
+    }
   }
 
   private final ApplicationArguments args;
@@ -88,7 +91,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     String arg = args.getNonOptionArgs().get(1);
 
     String tableName = Args.base(arg).split(":")[1];
-    DynamoOptions options = Args.options(arg, DynamoOptions.class);
+    Options options = Args.options(arg, Options.class);
 
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
@@ -99,13 +102,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
     int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
-    //###TODO CONCURRENCY HERE??
-    //###TODO CONCURRENCY HERE??
-    //###TODO CONCURRENCY HERE??
-    options.infer(concurrency, provisionedRcu, provisionedWcu);
-    //###TODO CONCURRENCY HERE??
-    //###TODO CONCURRENCY HERE??
-    //###TODO CONCURRENCY HERE??
+    options.wcu = options.wcu > 0 ? options.wcu : provisionedWcu;
 
     var writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
 
@@ -121,12 +118,6 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       }
     };
   }
-
-      // private Matcher match(String regex, CharSequence input) {
-      //   var m = Pattern.compile(regex).matcher(input);
-      //   m.matches();
-      //   return m;
-      // }
 
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
