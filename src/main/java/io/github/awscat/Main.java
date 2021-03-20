@@ -94,7 +94,13 @@ public class Main implements ApplicationRunner {
     try {
       String now = CharMatcher.anyOf("1234567890").retainFrom(Instant.now().toString().substring(0, 20));
       String randomString = Hashing.sha256().hashInt(new SecureRandom().nextInt()).toString().substring(0, 7);
+      //###TODO BUFFEREDOUTPUTSTREAM HERE??
+      //###TODO BUFFEREDOUTPUTSTREAM HERE??
+      //###TODO BUFFEREDOUTPUTSTREAM HERE??
       return failuresPrintStream = new PrintStream(new File(String.format("failures-%s-%s.json", now, randomString)));
+      //###TODO BUFFEREDOUTPUTSTREAM HERE??
+      //###TODO BUFFEREDOUTPUTSTREAM HERE??
+      //###TODO BUFFEREDOUTPUTSTREAM HERE??
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
