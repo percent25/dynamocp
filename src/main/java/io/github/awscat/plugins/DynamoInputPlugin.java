@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
@@ -87,6 +88,7 @@ public class DynamoInputPlugin implements InputPlugin {
 
   @Override
   public ListenableFuture<?> read(int mtu) throws Exception {
+    debug("read", "mtu", mtu);
     return new FutureRunner() {
       {
         for (int segment = 0; segment < totalSegments; ++segment)
@@ -137,8 +139,16 @@ public class DynamoInputPlugin implements InputPlugin {
           for (Map<String, AttributeValue> item : scanResponse.items())
             jsonElements.add(parse(item));
 
+          var futures = new ArrayList<ListenableFuture<?>>();
+          for (var partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
+            run(()->{
+              var lf = listener.apply(partition);
+              futures.add(lf);
+              return lf;
+            });
+          }
           run(()->{
-            return listener.apply(jsonElements);
+            return Futures.successfulAsList(futures);
           }, ()->{ // finally
             if (!exclusiveStartKeys.get(segment).isEmpty()) //###TODO check for null here?
               doSegment(segment);
