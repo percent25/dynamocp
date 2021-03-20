@@ -1,11 +1,7 @@
 package helpers;
 
 import java.security.SecureRandom;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,15 +31,18 @@ public class FutureRunner {
     private final VoidFuture facade = new VoidFuture();
     private final AtomicInteger running = new AtomicInteger(1);
     private final AtomicReference<Exception> firstException = new AtomicReference<>();
-    // private final List<ListenableFuture<?>> insideFutures = new CopyOnWriteArrayList<>();
+    // private final List<ListenableFuture<?>> insideFutures = Collections.synchronizedList(new ArrayList<>());
 
     /**
      * ctor
      */
     public FutureRunner() {
-        // facade.addListener(()->{
-        //     if (facade.isCancelled())
-        //         insideFutures.forEach(insideFuture -> insideFuture.cancel(true));
+        // facade.addListener(() -> {
+        //     if (facade.isCancelled()) {
+        //         synchronized (insideFutures) {
+        //             insideFutures.forEach(insideFuture -> insideFuture.cancel(true));
+        //         }
+        //     }
         // }, MoreExecutors.directExecutor());
     }
 
