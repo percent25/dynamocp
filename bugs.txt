@@ -1,6 +1,6 @@
 
-sudo yum install java-11 -y
-#sudo yum groupinstall "Development Tools" -y
+sudo yum install htop java-11 -y
+sudo yum groupinstall "Development Tools" -y
 mkdir git
 git -C git clone https://github.com/percent25/awscat.git
 
@@ -56,12 +56,6 @@ at start, have plugins report their desired/reported [50%]
 
 
 
-counters in/out still wierd never shows in greater than out
- - its because only printed stats in finally block
- - if printing stats at 'request' time then u would see requests vs success/failure difference
-
-
-
 s3outputplugin
  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DataExport.Output.html
  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.LowLevelAPI.html
@@ -87,11 +81,6 @@ SpEL based filter/transform expressions?
 
 
 independent aws profiles for source and target
-
-
-
-implement some sort of mtu hint ?
- - may not be necessary.. see [#1]
 
 
 
@@ -191,5 +180,44 @@ table to topic not working??
  ^C[ssm-user@ip-10-0-232-10 awscat]$ ./x dynamo:MyTableOnDemand,c=1 arn:aws:sns:us-east-1:343892718819:Dev-Myservice-MyTopic86869434-15ADVC9V4NAHB 2>&1^C
 
  - fixed: ConcatenatedJsonWriter nasty deadlock bug
+
+
+
+performance[2]..
+  % ./x 8.json dynamo:OnDemand,wcu=10000 --tranorm="{'id.s':'#{ #uuid() }'}"
+this is slow^^ pegging a single core 
+  % ./x 8.json /dev/null --transform="{'id.s':' #uuid() }'}"
+this ^^ also the same.. pegs a single core 
+ SOLN: systemIn needs a threadpool.. its currently running effectively single threaded
+
+
+
+performance weirdness on macbook air.. 
+ -   986  ./x dynamo:OnDemand /dev/null
+seems to "slow down" as time progresses ??
+
+  ALTERNATIVE TO COPYONWRITEARRAYLIST ??
+  ALTERNATIVE TO COPYONWRITEARRAYLIST ??
+  ALTERNATIVE TO COPYONWRITEARRAYLIST ??
+
+
+
+implement some sort of mtu hint ?
+ - may not be necessary.. see [#1]
+
+
+
+performance..
+w/ ObjectMapper:
+Fri Mar 19 23:31:02 UTC 2021 Progress{"request":1066633,"success":1066633,"failure":0,"rate":"65848/61953/55182 17148/3429/1143"}
+w/o ObjectMapper:
+Fri Mar 19 23:33:20 UTC 2021 Progress{"request":1066633,"success":1066633,"failure":0,"rate":"170319/128197/71023 17755/3551/1183"}
+
+
+
+counters in/out still wierd never shows in greater than out
+ - its because only printed stats in finally block
+ - if printing stats at 'request' time then u would see requests vs success/failure difference
+
 
 
