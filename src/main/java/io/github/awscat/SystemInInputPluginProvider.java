@@ -99,6 +99,7 @@ class SystemInInputPlugin implements InputPlugin {
 // @Service
 public class SystemInInputPluginProvider implements InputPluginProvider {
 
+  // in.txt,c=1
   class SystemInOptions {
     int c;
   }

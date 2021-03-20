@@ -9,6 +9,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -71,6 +72,21 @@ public class DynamoInputPlugin implements InputPlugin {
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     exclusiveStartKeys.addAll(Collections.nCopies(options.totalSegments(), null));
 
+  }
+
+  public String toString() {
+    // return tableName + keySchema + options + readLimiter;
+    return MoreObjects.toStringHelper(this)
+        //
+        .add("tableName", tableName)
+        //
+        .add("keySchema", keySchema)
+        //
+        .add("options", options)
+        //
+        .add("readLimiter", readLimiter)
+        //
+        .toString();
   }
 
   @Override
@@ -174,10 +190,6 @@ public class DynamoInputPlugin implements InputPlugin {
         // return jsonLine;
 
     return jsonElement;
-  }
-
-  public String toString() {
-    return tableName + keySchema + options + readLimiter;
   }
 
   private void debug(Object... args) {

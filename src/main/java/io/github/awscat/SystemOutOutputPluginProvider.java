@@ -43,6 +43,11 @@ class SystemOutOutputPlugin implements OutputPlugin {
 // @Service
 public class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
+  // out.txt,append=true
+  class SystemOutOptions {
+    boolean append;
+  }
+
   private final ApplicationArguments args;
 
   public SystemOutOutputPluginProvider(ApplicationArguments args) {
@@ -52,11 +57,6 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
   @Override
   public boolean canActivate() {
     return args.getNonOptionArgs().size()>0;
-  }
-
-  // out.txt,append=true
-  class SystemOutOptions {
-    boolean append;
   }
 
   class GetWork {
