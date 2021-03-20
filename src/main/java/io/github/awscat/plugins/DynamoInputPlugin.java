@@ -148,6 +148,8 @@ public class DynamoInputPlugin implements InputPlugin {
     }.get();
   }
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   private JsonElement parse(Map<String, AttributeValue> item) {
     
     // aesthetics
@@ -159,7 +161,7 @@ public class DynamoInputPlugin implements InputPlugin {
     
     var jsonElement = new Gson().toJsonTree(Maps.transformValues(sortedItem, value -> {
       try {
-        return new Gson().fromJson(new ObjectMapper().writeValueAsString(value.toBuilder()), JsonElement.class);
+        return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
