@@ -2,6 +2,8 @@ package io.github.awscat.plugins;
 
 import java.util.function.Supplier;
 
+import com.google.common.base.MoreObjects;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
@@ -16,33 +18,31 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient;
 public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
 
     private final ApplicationArguments args;
+    private String topicArn;
 
     public AwsTopicOutputPluginProvider(ApplicationArguments args) {
         this.args = args;
     }
 
+    public String toString() {
+        return MoreObjects.toStringHelper(this).add("topicArn", topicArn).toString();
+    }
+
     @Override
     public boolean canActivate() {
         String arg = args.getNonOptionArgs().get(1);
-        return Args.base(arg).matches("arn:(.+):sns:(.+):(\\d{12}):(.+)");
+        topicArn = Args.base(arg);
+        return topicArn.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)");
     }
 
     @Override
     public Supplier<OutputPlugin> get() throws Exception {
-        String arg = args.getNonOptionArgs().get(1);
-        // if (arg.startsWith("sns:"))
-        //     arg = arg.substring(arg.indexOf(":")+1);
-        // if (arg.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)"))
-        {
-            SnsAsyncClient client = SnsAsyncClient.create();
-            String topicArn = Args.base(arg);
-            // sns transport is thread-safe
-            ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(client, topicArn);
-            // ConcatenatedJsonWriter is not thread-safe
-            // which makes ConcatenatedJsonWriterOutputPlugin not thread-safe
-            return ()->new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
-        }
-        // return null;
+        SnsAsyncClient client = SnsAsyncClient.create();
+        // sns transport is thread-safe
+        ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(client, topicArn);
+        // ConcatenatedJsonWriter is not thread-safe
+        // which makes ConcatenatedJsonWriterOutputPlugin not thread-safe
+        return ()->new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
     }
 
 }
