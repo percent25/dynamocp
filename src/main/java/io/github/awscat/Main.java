@@ -115,9 +115,9 @@ public class Main implements ApplicationRunner {
     this.context = context;
     this.buildProperties = buildProperties;
     this.inputPluginProviders.addAll(inputPluginProviders);
-    this.inputPluginProviders.add(new SystemInInputPluginProvider(args));
+    this.inputPluginProviders.add(new SystemInPluginProvider(args)); // ensure last
     this.outputPluginProviders.addAll(outputPluginProviders);
-    this.outputPluginProviders.add(new SystemOutOutputPluginProvider(args));
+    this.outputPluginProviders.add(new SystemOutPluginProvider(args)); // ensure last
   }
 
   /**

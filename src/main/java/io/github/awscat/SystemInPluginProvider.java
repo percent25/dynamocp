@@ -32,14 +32,14 @@ import helpers.QueuePutPolicy;
 import helpers.FutureRunner;
 import helpers.LogHelper;
 
-class SystemInInputPlugin implements InputPlugin {
+class SystemInPlugin implements InputPlugin {
 
   private final InputStream in;
   private final int concurrency;
   private final ThreadPoolExecutor executor;
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  public SystemInInputPlugin(InputStream in, int concurrency) {
+  public SystemInPlugin(InputStream in, int concurrency) {
     debug("ctor", in, concurrency);
     this.in = in;
     this.concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
@@ -97,7 +97,7 @@ class SystemInInputPlugin implements InputPlugin {
 }
 
 // @Service
-public class SystemInInputPluginProvider implements InputPluginProvider {
+public class SystemInPluginProvider implements InputPluginProvider {
 
   // in.txt,c=1
   class SystemInOptions {
@@ -106,7 +106,7 @@ public class SystemInInputPluginProvider implements InputPluginProvider {
 
   private final ApplicationArguments args;
 
-  public SystemInInputPluginProvider(ApplicationArguments args) {
+  public SystemInPluginProvider(ApplicationArguments args) {
     this.args = args;
   }
 
@@ -120,7 +120,7 @@ public class SystemInInputPluginProvider implements InputPluginProvider {
     var arg = args.getNonOptionArgs().get(0);
     var base = Args.base(arg);
     var options = Args.options(arg, SystemInOptions.class);
-    return new SystemInInputPlugin("-".equals(base) ? System.in : new FileInputStream(base), options.c);
+    return new SystemInPlugin("-".equals(base) ? System.in : new FileInputStream(base), options.c);
   }
 
   private void debug(Object... args) {

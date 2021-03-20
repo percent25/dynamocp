@@ -14,11 +14,11 @@ import org.springframework.boot.ApplicationArguments;
 
 import helpers.LogHelper;
 
-class SystemOutOutputPlugin implements OutputPlugin {
+class SystemOutPlugin implements OutputPlugin {
 
   private final PrintStream out;
 
-  public SystemOutOutputPlugin(PrintStream out) {
+  public SystemOutPlugin(PrintStream out) {
     debug("ctor");
     this.out = out;
   }
@@ -42,7 +42,7 @@ class SystemOutOutputPlugin implements OutputPlugin {
 }
 
 // @Service
-public class SystemOutOutputPluginProvider implements OutputPluginProvider {
+public class SystemOutPluginProvider implements OutputPluginProvider {
 
   // out.txt,append=true
   class SystemOutOptions {
@@ -51,7 +51,7 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
 
   private final ApplicationArguments args;
 
-  public SystemOutOutputPluginProvider(ApplicationArguments args) {
+  public SystemOutPluginProvider(ApplicationArguments args) {
     this.args = args;
   }
 
@@ -82,7 +82,7 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
       work.options = Args.options(work.arg, SystemOutOptions.class);
       PrintStream out = "-".equals(work.target) ? System.out : new PrintStream(new BufferedOutputStream(new FileOutputStream(work.target, work.options.append)));
       work.success = true;
-      return () -> new SystemOutOutputPlugin(out);
+      return () -> new SystemOutPlugin(out);
     } catch (Exception e) {
       e.printStackTrace();
       work.failureMessage = ""+e;
