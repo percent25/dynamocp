@@ -50,8 +50,8 @@ public class DynamoWriter {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
-  private final boolean delete; // PutItem vs DeleteItem
   private final Iterable<String> keySchema;
+  private final boolean delete; // PutItem vs DeleteItem
   private final RateLimiter writeLimiter;
 
   // ###TODO
@@ -84,12 +84,12 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, boolean delete, Iterable<String> keySchema, RateLimiter writeLimiter) {
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, boolean delete, RateLimiter writeLimiter) {
     debug("ctor", client, tableName, keySchema, delete, writeLimiter);
     this.client = client;
     this.tableName = tableName;
-    this.delete = delete;
     this.keySchema = keySchema;
+    this.delete = delete;
     this.writeLimiter = writeLimiter;
   }
 

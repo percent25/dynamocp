@@ -182,8 +182,8 @@ public class Main implements ApplicationRunner {
 
         var inputPlugin = inputPluginProvider.get();
         log("inputPlugin", inputPlugin);
-        log("outputPlugin", outputPluginProvider);
         var outputPluginSupplier = outputPluginProvider.get();
+        log("outputPlugin", outputPluginSupplier);
 
         var transformValues = args.getOptionValues("transform");
         if (transformValues != null) {

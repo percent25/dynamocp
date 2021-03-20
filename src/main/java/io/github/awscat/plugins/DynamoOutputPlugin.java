@@ -30,9 +30,9 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoWriter writer;
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, boolean delete, Iterable<String> keySchema, RateLimiter writeLimiter) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, boolean delete, RateLimiter writeLimiter) {
     debug("ctor");
-    this.writer = new DynamoWriter(client, tableName, delete, keySchema, writeLimiter);
+    this.writer = new DynamoWriter(client, tableName, keySchema, delete, writeLimiter);
   }
 
   @Override
@@ -56,21 +56,13 @@ public class DynamoOutputPlugin implements OutputPlugin {
 @Service
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
+  class Options {
+    
+  }
+
   private final ApplicationArguments args;
-  private String tableName;
-  private DynamoOptions desiredOptions;
-  private DynamoOptions reportedOptions;
-  
   private final DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
   
-  private Iterable<String> keySchema;
-  private int concurrency;
-  private int provisionedRcu;
-  private int provisionedWcu;
-  private RateLimiter writeLimiter;
-
-  private Exception e;
-
   /**
    * ctor
    * 
@@ -78,10 +70,6 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
    */
   public DynamoOutputPluginProvider(ApplicationArguments args) {
     this.args = args;
-  }
-
-  public String toString() {
-    return MoreObjects.toStringHelper(this).add("tableName", tableName).add("desiredOptions", desiredOptions).add("reportedOptions", reportedOptions).toString();
   }
 
   @Override
@@ -92,47 +80,53 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   @Override
   public boolean canActivate() {
     String arg = args.getNonOptionArgs().get(1);
-    tableName = match("dynamo:(.+)", Args.base(arg)).group(1);
-    desiredOptions = Args.options(arg, DynamoOptions.class);
-    reportedOptions = Args.options(arg, DynamoOptions.class);
-    try {
-      DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
-      DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
-  
-      keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
-  
-      concurrency = Runtime.getRuntime().availableProcessors();
-      provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
-      provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
-  
-      //###TODO CONCURRENCY HERE??
-      //###TODO CONCURRENCY HERE??
-      //###TODO CONCURRENCY HERE??
-      reportedOptions.infer(concurrency, provisionedRcu, provisionedWcu);
-      //###TODO CONCURRENCY HERE??
-      //###TODO CONCURRENCY HERE??
-      //###TODO CONCURRENCY HERE??
-  
-      writeLimiter = RateLimiter.create(reportedOptions.wcu > 0 ? reportedOptions.wcu : Integer.MAX_VALUE);
-  
-    } catch (Exception e) {
-      this.e = e;
-    }
-    return true; // we got this far
+    return ImmutableSet.of("dynamo", "dynamodb").contains(Args.base(arg).split(":")[0]);
   }
 
   @Override
   public Supplier<OutputPlugin> get() throws Exception {
-    if (e != null)
-      throw e;
-    return () -> new DynamoOutputPlugin(client, tableName, reportedOptions.delete, keySchema, writeLimiter);
+    String arg = args.getNonOptionArgs().get(1);
+
+    String tableName = Args.base(arg).split(":")[1];
+    DynamoOptions options = Args.options(arg, DynamoOptions.class);
+
+    DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
+    DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
+
+    Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
+
+    int concurrency = Runtime.getRuntime().availableProcessors();
+    int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
+    int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
+
+    //###TODO CONCURRENCY HERE??
+    //###TODO CONCURRENCY HERE??
+    //###TODO CONCURRENCY HERE??
+    options.infer(concurrency, provisionedRcu, provisionedWcu);
+    //###TODO CONCURRENCY HERE??
+    //###TODO CONCURRENCY HERE??
+    //###TODO CONCURRENCY HERE??
+
+    var writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
+
+    return new Supplier<OutputPlugin>() {
+      @Override
+      public OutputPlugin get() {
+        return new DynamoOutputPlugin(client, tableName, keySchema, options.delete, writeLimiter);
+      }
+      public String toString() {
+        return MoreObjects.toStringHelper("DynamoOutputPlugin")
+        //
+        .add("tableName", tableName).add("options", options).toString();
+      }
+    };
   }
 
-  private Matcher match(String regex, CharSequence input) {
-    var m = Pattern.compile(regex).matcher(input);
-    m.matches();
-    return m;
-  }
+      // private Matcher match(String regex, CharSequence input) {
+      //   var m = Pattern.compile(regex).matcher(input);
+      //   m.matches();
+      //   return m;
+      // }
 
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
