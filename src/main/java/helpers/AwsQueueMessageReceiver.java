@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Function;
 
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.*;
 import com.google.gson.Gson;
 
@@ -38,7 +37,7 @@ public class AwsQueueMessageReceiver {
   private boolean running;
   private Function<String, ListenableFuture<?>> listener;
 
-  private final List<ListenableFuture<?>> futures = Lists.newCopyOnWriteArrayList();
+  // private final List<ListenableFuture<?>> futures = Collections.synchronizedList(new ArrayList<>());
 
   private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setDaemon(true).build()); // for backoff
 
@@ -147,9 +146,9 @@ public class AwsQueueMessageReceiver {
         });
       }}.get();
 
-      futures.add(lf);
+      // futures.add(lf);
       lf.addListener(()->{
-        futures.remove(lf);
+        // futures.remove(lf);
         doReceiveMessage(i);
       }, MoreExecutors.directExecutor());
     }
