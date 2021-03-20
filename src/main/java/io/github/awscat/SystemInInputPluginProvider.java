@@ -6,15 +6,28 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.MoreCollectors;
+import com.google.common.collect.Queues;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
 import org.springframework.boot.ApplicationArguments;
 
+import helpers.QueuePutPolicy;
 import helpers.FutureRunner;
 import helpers.LogHelper;
 
@@ -27,19 +40,22 @@ class SystemInInputPlugin implements InputPlugin {
   //###TODO
   //###TODO
   private final int concurrency = Runtime.getRuntime().availableProcessors();
-  private final Semaphore sem = new Semaphore(concurrency); // backpressure
+  // private final Semaphore sem = new Semaphore(concurrency); // backpressure
+  private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
+    0, concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(concurrency));
   //###TODO
   //###TODO
   //###TODO
 
   public SystemInInputPlugin(InputStream in) {
-    debug("ctor");
+    debug("ctor", in);
     this.in = in;
+    executor.setRejectedExecutionHandler(new QueuePutPolicy());
   }
 
   @Override
   public void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener) {
-    debug("setListener");
+    debug("setListener", listener);
     this.listener = listener;
   }
 
@@ -58,13 +74,17 @@ class SystemInInputPlugin implements InputPlugin {
             //###TODDO 1000
             //###TODDO 1000
             if (!parser.hasNext() || partition.size() == 1000) { // mtu
-              sem.acquire();
+              // sem.acquire();
               run(() -> {
-                return listener.apply(partition);
+                var copyOfPartition = partition;
+                // var copyOfPartition = ImmutableList.copyOf(partition);
+                partition = new ArrayList<>();
+                return Futures.submitAsync(()->{
+                  return listener.apply(copyOfPartition);
+                }, executor);
               }, () -> { // finally
-                sem.release();
+                // sem.release();
               });
-              partition = new ArrayList<>();
             }
           }
         } finally {
