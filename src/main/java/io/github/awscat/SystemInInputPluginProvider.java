@@ -36,20 +36,14 @@ class SystemInInputPlugin implements InputPlugin {
   private final InputStream in;
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  //###TODO
-  //###TODO
-  //###TODO
-  private final int concurrency = Runtime.getRuntime().availableProcessors();
-  // private final Semaphore sem = new Semaphore(concurrency); // backpressure
-  private final ThreadPoolExecutor executor = new ThreadPoolExecutor(
-    0, concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(concurrency));
-  //###TODO
-  //###TODO
-  //###TODO
+  private final ThreadPoolExecutor executor;
 
-  public SystemInInputPlugin(InputStream in) {
-    debug("ctor", in);
+  public SystemInInputPlugin(InputStream in, int concurrency) {
+    debug("ctor", in, concurrency);
     this.in = in;
+    concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
+    executor = new ThreadPoolExecutor(
+      0, concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(concurrency));
     executor.setRejectedExecutionHandler(new QueuePutPolicy());
   }
 
@@ -74,7 +68,6 @@ class SystemInInputPlugin implements InputPlugin {
             //###TODDO 1000
             //###TODDO 1000
             if (!parser.hasNext() || partition.size() == 1000) { // mtu
-              // sem.acquire();
               run(() -> {
                 var copyOfPartition = partition;
                 // var copyOfPartition = ImmutableList.copyOf(partition);
@@ -82,8 +75,6 @@ class SystemInInputPlugin implements InputPlugin {
                 return Futures.submitAsync(()->{
                   return listener.apply(copyOfPartition);
                 }, executor);
-              }, () -> { // finally
-                // sem.release();
               });
             }
           }
@@ -102,6 +93,10 @@ class SystemInInputPlugin implements InputPlugin {
 // @Service
 public class SystemInInputPluginProvider implements InputPluginProvider {
 
+  class SystemInOptions {
+    int c;
+  }
+
   private final ApplicationArguments args;
 
   public SystemInInputPluginProvider(ApplicationArguments args) {
@@ -115,8 +110,10 @@ public class SystemInInputPluginProvider implements InputPluginProvider {
 
   @Override
   public InputPlugin get() throws Exception {
-    String source = args.getNonOptionArgs().get(0);
-    return new SystemInInputPlugin("-".equals(source) ? System.in : new FileInputStream(source));
+    var arg = args.getNonOptionArgs().get(0);
+    var base = Args.base(arg);
+    var options = Args.options(arg, SystemInOptions.class);
+    return new SystemInInputPlugin("-".equals(base) ? System.in : new FileInputStream(base), options.c);
   }
 
   private void debug(Object... args) {
