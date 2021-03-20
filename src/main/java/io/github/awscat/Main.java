@@ -84,10 +84,10 @@ public class Main implements ApplicationRunner {
     }
   }
 
-  // resolved input plugin
-  private InputPlugin inputPlugin;
-  // resolved output plugin
-  private Supplier<OutputPlugin> outputPluginSupplier;
+  // resolved input plugin provider
+  private InputPluginProvider inputPluginProvider;
+  // resolved output plugin provider
+  private OutputPluginProvider outputPluginProvider;
 
   // lazy
   private final Supplier<PrintStream> failures = Suppliers.memoize(()->{
@@ -145,10 +145,10 @@ public class Main implements ApplicationRunner {
           } catch (Exception e) {
             log(e);
           }
-          if (canActivate)
-            inputPlugin = provider.get(); // activate
-          if (inputPlugin != null)
+          if (canActivate) {
+            inputPluginProvider = provider;
             break;
+          }
           // if (inputPluginProviders.size() != 1)
           //   throw new Exception("ambiguous sources!");
         }
@@ -170,18 +170,20 @@ public class Main implements ApplicationRunner {
           } catch (Exception e) {
             log(e);
           }
-          if (canActivate)
-            outputPluginSupplier = provider.get(); // activate
-          if (outputPluginSupplier != null)
+          if (canActivate) {
+            outputPluginProvider = provider;
             break;
+          }
         }
         // if (outputPlugins.size() == 0)
         //   outputPlugins.add(new SystemOutOutputPluginProvider(args).get());
         // if (outputPlugins.size() != 1)
         //   throw new Exception("ambiguous targets!");
 
+        var inputPlugin = inputPluginProvider.get();
         log("inputPlugin", inputPlugin);
-        log("outputPlugin", outputPluginSupplier);
+        log("outputPlugin", outputPluginProvider);
+        var outputPluginSupplier = outputPluginProvider.get();
 
         var transformValues = args.getOptionValues("transform");
         if (transformValues != null) {
