@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import com.google.common.util.concurrent.AbstractFuture;
@@ -28,11 +30,10 @@ public class FutureRunner {
         }
     }
       
-    private int running = 1; // aka inFlight
-    private final Object lock = new Object();
     private final VoidFuture facade = new VoidFuture();
+    private final AtomicInteger running = new AtomicInteger(1);
+    private final AtomicReference<Exception> firstException = new AtomicReference<>();
     private final List<ListenableFuture<?>> insideFutures = new CopyOnWriteArrayList<>();
-    private Exception firstException;
 
     /**
      * ctor
@@ -45,8 +46,10 @@ public class FutureRunner {
     }
 
     public ListenableFuture<?> get() {
-        synchronized (lock) {
-            --running;
+        // synchronized (lock)
+        {
+            // --running;
+            // running.decrementAndGet();
             doFinally(); // safety
             return facade;
         }
@@ -106,14 +109,16 @@ public class FutureRunner {
      * @param perRequestResponseFinally
      */
     protected <T> void run(AsyncCallable<T> request, Consumer<T> response, Consumer<Exception> perRequestResponseCatch, Runnable perRequestResponseFinally) {
-        synchronized (lock) {
+        // synchronized (lock)
+        {
             try {
                 ListenableFuture<T> lf = request.call(); // throws
-                ++running;
+                running.incrementAndGet();
                 insideFutures.add(lf);
                 lf.addListener(() -> {
-                    synchronized (lock) {
-                        --running;
+                    // synchronized (lock)
+                    {
+                        // running.decrementAndGet();
                         try {
                             response.accept(lf.get()); // throws
                         } catch (Exception e) {
@@ -167,22 +172,22 @@ public class FutureRunner {
     // ----------------------------------------------------------------------
 
     private void doCatch(Exception e) {
-        if (firstException == null)
-            firstException = e;
+        if (firstException.compareAndSet(null, e)) {
+
+        }
     }
 
     private void doFinally() {
-        if (running == 0) {
-            --running; // once
+        if (running.decrementAndGet() == 0) {
             try {
                 onListen();
             } catch (Exception e) {
                 doCatch(e);
             } finally {
-                if (firstException == null)
+                if (firstException.get() == null)
                     facade.setVoid();
                 else
-                    facade.setException(firstException);
+                    facade.setException(firstException.get());
             }
         }
     }
@@ -195,7 +200,7 @@ public class FutureRunner {
                 int listenCount;
                 {
                     // run(() -> {
-                        for (int i = 0; i < 12; ++i) {
+                        for (int i = 0; i < 8; ++i) {
                             ++count;
                             System.out.println("count:"+count);
                             // run(() -> {
