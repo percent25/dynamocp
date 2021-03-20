@@ -53,7 +53,13 @@ public class ConcatenatedJsonWriter {
 
     private ByteArrayOutputStream baos = new ByteArrayOutputStream();
     private final Multimap<ByteArrayOutputStream, VoidFuture> partitions = LinkedListMultimap.create();
+    //###TODO does not need to be concurrent
+    //###TODO does not need to be concurrent
+    //###TODO does not need to be concurrent
     private final List<ListenableFuture<?>> flushFutures = Lists.newCopyOnWriteArrayList();
+    //###TODO does not need to be concurrent
+    //###TODO does not need to be concurrent
+    //###TODO does not need to be concurrent
 
     /**
      * ctor
