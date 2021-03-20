@@ -114,7 +114,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       public String toString() {
         return MoreObjects.toStringHelper("DynamoOutputPlugin")
         //
-        .add("tableName", tableName).add("options", options).toString();
+        .add("tableName", tableName).add("keySchema", keySchema).add("options", options).toString();
       }
     };
   }

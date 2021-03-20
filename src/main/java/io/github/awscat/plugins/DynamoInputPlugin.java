@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -84,7 +85,7 @@ public class DynamoInputPlugin implements InputPlugin {
         //
         .add("options", options)
         //
-        .add("readLimiter", readLimiter)
+        // .add("readLimiter", readLimiter)
         //
         .toString();
   }
@@ -202,6 +203,7 @@ public class DynamoInputPlugin implements InputPlugin {
 class DynamoInputPluginProvider implements InputPluginProvider {
 
   private final ApplicationArguments args;
+  private final DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
 
   public DynamoInputPluginProvider(ApplicationArguments args) {
     this.args = args;
@@ -209,44 +211,39 @@ class DynamoInputPluginProvider implements InputPluginProvider {
 
   @Override
   public boolean canActivate() {
-    return "dynamo".equals(args.getNonOptionArgs().get(0).split(":")[0]);
+    String arg = args.getNonOptionArgs().get(0);
+    return ImmutableSet.of("dynamo", "dynamodb").contains(Args.base(arg).split(":")[0]);
   }
 
   @Override
   public InputPlugin get() throws Exception {
     String arg = args.getNonOptionArgs().get(0);
-    //arn:aws:dynamodb:us-east-1:102938475610:table/MyTable
-    // if (arg.startsWith("dynamo:"))
-    {
-      String tableName = Args.base(arg).split(":")[1];
+    String tableName = Args.base(arg).split(":")[1];  
+    DynamoOptions options = Args.options(arg, DynamoOptions.class);  
+    debug("desired", options);
 
-      DynamoOptions options = Args.options(arg, DynamoOptions.class);  
-      debug("desired", options);
-  
-      DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
-      DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
-      DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
+    DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
+    DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
 
-      Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
+    Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
 
-      int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
-      int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
+    int concurrency = Runtime.getRuntime().availableProcessors();
+    int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
+    int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
-      options.infer(Runtime.getRuntime().availableProcessors(), provisionedRcu, provisionedWcu);
-      debug("reported", options);
+    options.infer(concurrency, provisionedRcu, provisionedWcu);
+    debug("reported", options);
 
-      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
-      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
-      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
-      RateLimiter readLimiter = RateLimiter.create(options.rcu==0?Integer.MAX_VALUE:options.rcu);
-      debug("readLimiter", readLimiter);
-      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
-      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
-      //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+    //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+    //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+    //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+    RateLimiter readLimiter = RateLimiter.create(options.rcu>0?options.rcu:Integer.MAX_VALUE);
+    debug("readLimiter", readLimiter);
+    //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+    //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
+    //###TODO PASS THIS TO DYNAMOINPUTPLUGIN
 
-      return new DynamoInputPlugin(client, tableName, keySchema, options, readLimiter);
-    }
-    // return null;
+    return new DynamoInputPlugin(client, tableName, keySchema, options, readLimiter);
   }
   
   private void debug(Object... args) {
