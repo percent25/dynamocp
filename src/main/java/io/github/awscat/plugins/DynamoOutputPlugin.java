@@ -2,6 +2,8 @@ package io.github.awscat.plugins;
 
 import java.util.function.Supplier;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.RateLimiter;
@@ -48,9 +50,15 @@ public class DynamoOutputPlugin implements OutputPlugin {
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   private final ApplicationArguments args;
+  private String tableName;
+  private DynamoOptions options;
 
   public DynamoOutputPluginProvider(ApplicationArguments args) {
     this.args = args;
+  }
+
+  public String toString() {
+    return MoreObjects.toStringHelper(this).add("tableName", tableName).add("options", options).toString();
   }
 
   @Override
@@ -60,44 +68,38 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public boolean canActivate() {
-    return "dynamo".equals(args.getNonOptionArgs().get(1).split(":")[0]);
+    String arg = args.getNonOptionArgs().get(1);
+    String base = Args.base(arg);
+    tableName = base.split(":")[1];
+    options = Args.options(arg, DynamoOptions.class);
+    return ImmutableSet.of("dynamo", "dynamodb").contains(base.split(":")[0]);
   }
 
   @Override
   public Supplier<OutputPlugin> get() throws Exception {
-    String arg = args.getNonOptionArgs().get(1);
-    //arn:aws:dynamodb:us-east-1:102938475610:table/MyTable
-    // if (arg.startsWith("dynamo:"))
-    {
-      String tableName = Args.base(arg).split(":")[1];
 
-      DynamoOptions options = Args.options(arg, DynamoOptions.class);
-      debug("desired", options);
+    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
+    DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
+    DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
+
+    Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
+
+    int concurrency = Runtime.getRuntime().availableProcessors();
+    int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
+    int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
+
+    //###TODO CONCURRENCY HERE??
+    //###TODO CONCURRENCY HERE??
+    //###TODO CONCURRENCY HERE??
+    options.infer(concurrency, provisionedRcu, provisionedWcu);
+    //###TODO CONCURRENCY HERE??
+    //###TODO CONCURRENCY HERE??
+    //###TODO CONCURRENCY HERE??
+
+    RateLimiter writeLimiter = RateLimiter.create(options.wcu == 0 ? Integer.MAX_VALUE : options.wcu);
+    // debug("writeLimiter", writeLimiter);
     
-      DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
-      DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
-      DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
-
-      Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
-
-      int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
-      int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
-
-      //###TODO CONCURRENCY HERE??
-      //###TODO CONCURRENCY HERE??
-      //###TODO CONCURRENCY HERE??
-      options.infer(Runtime.getRuntime().availableProcessors(), provisionedRcu, provisionedWcu);
-      //###TODO CONCURRENCY HERE??
-      //###TODO CONCURRENCY HERE??
-      //###TODO CONCURRENCY HERE??
-      debug("reported", options);
-
-      RateLimiter writeLimiter = RateLimiter.create(options.wcu == 0 ? Integer.MAX_VALUE : options.wcu);
-      debug("writeLimiter", writeLimiter);
-      
-      return () -> new DynamoOutputPlugin(client, tableName, keySchema, options.delete, writeLimiter);
-    }
-    // return null;
+    return () -> new DynamoOutputPlugin(client, tableName, keySchema, options.delete, writeLimiter);
   }
 
   private void debug(Object... args) {
