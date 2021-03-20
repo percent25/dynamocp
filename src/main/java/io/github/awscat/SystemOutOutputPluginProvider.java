@@ -1,5 +1,6 @@
 package io.github.awscat;
 
+import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.function.Supplier;
@@ -79,7 +80,7 @@ public class SystemOutOutputPluginProvider implements OutputPluginProvider {
         work.arg = args.getNonOptionArgs().get(1);
       work.target = Args.base(work.arg);
       work.options = Args.options(work.arg, SystemOutOptions.class);
-      PrintStream out = "-".equals(work.target) ? System.out : new PrintStream(new FileOutputStream(work.target, work.options.append));
+      PrintStream out = "-".equals(work.target) ? System.out : new PrintStream(new BufferedOutputStream(new FileOutputStream(work.target, work.options.append)));
       work.success = true;
       return () -> new SystemOutOutputPlugin(out);
     } catch (Exception e) {
