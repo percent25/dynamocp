@@ -30,6 +30,12 @@ import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
+/**
+ * DynamoWriter
+ * 
+ * <p>pipelined
+ * <p>not thread-safe
+ */
 public class DynamoWriter {
 
   private class VoidFuture extends AbstractFuture<Void> {
@@ -67,7 +73,14 @@ public class DynamoWriter {
     }
   }
   private Multimap<Map<String, AttributeValue>/*key*/, PartitionValue> partition = ArrayListMultimap.create();
+
+  //###TODO does not need to be concurrent
+  //###TODO does not need to be concurrent
+  //###TODO does not need to be concurrent
   private final List<ListenableFuture<?>> batchWriteItemFutures = Lists.newCopyOnWriteArrayList();
+  //###TODO does not need to be concurrent
+  //###TODO does not need to be concurrent
+  //###TODO does not need to be concurrent
 
   // ###TODO
   // ###TODO
@@ -90,6 +103,7 @@ public class DynamoWriter {
     return new FutureRunner() {
       {
         run(() -> {
+          VoidFuture lf = new VoidFuture();
 
           Map<String, AttributeValue> item = render(jsonElement);
           Map<String, AttributeValue> key = Maps.toMap(keySchema, k -> item.get(k));
@@ -100,7 +114,6 @@ public class DynamoWriter {
             writeRequest = WriteRequest.builder().deleteRequest(deleteRequest).build();
           }
 
-          VoidFuture lf = new VoidFuture();
           partition.put(key, new PartitionValue(item, writeRequest, lf));
 
           // A single BatchWriteItem operation can contain up to 25 PutItem or DeleteItem
