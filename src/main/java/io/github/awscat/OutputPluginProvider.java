@@ -6,7 +6,7 @@ import org.springframework.boot.ApplicationArguments;
 
 public interface OutputPluginProvider {
   default int mtu() {
-    return 0;
+    return -1;
   }
   boolean canActivate();
   Supplier<OutputPlugin> get() throws Exception;
