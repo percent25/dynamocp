@@ -200,7 +200,7 @@ public class Main implements ApplicationRunner {
 
         inputPlugin.setListener(jsonElements->{
           debug("listener", Iterables.size(jsonElements));
-          return new FutureRunner(){
+          return new FutureRunner() {
             Progress work = new Progress(request, success, failure);
             {
               run(()->{
@@ -230,6 +230,9 @@ public class Main implements ApplicationRunner {
                 return outputPlugin.flush();
               }, ()->{
                 log(work);
+                //###TODO flush failuresPrintStream here??
+                //###TODO flush failuresPrintStream here??
+                //###TODO flush failuresPrintStream here??
               });
             }
           }.get();
