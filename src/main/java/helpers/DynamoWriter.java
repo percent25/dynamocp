@@ -50,8 +50,8 @@ public class DynamoWriter {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
-  private final Iterable<String> keySchema;
   private final boolean delete; // PutItem vs DeleteItem
+  private final Iterable<String> keySchema;
   private final RateLimiter writeLimiter;
 
   // ###TODO
@@ -74,13 +74,7 @@ public class DynamoWriter {
   }
   private Multimap<Map<String, AttributeValue>/*key*/, PartitionValue> partition = ArrayListMultimap.create();
 
-  //###TODO does not need to be concurrent
-  //###TODO does not need to be concurrent
-  //###TODO does not need to be concurrent
   private final List<ListenableFuture<?>> batchWriteItemFutures = Lists.newArrayList();
-  //###TODO does not need to be concurrent
-  //###TODO does not need to be concurrent
-  //###TODO does not need to be concurrent
 
   // ###TODO
   // ###TODO
@@ -90,12 +84,12 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, boolean delete, RateLimiter writeLimiter) {
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, boolean delete, Iterable<String> keySchema, RateLimiter writeLimiter) {
     debug("ctor", client, tableName, keySchema, delete, writeLimiter);
     this.client = client;
     this.tableName = tableName;
-    this.keySchema = keySchema;
     this.delete = delete;
+    this.keySchema = keySchema;
     this.writeLimiter = writeLimiter;
   }
 
@@ -272,11 +266,13 @@ public class DynamoWriter {
     return ArrayListMultimap.create();
   }
 
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   private Map<String, AttributeValue> render(JsonElement jsonElement) throws Exception {
     var item = new LinkedHashMap<String, AttributeValue>();
     for (var entry : jsonElement.getAsJsonObject().entrySet()) {
       var key = entry.getKey();
-      var attributeValue = new ObjectMapper().readValue(entry.getValue().toString(), AttributeValue.serializableBuilderClass()).build();
+      var attributeValue = objectMapper.readValue(entry.getValue().toString(), AttributeValue.serializableBuilderClass()).build();
       item.put(key, attributeValue);
     }
     return item;
