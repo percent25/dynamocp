@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.function.Supplier;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
@@ -47,12 +48,27 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
   // out.txt,append=true
   class SystemOutOptions {
     boolean append;
+    public String toString() {
+      return new Gson().toJson(this);
+      // return MoreObjects.toStringHelper(this).add("append", append).toString();
+    }
   }
 
   private final ApplicationArguments args;
+  private String base;
+  private SystemOutOptions options;
 
   public SystemOutPluginProvider(ApplicationArguments args) {
     this.args = args;
+    String arg = "-";
+    if (args.getNonOptionArgs().size() > 1)
+      arg = args.getNonOptionArgs().get(1);
+    base = Args.base(arg);
+    options = Args.options(arg, SystemOutOptions.class);
+  }
+
+  public String toString() {
+    return MoreObjects.toStringHelper(this).add("base", base).add("options", options).toString();
   }
 
   @Override
@@ -60,36 +76,10 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
     return args.getNonOptionArgs().size()>0;
   }
 
-  class GetWork {
-    boolean success;
-    String failureMessage;
-    String arg;
-    String target;
-    SystemOutOptions options;
-    public String toString() {
-      return getClass().getSimpleName()+new Gson().toJson(this);
-    }
-  }
-
   @Override
   public Supplier<OutputPlugin> get() throws Exception {
-    GetWork work = new GetWork();
-    try {
-      work.arg = "-";
-      if (args.getNonOptionArgs().size() > 1)
-        work.arg = args.getNonOptionArgs().get(1);
-      work.target = Args.base(work.arg);
-      work.options = Args.options(work.arg, SystemOutOptions.class);
-      PrintStream out = "-".equals(work.target) ? System.out : new PrintStream(new BufferedOutputStream(new FileOutputStream(work.target, work.options.append)));
-      work.success = true;
-      return () -> new SystemOutPlugin(out);
-    } catch (Exception e) {
-      e.printStackTrace();
-      work.failureMessage = ""+e;
-      throw e;
-    } finally {
-      debug(work);
-    }
+    PrintStream out = "-".equals(base) ? System.out : new PrintStream(new BufferedOutputStream(new FileOutputStream(base, options.append)));
+    return ()->new SystemOutPlugin(out);
   }
 
   private void debug(Object... args) {
