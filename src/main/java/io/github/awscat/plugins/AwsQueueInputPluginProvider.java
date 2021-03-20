@@ -22,23 +22,23 @@ class AwsQueueInputPlugin implements InputPlugin {
 
     private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-    private final AwsQueueMessageReceiver queueReceiver;
+    private final AwsQueueMessageReceiver messageReceiver;
 
-    public AwsQueueInputPlugin(AwsQueueMessageReceiver queueReceiver) {
+    public AwsQueueInputPlugin(AwsQueueMessageReceiver messageReceiver) {
         debug("ctor");
-        this.queueReceiver = queueReceiver;
-        queueReceiver.setListener(json->{
+        this.messageReceiver = messageReceiver;
+        messageReceiver.setListener(json->{
             return listener.apply(Lists.newArrayList(new JsonStreamParser(json)));
         });
     }
 
     public String toString() {
-        return MoreObjects.toStringHelper(this).add("queueReceiver", queueReceiver).toString();
+        return MoreObjects.toStringHelper(this).add("messageReceiver", messageReceiver).toString();
     }
 
     @Override
     public ListenableFuture<?> read(int mtu) throws Exception {
-        queueReceiver.start();
+        messageReceiver.start();
         Thread.sleep(Long.MAX_VALUE);
         return Futures.immediateVoidFuture();
     }
