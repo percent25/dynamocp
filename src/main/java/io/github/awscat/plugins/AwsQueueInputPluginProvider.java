@@ -52,6 +52,10 @@ class AwsQueueInputPlugin implements InputPlugin {
 @Service
 public class AwsQueueInputPluginProvider implements InputPluginProvider {
 
+    class Options {
+        int c;
+    }
+
     private final ApplicationArguments args;
 
     public AwsQueueInputPluginProvider(ApplicationArguments args) {
@@ -60,18 +64,22 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
 
     @Override
     public boolean canActivate() {
-        return Args.base(args.getNonOptionArgs().get(0)).matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)");
+        String arg = args.getNonOptionArgs().get(0);
+        String queueUrl = Args.base(arg);
+        if (queueUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)"))
+            return true;
+        if (queueUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)"))
+            return true;
+        return false;
     }
 
     @Override
     public InputPlugin get() throws Exception {
         String arg = args.getNonOptionArgs().get(0);
-        if (arg.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) {
-            String queueUrl = arg;
-            int concurrency = Runtime.getRuntime().availableProcessors();
-            return new AwsQueueInputPlugin(new AwsQueueMessageReceiver(queueUrl, concurrency));
-        }
-        return null;
+        String queueUrl = Args.base(arg);
+        Options options = Args.options(arg, Options.class);
+        int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
+        return new AwsQueueInputPlugin(new AwsQueueMessageReceiver(queueUrl, c));
     }
 
 }
