@@ -56,7 +56,7 @@ public class ConcatenatedJsonWriter {
     //###TODO does not need to be concurrent
     //###TODO does not need to be concurrent
     //###TODO does not need to be concurrent
-    private final List<ListenableFuture<?>> flushFutures = Lists.newCopyOnWriteArrayList();
+    private final List<ListenableFuture<?>> flushFutures = Lists.newArrayList();
     //###TODO does not need to be concurrent
     //###TODO does not need to be concurrent
     //###TODO does not need to be concurrent

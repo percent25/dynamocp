@@ -54,12 +54,13 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public boolean canActivate() {
-    return "dynamo".equals(args.getNonOptionArgs().get(1).split(":")[0]);
+  public int mtu() {
+    return 25;
   }
 
-  class DynamoOutputPluginProviderWork {
-
+  @Override
+  public boolean canActivate() {
+    return "dynamo".equals(args.getNonOptionArgs().get(1).split(":")[0]);
   }
 
   @Override

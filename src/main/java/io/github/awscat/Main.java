@@ -55,6 +55,8 @@ public class Main implements ApplicationRunner {
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
+  private int mtu;
+
   private JsonObject transformExpressions = new JsonObject();
 
   // AtomicLong in = new AtomicLong();
@@ -152,6 +154,7 @@ public class Main implements ApplicationRunner {
         // if (args.getNonOptionArgs().size() > 1)
         //   target = args.getNonOptionArgs().get(1);
         for (OutputPluginProvider provider : outputPluginProviders) {
+          mtu = provider.mtu();
           //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
           //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
           //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
@@ -210,6 +213,7 @@ public class Main implements ApplicationRunner {
                     success.incrementAndGet();
                   }, e->{
                     log(e);
+                    // e.printStackTrace();
                     failure.incrementAndGet();
                     failures.get().println(jsonElement); // pre-transform
                   }, ()->{
@@ -226,9 +230,9 @@ public class Main implements ApplicationRunner {
 
         });
 
-        log("start");
-        inputPlugin.read().get();
-        log("finish");
+        log("start", "mtu", mtu);
+        inputPlugin.read(mtu).get();
+        log("finish", "mtu", mtu);
 
         // log("output.flush().get();111");
         // outputPlugin.flush().get();
@@ -239,6 +243,7 @@ public class Main implements ApplicationRunner {
 
     } catch (Exception e) {
       log(e);
+      e.printStackTrace();
     } finally {
       
       if (failuresPrintStream != null)

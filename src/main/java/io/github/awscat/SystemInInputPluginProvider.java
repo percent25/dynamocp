@@ -16,6 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.MoreCollectors;
 import com.google.common.collect.Queues;
@@ -34,17 +35,21 @@ import helpers.LogHelper;
 class SystemInInputPlugin implements InputPlugin {
 
   private final InputStream in;
-  private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
-
+  private final int concurrency;
   private final ThreadPoolExecutor executor;
+  private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   public SystemInInputPlugin(InputStream in, int concurrency) {
     debug("ctor", in, concurrency);
     this.in = in;
-    concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
+    this.concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
     executor = new ThreadPoolExecutor(
-      0, concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(concurrency));
+      0, this.concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(this.concurrency));
     executor.setRejectedExecutionHandler(new QueuePutPolicy());
+  }
+
+  public String toString() {
+    return MoreObjects.toStringHelper(this).add("in", in).add("concurrency", concurrency).toString();
   }
 
   @Override
@@ -54,9 +59,10 @@ class SystemInInputPlugin implements InputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> read() throws Exception {
-    debug("read");
+  public ListenableFuture<?> read(int mtu) throws Exception {
+    debug("read", "mtu", mtu);
     return new FutureRunner() {
+      int effectiveMtu = mtu > 0 ? mtu : 40000;
       List<JsonElement> partition = new ArrayList<>();
       {
         final BufferedReader br = new BufferedReader(new InputStreamReader(in));
@@ -67,7 +73,7 @@ class SystemInInputPlugin implements InputPlugin {
             //###TODDO 1000
             //###TODDO 1000
             //###TODDO 1000
-            if (!parser.hasNext() || partition.size() == 1000) { // mtu
+            if (!parser.hasNext() || partition.size() == effectiveMtu) {
               run(() -> {
                 var copyOfPartition = partition;
                 // var copyOfPartition = ImmutableList.copyOf(partition);

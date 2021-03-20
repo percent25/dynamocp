@@ -32,7 +32,7 @@ class AwsQueueInputPlugin implements InputPlugin {
     }
 
     @Override
-    public ListenableFuture<?> read() throws Exception {
+    public ListenableFuture<?> read(int mtu) throws Exception {
         queueReceiver.start();
         Thread.sleep(Long.MAX_VALUE);
         return Futures.immediateVoidFuture();

@@ -77,7 +77,7 @@ public class DynamoWriter {
   //###TODO does not need to be concurrent
   //###TODO does not need to be concurrent
   //###TODO does not need to be concurrent
-  private final List<ListenableFuture<?>> batchWriteItemFutures = Lists.newCopyOnWriteArrayList();
+  private final List<ListenableFuture<?>> batchWriteItemFutures = Lists.newArrayList();
   //###TODO does not need to be concurrent
   //###TODO does not need to be concurrent
   //###TODO does not need to be concurrent

@@ -79,7 +79,7 @@ public class DynamoInputPlugin implements InputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> read() throws Exception {
+  public ListenableFuture<?> read(int mtu) throws Exception {
     return new FutureRunner() {
       {
         for (int segment = 0; segment < options.totalSegments(); ++segment)
