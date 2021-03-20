@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Function;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.util.concurrent.*;
 import com.google.gson.Gson;
 
@@ -59,6 +60,10 @@ public class AwsQueueMessageReceiver {
    */
   public void setListener(Function<String, ListenableFuture<?>> listener) {
     this.listener = listener;
+  }
+
+  public String toString() {
+    return MoreObjects.toStringHelper(this).add("queueUrl", queueUrl).add("c", concurrency).toString();
   }
 
   /**

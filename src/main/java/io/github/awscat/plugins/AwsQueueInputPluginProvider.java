@@ -2,6 +2,7 @@ package io.github.awscat.plugins;
 
 import java.util.function.Function;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -29,6 +30,10 @@ class AwsQueueInputPlugin implements InputPlugin {
         queueReceiver.setListener(json->{
             return listener.apply(Lists.newArrayList(new JsonStreamParser(json)));
         });
+    }
+
+    public String toString() {
+        return MoreObjects.toStringHelper(this).add("queueReceiver", queueReceiver).toString();
     }
 
     @Override

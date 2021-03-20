@@ -1,5 +1,6 @@
 package io.github.awscat.plugins;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -16,6 +17,10 @@ class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
     public ConcatenatedJsonWriterOutputPlugin(ConcatenatedJsonWriter writer) {
         debug("ctor");
         this.writer = writer;
+    }
+
+    public String toString() {
+        return MoreObjects.toStringHelper(this).add("writer", writer).toString();
     }
 
     @Override

@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Defaults;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -53,13 +54,7 @@ public class ConcatenatedJsonWriter {
 
     private ByteArrayOutputStream baos = new ByteArrayOutputStream();
     private final Multimap<ByteArrayOutputStream, VoidFuture> partitions = LinkedListMultimap.create();
-    //###TODO does not need to be concurrent
-    //###TODO does not need to be concurrent
-    //###TODO does not need to be concurrent
     private final List<ListenableFuture<?>> flushFutures = Lists.newArrayList();
-    //###TODO does not need to be concurrent
-    //###TODO does not need to be concurrent
-    //###TODO does not need to be concurrent
 
     /**
      * ctor
@@ -70,6 +65,10 @@ public class ConcatenatedJsonWriter {
     public ConcatenatedJsonWriter(Transport transport) {
         debug("ctor");
         this.transport = transport;
+    }
+
+    public String toString() {
+        return MoreObjects.toStringHelper(this).add("transport", transport).toString();
     }
 
     /**
