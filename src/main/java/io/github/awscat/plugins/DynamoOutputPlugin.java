@@ -29,9 +29,9 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoWriter writer;
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, boolean delete, RateLimiter writeLimiter) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, boolean delete) {
     debug("ctor");
-    this.writer = new DynamoWriter(client, tableName, keySchema, delete, writeLimiter);
+    this.writer = new DynamoWriter(client, tableName, keySchema, writeLimiter, delete);
   }
 
   @Override
@@ -98,8 +98,6 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
     Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
 
-    int concurrency = Runtime.getRuntime().availableProcessors();
-    int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
     int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
     options.wcu = options.wcu > 0 ? options.wcu : provisionedWcu;
@@ -109,12 +107,14 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     return new Supplier<OutputPlugin>() {
       @Override
       public OutputPlugin get() {
-        return new DynamoOutputPlugin(client, tableName, keySchema, options.delete, writeLimiter);
+        return new DynamoOutputPlugin(client, tableName, keySchema, writeLimiter, options.delete);
       }
       public String toString() {
         return MoreObjects.toStringHelper("DynamoOutputPlugin")
-        //
-        .add("tableName", tableName).add("keySchema", keySchema).add("options", options).toString();
+            //
+            .add("tableName", tableName).add("keySchema", keySchema).add("writeLimiter", writeLimiter)
+            //
+            .add("options", options).toString();
       }
     };
   }

@@ -84,13 +84,13 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, boolean delete, RateLimiter writeLimiter) {
-    debug("ctor", client, tableName, keySchema, delete, writeLimiter);
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, boolean delete) {
+    debug("ctor", client, tableName, keySchema, writeLimiter, delete);
     this.client = client;
     this.tableName = tableName;
     this.keySchema = keySchema;
-    this.delete = delete;
     this.writeLimiter = writeLimiter;
+    this.delete = delete;
   }
 
   public ListenableFuture<?> write(JsonElement jsonElement) {
