@@ -12,6 +12,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
+import javax.annotation.PreDestroy;
+
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
@@ -90,6 +92,8 @@ public class Main implements ApplicationRunner {
   private OutputPluginProvider outputPluginProvider;
 
   // lazy
+  private String failuresName;
+  private PrintStream failuresPrintStream;
   private final Supplier<PrintStream> failures = Suppliers.memoize(()->{
     try {
       String now = CharMatcher.anyOf("1234567890").retainFrom(Instant.now().toString().substring(0, 20));
@@ -97,7 +101,7 @@ public class Main implements ApplicationRunner {
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
-      return failuresPrintStream = new PrintStream(new File(String.format("failures-%s-%s.json", now, randomString)));
+      return failuresPrintStream = new PrintStream(new File(failuresName = String.format("failures-%s-%s.json", now, randomString)));
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
@@ -105,7 +109,6 @@ public class Main implements ApplicationRunner {
       throw new RuntimeException(e);
     }
   });
-  private PrintStream failuresPrintStream;
 
   /**
    * ctor
@@ -260,10 +263,17 @@ public class Main implements ApplicationRunner {
       log(e);
       e.printStackTrace();
     } finally {
-      
-      if (failuresPrintStream != null)
-        failuresPrintStream.close();
+    }
+  }
 
+  @PreDestroy
+  public void destroy() {
+    if (failuresName != null) {
+      try {
+        failuresPrintStream.close();
+      } finally {
+        log(" ########## " + failuresName + " ########## ");
+      }
     }
   }
 
