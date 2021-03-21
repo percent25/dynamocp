@@ -57,14 +57,8 @@ public class Main implements ApplicationRunner {
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
-  private int mtu;
-
   private JsonObject transformExpressions = new JsonObject();
 
-  // AtomicLong in = new AtomicLong();
-  // AtomicLong inErr = new AtomicLong();
-  // AtomicLong out = new AtomicLong();
-  // AtomicLong outErr = new AtomicLong();
   AtomicLong request = new AtomicLong();
   AtomicLong success = new AtomicLong();
   AtomicLong failure = new AtomicLong();
@@ -85,11 +79,6 @@ public class Main implements ApplicationRunner {
       this.failure = failure;
     }
   }
-
-  // resolved input plugin provider
-  private InputPluginProvider inputPluginProvider;
-  // resolved output plugin provider
-  private OutputPluginProvider outputPluginProvider;
 
   // lazy
   private String failuresName;
@@ -136,56 +125,16 @@ public class Main implements ApplicationRunner {
 
     try {
 
-      // List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
-      // List<Supplier<OutputPlugin>> outputPlugins = new ArrayList<>();
+      // input plugin
+      InputPluginProvider inputPluginProvider = resolveInputPlugin(args);
+      
+      // output plugin
+      String target = "-";
+      if (args.getNonOptionArgs().size()>1)
+        target = args.getNonOptionArgs().get(1);
+      OutputPluginProvider outputPluginProvider = resolveOutputPlugin(args);
 
-      // STEP 1 input plugin
       if (args.getNonOptionArgs().size() > 0) {
-        // String source = args.getNonOptionArgs().get(0);
-        for (InputPluginProvider provider : inputPluginProviders) {
-          //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
-          //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
-          //###TODO HANDLE AMBIGUOUS INPUT PLUGINS
-          boolean canActivate = false;
-          try {
-            canActivate = provider.canActivate();
-          } catch (Exception e) {
-            log(e);
-          }
-          if (canActivate) {
-            inputPluginProvider = provider;
-            break;
-          }
-          // if (inputPluginProviders.size() != 1)
-          //   throw new Exception("ambiguous sources!");
-        }
-        // if (inputPlugin == null)
-        //   inputPlugin = new SystemInInputPluginProvider(args).get();
-
-        // STEP 2 output plugin
-        String target = "-";
-        if (args.getNonOptionArgs().size() > 1)
-          target = args.getNonOptionArgs().get(1);
-        for (OutputPluginProvider provider : outputPluginProviders) {
-          mtu = provider.mtu();
-          //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
-          //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
-          //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
-          boolean canActivate = false;
-          try {
-            canActivate = provider.canActivate(target);
-          } catch (Exception e) {
-            log(e);
-          }
-          if (canActivate) {
-            outputPluginProvider = provider;
-            break;
-          }
-        }
-        // if (outputPlugins.size() == 0)
-        //   outputPlugins.add(new SystemOutOutputPluginProvider(args).get());
-        // if (outputPlugins.size() != 1)
-        //   throw new Exception("ambiguous targets!");
 
         var inputPlugin = inputPluginProvider.get();
         log("inputPlugin", inputPlugin);
@@ -248,6 +197,7 @@ public class Main implements ApplicationRunner {
 
         });
 
+        int mtu = outputPluginProvider.mtu();
         log("start", "mtu", mtu);
         inputPlugin.read(mtu).get();
         log("finish", "mtu", mtu);
@@ -275,6 +225,32 @@ public class Main implements ApplicationRunner {
         log(" ########## " + failuresName + " ########## ");
       }
     }
+  }
+
+  private InputPluginProvider resolveInputPlugin(ApplicationArguments args) {
+    for (InputPluginProvider provider : inputPluginProviders) {
+      try {
+        if (provider.canActivate())
+          return provider;
+      } catch (Exception e) {
+        log(e);
+      }
+    }
+    return new SystemInPluginProvider(args);
+  }
+
+  private OutputPluginProvider resolveOutputPlugin(ApplicationArguments args) {
+    if (args.getNonOptionArgs().size() > 1) {
+      for (OutputPluginProvider provider : outputPluginProviders) {
+        try {
+          if (provider.canActivate(args.getNonOptionArgs().get(1)))
+            return provider;
+        } catch (Exception e) {
+          log(e);
+        }
+      }
+    }
+    return new SystemOutPluginProvider(args);
   }
 
   // private static AppState parseState(String base64) throws Exception {
