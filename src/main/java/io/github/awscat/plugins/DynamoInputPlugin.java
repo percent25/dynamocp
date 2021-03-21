@@ -82,7 +82,7 @@ public class DynamoInputPlugin implements InputPlugin {
         //
         .add("totalSegments", totalSegments)
         //
-        .add("limit", limit)
+        // .add("limit", limit)
         //
         .toString();
   }
