@@ -220,7 +220,7 @@ public class DynamoWriter {
           int permits[] = new int[1];
           for (var item : items.values()) {
             int size = MoreDynamo.itemSize(item);
-            permits[0] += (size + 1024 - 1) / 1024;
+            permits[0] += (size + 1023) / 1024;
           }
           // System.out.println("permits="+permits[0]);
           // if (permits > 0)
