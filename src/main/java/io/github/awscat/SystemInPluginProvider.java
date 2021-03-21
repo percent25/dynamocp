@@ -7,45 +7,38 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.MoreCollectors;
-import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
 import org.springframework.boot.ApplicationArguments;
 
-import helpers.QueuePutPolicy;
 import helpers.FutureRunner;
 import helpers.LogHelper;
+import helpers.QueuePutPolicy;
 
 class SystemInPlugin implements InputPlugin {
 
   private final InputStream in;
   private final int concurrency;
-  private final ThreadPoolExecutor executor;
+  private final Executor executor;
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   public SystemInPlugin(InputStream in, int concurrency) {
     debug("ctor", in, concurrency);
     this.in = in;
     this.concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
-    executor = new ThreadPoolExecutor(
+    var executor = new ThreadPoolExecutor(
       0, this.concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(this.concurrency));
     executor.setRejectedExecutionHandler(new QueuePutPolicy());
+    this.executor = executor;
   }
 
   public String toString() {
