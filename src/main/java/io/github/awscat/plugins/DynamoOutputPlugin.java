@@ -90,7 +90,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public Supplier<OutputPlugin> get(String arg) throws Exception {
+  public Supplier<OutputPlugin> activate(String arg) throws Exception {
     String tableName = Args.base(arg).split(":")[1];
     Options options = Args.options(arg, Options.class);
 

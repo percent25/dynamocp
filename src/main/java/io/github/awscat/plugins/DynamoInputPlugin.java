@@ -240,7 +240,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   }
 
   @Override
-  public InputPlugin get() throws Exception {
+  public InputPlugin activate() throws Exception {
     String arg = args.getNonOptionArgs().get(0);
     String tableName = Args.base(arg).split(":")[1];  
     Options options = Args.options(arg, Options.class);  

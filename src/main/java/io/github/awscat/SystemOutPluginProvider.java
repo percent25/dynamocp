@@ -77,7 +77,7 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public Supplier<OutputPlugin> get(String arg) throws Exception {
+  public Supplier<OutputPlugin> activate(String arg) throws Exception {
     PrintStream out = "-".equals(base) ? System.out : new PrintStream(new BufferedOutputStream(new FileOutputStream(base, options.append)));
     return ()->new SystemOutPlugin(out);
   }

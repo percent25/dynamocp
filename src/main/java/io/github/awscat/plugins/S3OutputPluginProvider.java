@@ -57,7 +57,7 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
     }
 
     @Override
-    public Supplier<OutputPlugin> get(String arg) throws Exception {
+    public Supplier<OutputPlugin> activate(String arg) throws Exception {
         S3AsyncClient client = S3AsyncClient.create();
 
         URI uri = URI.create(Args.base(arg));

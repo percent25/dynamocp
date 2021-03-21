@@ -9,5 +9,5 @@ public interface OutputPluginProvider {
     return -1;
   }
   boolean canActivate(String arg);
-  Supplier<OutputPlugin> get(String arg) throws Exception;
+  Supplier<OutputPlugin> activate(String arg) throws Exception;
 }

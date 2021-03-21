@@ -2,5 +2,5 @@ package io.github.awscat;
 
 public interface InputPluginProvider {
   boolean canActivate();
-  InputPlugin get() throws Exception;
+  InputPlugin activate() throws Exception;
 }

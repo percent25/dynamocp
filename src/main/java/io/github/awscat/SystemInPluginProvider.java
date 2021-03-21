@@ -114,7 +114,7 @@ public class SystemInPluginProvider implements InputPluginProvider {
   }
 
   @Override
-  public InputPlugin get() throws Exception {
+  public InputPlugin activate() throws Exception {
     var arg = args.getNonOptionArgs().get(0);
     var base = Args.base(arg);
     var options = Args.options(arg, SystemInOptions.class);

@@ -79,7 +79,7 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
     }
 
     @Override
-    public InputPlugin get() throws Exception {
+    public InputPlugin activate() throws Exception {
         String arg = args.getNonOptionArgs().get(0);
         String queueUrl = Args.base(arg);
         Options options = Args.options(arg, Options.class);
