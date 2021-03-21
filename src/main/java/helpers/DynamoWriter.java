@@ -57,8 +57,8 @@ public class DynamoWriter {
   private final DynamoDbAsyncClient client;
   private final String tableName;
   private final Iterable<String> keySchema;
-  private final RateLimiter writeLimiter;
   private final Semaphore c;
+  private final RateLimiter writeLimiter;
   private final boolean delete; // PutItem vs DeleteItem
 
   // ###TODO
@@ -95,13 +95,13 @@ public class DynamoWriter {
   // static ThreadFactory threadFactory = new ThreadFactoryBuilder().daemonThreads(true).build();
   // static Timer timer = new HashedWheelTimer(threadFactory, 5, TimeUnit.MILLISECONDS);
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, Semaphore c, boolean delete) {
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore c, RateLimiter writeLimiter, boolean delete) {
     debug("ctor", client, tableName, keySchema, writeLimiter, delete);
     this.client = client;
     this.tableName = tableName;
     this.keySchema = keySchema;
-    this.writeLimiter = writeLimiter;
     this.c = c;
+    this.writeLimiter = writeLimiter;
     this.delete = delete;
   }
 

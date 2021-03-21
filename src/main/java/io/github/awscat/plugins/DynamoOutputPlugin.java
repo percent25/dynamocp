@@ -32,9 +32,9 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoWriter writer;
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, Semaphore c, boolean delete) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore c, RateLimiter writeLimiter, boolean delete) {
     debug("ctor");
-    this.writer = new DynamoWriter(client, tableName, keySchema, writeLimiter, c, delete);
+    this.writer = new DynamoWriter(client, tableName, keySchema, c, writeLimiter, delete);
   }
 
   @Override
@@ -59,24 +59,12 @@ public class DynamoOutputPlugin implements OutputPlugin {
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   class Options {
-    public int wcu;
     public int c;
+    public int wcu;
     public boolean delete;
     public String toString() {
       return new Gson().toJson(this);
     }
-  }
-
-  private final ApplicationArguments args;
-  private final DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
-  
-  /**
-   * ctor
-   * 
-   * @param args
-   */
-  public DynamoOutputPluginProvider(ApplicationArguments args) {
-    this.args = args;
   }
 
   @Override
@@ -94,18 +82,21 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     String tableName = Args.base(arg).split(":")[1];
     Options options = Args.options(arg, Options.class);
 
+    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
+  
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
 
     Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
 
+    int availableProcessors = Runtime.getRuntime().availableProcessors();
     int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
+    options.c = options.c > 0 ? options.c : availableProcessors;
     options.wcu = options.wcu > 0 ? options.wcu : provisionedWcu;
-    options.c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
 
-    var writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
     var c = new Semaphore(options.c);
+    var writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
 
     Supplier<?> preWarm = Suppliers.memoize(() -> {
       if (options.wcu > 0)
@@ -116,8 +107,14 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     return new Supplier<OutputPlugin>() {
       @Override
       public OutputPlugin get() {
+        //###TODO REALLY NEEDED??
+        //###TODO REALLY NEEDED??
+        //###TODO REALLY NEEDED??
         preWarm.get();
-        return new DynamoOutputPlugin(client, tableName, keySchema, writeLimiter, c, options.delete);
+        //###TODO REALLY NEEDED??
+        //###TODO REALLY NEEDED??
+        //###TODO REALLY NEEDED??
+        return new DynamoOutputPlugin(client, tableName, keySchema, c, writeLimiter, options.delete);
       }
       public String toString() {
         return MoreObjects.toStringHelper("DynamoOutputPlugin")
@@ -126,9 +123,9 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
             //
             .add("keySchema", keySchema)
             //
-            .add("writeLimiter", writeLimiter)
-            //
             .add("c", options.c)
+            //
+            .add("wcu", options.wcu)
             //
             .add("delete", options.delete)
             //
