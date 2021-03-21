@@ -64,6 +64,12 @@
 			<artifactId>futures-extra</artifactId>
 			<version>4.3.0</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/software.amazon.awssdk/netty-nio-client -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>netty-nio-client</artifactId>
+			<!-- <scope>runtime</scope> -->
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
