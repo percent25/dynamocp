@@ -11,9 +11,6 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-/**
- * ConcatenatedJsonWriterTransportAwsTopic
- */
 public class ConcatenatedJsonWriterTransportAwsS3 implements ConcatenatedJsonWriter.Transport {
     private final S3AsyncClient client;
     private final String bucket;
@@ -24,7 +21,6 @@ public class ConcatenatedJsonWriterTransportAwsS3 implements ConcatenatedJsonWri
      * ctor
      * 
      * @param client
-     * @param topicArn
      */
     public ConcatenatedJsonWriterTransportAwsS3(S3AsyncClient client, String bucket, String deliveryStreamName) {
         debug("ctor", client, bucket, deliveryStreamName);
