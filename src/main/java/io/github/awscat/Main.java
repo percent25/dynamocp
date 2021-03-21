@@ -32,6 +32,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationContext;
 
+class CatOptions {
+  public boolean loop;
+  public int limit;
+  public String transform;
+  public String toString() {
+    return new Gson().toJson(this);
+  }
+}
+
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
 public class Main implements ApplicationRunner {
@@ -126,6 +135,10 @@ public class Main implements ApplicationRunner {
   @Override
   public void run(ApplicationArguments args) throws Exception {
     log("run");
+
+    CatOptions options = Args.parse(args, CatOptions.class);
+    
+    log("options", options);
 
     try {
 
