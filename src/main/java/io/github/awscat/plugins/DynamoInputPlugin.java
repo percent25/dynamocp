@@ -218,7 +218,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
     public void infer(int provisionedRcu, int availableProcessors) {
       rcu = rcu > 0 ? rcu : provisionedRcu;
-      c = c > 0 ? c : rcu > 0 ? Math.max(rcu / 128, 1) : availableProcessors;
+      c = c > 0 ? c : rcu > 0 ? (rcu + 127) / 128 : availableProcessors;
     }
 
     public String toString() {
