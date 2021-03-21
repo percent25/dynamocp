@@ -52,14 +52,12 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
     }
 
     @Override
-    public boolean canActivate() {
-        String arg = args.getNonOptionArgs().get(1);
-        return "s3".equals(Args.base(arg).split(":")[0]);
+    public boolean canActivate(String arg) {
+        return "s3".equals(arg.split(":")[0]);
     }
 
     @Override
-    public Supplier<OutputPlugin> get() throws Exception {
-        String arg = args.getNonOptionArgs().get(1);
+    public Supplier<OutputPlugin> get(String arg) throws Exception {
         S3AsyncClient client = S3AsyncClient.create();
 
         URI uri = URI.create(Args.base(arg));

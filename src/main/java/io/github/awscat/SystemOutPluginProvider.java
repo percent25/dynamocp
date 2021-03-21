@@ -72,12 +72,12 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public boolean canActivate() {
+  public boolean canActivate(String arg) {
     return args.getNonOptionArgs().size()>0;
   }
 
   @Override
-  public Supplier<OutputPlugin> get() throws Exception {
+  public Supplier<OutputPlugin> get(String arg) throws Exception {
     PrintStream out = "-".equals(base) ? System.out : new PrintStream(new BufferedOutputStream(new FileOutputStream(base, options.append)));
     return ()->new SystemOutPlugin(out);
   }

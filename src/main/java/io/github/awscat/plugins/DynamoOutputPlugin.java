@@ -85,15 +85,12 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public boolean canActivate() {
-    String arg = args.getNonOptionArgs().get(1);
-    return ImmutableSet.of("dynamo", "dynamodb").contains(Args.base(arg).split(":")[0]);
+  public boolean canActivate(String arg) {
+    return ImmutableSet.of("dynamo", "dynamodb").contains(arg.split(":")[0]);
   }
 
   @Override
-  public Supplier<OutputPlugin> get() throws Exception {
-    String arg = args.getNonOptionArgs().get(1);
-
+  public Supplier<OutputPlugin> get(String arg) throws Exception {
     String tableName = Args.base(arg).split(":")[1];
     Options options = Args.options(arg, Options.class);
 

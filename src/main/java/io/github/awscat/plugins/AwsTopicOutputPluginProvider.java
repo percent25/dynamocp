@@ -17,11 +17,11 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient;
 @Service
 public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
 
-    private final ApplicationArguments args;
+    // private final ApplicationArguments args;
     private String topicArn;
 
     public AwsTopicOutputPluginProvider(ApplicationArguments args) {
-        this.args = args;
+        // this.args = args;
     }
 
     public String toString() {
@@ -29,14 +29,13 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
     }
 
     @Override
-    public boolean canActivate() {
-        String arg = args.getNonOptionArgs().get(1);
+    public boolean canActivate(String arg) {
         topicArn = Args.base(arg);
         return topicArn.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)");
     }
 
     @Override
-    public Supplier<OutputPlugin> get() throws Exception {
+    public Supplier<OutputPlugin> get(String arg) throws Exception {
         SnsAsyncClient client = SnsAsyncClient.create();
         // sns transport is thread-safe
         ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(client, topicArn);

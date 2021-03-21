@@ -163,9 +163,9 @@ public class Main implements ApplicationRunner {
         //   inputPlugin = new SystemInInputPluginProvider(args).get();
 
         // STEP 2 output plugin
-        // String target = "-";
-        // if (args.getNonOptionArgs().size() > 1)
-        //   target = args.getNonOptionArgs().get(1);
+        String target = "-";
+        if (args.getNonOptionArgs().size() > 1)
+          target = args.getNonOptionArgs().get(1);
         for (OutputPluginProvider provider : outputPluginProviders) {
           mtu = provider.mtu();
           //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
@@ -173,7 +173,7 @@ public class Main implements ApplicationRunner {
           //###TODO HANDLE AMBIGUOUS OUTPUT PLUGINS
           boolean canActivate = false;
           try {
-            canActivate = provider.canActivate();
+            canActivate = provider.canActivate(target);
           } catch (Exception e) {
             log(e);
           }
@@ -189,7 +189,7 @@ public class Main implements ApplicationRunner {
 
         var inputPlugin = inputPluginProvider.get();
         log("inputPlugin", inputPlugin);
-        var outputPluginSupplier = outputPluginProvider.get();
+        var outputPluginSupplier = outputPluginProvider.get(target);
         log("outputPlugin", outputPluginSupplier);
 
         var transformValues = args.getOptionValues("transform");
