@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
@@ -21,6 +22,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timer;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
@@ -29,6 +32,7 @@ import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
+import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 
 /**
  * DynamoWriter
@@ -83,6 +87,8 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
   // ###TODO
+
+  static Timer timer = new HashedWheelTimer(new ThreadFactoryBuilder().daemonThreads(true).build());
 
   public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, boolean delete) {
     debug("ctor", client, tableName, keySchema, writeLimiter, delete);
@@ -171,13 +177,30 @@ public class DynamoWriter {
     // });
 
     var lf = new FutureRunner() {
+      VoidFuture throttle = new VoidFuture();
       DoBatchWriteItemWork work = new DoBatchWriteItemWork();
       BiMap<Map<String, AttributeValue>/*key*/, WriteRequest> writeRequests = HashBiMap.create();
+      
+      VoidFuture acquire(int permits) {
+        // debug("acquire", permits);
+        if (writeLimiter.tryAcquire(permits))
+          throttle.setVoid();
+        else {
+          long delay = Double.valueOf(1000.0*permits/writeLimiter.getRate()).longValue();
+          // delay=500;
+          // debug("delay", delay);
+          timer.newTimeout(timeout->{
+            acquire(permits);
+          }, delay, TimeUnit.MILLISECONDS);
+        }
+        return throttle;
+      }
+
       {
         run(() -> {
 
-          var items = new LinkedHashMap<Map<String, AttributeValue>/*key*/,Map<String, AttributeValue>/*item*/>();
-          partition.keySet().forEach(key->{
+          var items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
+          partition.keySet().forEach(key -> {
             var partitionValue = Iterables.getLast(partition.get(key)); // last one wins
             items.put(key, partitionValue.item);
             writeRequests.put(key, partitionValue.writeRequest);
@@ -185,75 +208,81 @@ public class DynamoWriter {
 
           // pre-throttle
           // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
-          int permits = 0;
+          int permits[] = new int[1];
           for (var item : items.values()) {
             int size = MoreDynamo.itemSize(item);
-            permits += size/writeLimiter.getRate() + 1;
+            permits[0] += (size + 1024 - 1) / 1024;
           }
-          // System.out.println("permits="+permits);
-          if (permits > 0)
-            writeLimiter.acquire(permits);
+          // System.out.println("permits="+permits[0]);
+          // if (permits > 0)
+          // writeLimiter.acquire(permits);
+          // permits[0]=25; //###?!?
+          return acquire(permits[0]);
+        }, () -> {
 
-          BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
-              //
-              .requestItems(ImmutableMap.of(tableName, writeRequests.values()))
-              //
-              .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-              //
-              .build();
+          run(() -> {
 
-          return lf(client.batchWriteItem(batchWriteItemRequest));
+            BatchWriteItemRequest batchWriteItemRequest = BatchWriteItemRequest.builder()
+                //
+                .requestItems(ImmutableMap.of(tableName, writeRequests.values()))
+                //
+                .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+                //
+                .build();
 
-        }, batchWriteItemResponse -> {
+            return lf(client.batchWriteItem(batchWriteItemRequest));
 
-          for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
-            wcuMeter.add(consumedCapacity.capacityUnits().longValue());
-            work.consumedCapacityUnits += consumedCapacity.capacityUnits().intValue();
-            int permits = consumedCapacity.capacityUnits().intValue();
-            // if (permits > 0)
-            //   writeLimiter.acquire(permits);
-          }
+          }, batchWriteItemResponse -> {
 
-          // failure 500
-          if (batchWriteItemResponse.hasUnprocessedItems()) {
-            for (List<WriteRequest> unprocessedItems : batchWriteItemResponse.unprocessedItems().values()) {
+            for (ConsumedCapacity consumedCapacity : batchWriteItemResponse.consumedCapacity()) {
+              wcuMeter.add(consumedCapacity.capacityUnits().longValue());
+              work.consumedCapacityUnits += consumedCapacity.capacityUnits().intValue();
+              int permits = consumedCapacity.capacityUnits().intValue();
+              // if (permits > 0)
+              // writeLimiter.acquire(permits);
+            }
 
-              //###TODO re-submit unprocessedItems
-              //###TODO re-submit unprocessedItems
-              //###TODO re-submit unprocessedItems
-              // doWrite(batchWriteItemResponse.unprocessedItems().values().iterator().next());
-              //###TODO re-submit unprocessedItems
-              //###TODO re-submit unprocessedItems
-              //###TODO re-submit unprocessedItems
+            // failure 500
+            if (batchWriteItemResponse.hasUnprocessedItems()) {
+              for (List<WriteRequest> unprocessedItems : batchWriteItemResponse.unprocessedItems().values()) {
 
-              for (WriteRequest writeRequest : unprocessedItems) {
-                var key = writeRequests.inverse().get(writeRequest);
-                partition.removeAll(key).forEach(partitionValue -> {
-                  ++work.unprocessedItems;
-                  partitionValue.lf.setException(new Exception("unprocessedItem="+writeRequest));
-                });
+                // ###TODO re-submit unprocessedItems
+                // ###TODO re-submit unprocessedItems
+                // ###TODO re-submit unprocessedItems
+                // doWrite(batchWriteItemResponse.unprocessedItems().values().iterator().next());
+                // ###TODO re-submit unprocessedItems
+                // ###TODO re-submit unprocessedItems
+                // ###TODO re-submit unprocessedItems
+
+                for (WriteRequest writeRequest : unprocessedItems) {
+                  var key = writeRequests.inverse().get(writeRequest);
+                  partition.removeAll(key).forEach(partitionValue -> {
+                    ++work.unprocessedItems;
+                    partitionValue.lf.setException(new Exception("unprocessedItem=" + writeRequest));
+                  });
+                }
               }
             }
-          }
 
-          // success 200
-          partition.values().forEach(partitionValue -> {
-            partitionValue.lf.setVoid();
+            // success 200
+            partition.values().forEach(partitionValue -> {
+              partitionValue.lf.setVoid();
+            });
+
+            work.success = true;
+
+          }, e -> {
+            debug(e);
+            e.printStackTrace();
+            work.failureMessage = "" + e;
+            partition.values().forEach(partitionValue -> {
+              partitionValue.lf.setException(e);
+            });
+            // throw e;
+          }, () -> { 
+            // finally
+            work.wcuMeter = wcuMeter.toString();
           });
-
-          work.success = true;
-
-        }, e -> {
-          debug(e);
-          e.printStackTrace();
-          work.failureMessage = "" + e;
-          partition.values().forEach(partitionValue -> {
-            partitionValue.lf.setException(e);
-          });
-          // throw e;
-        }, () -> {
-          // finally
-          work.wcuMeter = wcuMeter.toString();
         });
       }
 
