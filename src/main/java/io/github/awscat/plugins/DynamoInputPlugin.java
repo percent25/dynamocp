@@ -74,9 +74,15 @@ public class DynamoInputPlugin implements InputPlugin {
   public String toString() {
     return MoreObjects.toStringHelper(this)
         //
-        .add("tableName", tableName).add("keySchema", keySchema).add("readLimiter", readLimiter)
+        .add("tableName", tableName)
         //
-        .add("totalSegments", totalSegments).add("limit", limit)
+        .add("keySchema", keySchema)
+        //
+        .add("readLimiter", readLimiter)
+        //
+        .add("totalSegments", totalSegments)
+        //
+        .add("limit", limit)
         //
         .toString();
   }
@@ -89,6 +95,10 @@ public class DynamoInputPlugin implements InputPlugin {
   @Override
   public ListenableFuture<?> read(int mtu) throws Exception {
     debug("read", "mtu", mtu);
+
+    // prewarm limiter
+    readLimiter.acquire(Double.valueOf(readLimiter.getRate()).intValue());
+
     return new FutureRunner() {
       {
         for (int segment = 0; segment < totalSegments; ++segment)
