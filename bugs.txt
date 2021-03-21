@@ -16,6 +16,12 @@ rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java
 OPEN
 ======================================================================
 
+ - scale down issue..
+rrizun@rrizuns-MacBook-Air dynamocat % ./x dynamo:MyTable dynamo:MyTable
+ - slow down because dynamoWriter is .acquire()ing in caller's thread
+
+
+
 + target/awscat-0.0.1-SNAPSHOT.jar -
 main[-]
 ctor
@@ -53,6 +59,16 @@ transform is a little bit weird atm.. inplace transform? vs output=transform(inp
 
 
 at start, have plugins report their desired/reported [50%]
+Sat Mar 20 10:00:26 PDT 2021 ctor
+Sat Mar 20 10:00:27 PDT 2021 run
+Sat Mar 20 10:00:27 PDT 2021 inputPlugin SystemInPlugin{in=java.io.BufferedInputStream@53976f5c, concurrency=4}
+Sat Mar 20 10:00:27 PDT 2021 outputPlugin io.github.awscat.SystemOutPluginProvider$$Lambda$383/0x0000000800d21538@2bfc268b
+Sat Mar 20 10:00:27 PDT 2021 start mtu -1
+Sat Mar 20 10:01:57 PDT 2021 ctor
+Sat Mar 20 10:01:57 PDT 2021 run
+Sat Mar 20 10:01:57 PDT 2021 inputPlugin SystemInPlugin{in=java.io.BufferedInputStream@be35cd9, concurrency=4}
+Sat Mar 20 10:01:57 PDT 2021 outputPlugin SystemOutPluginProvider{base=-, options={"append":false}}
+Sat Mar 20 10:01:57 PDT 2021 start mtu -1
 
 
 
