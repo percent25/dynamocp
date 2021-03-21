@@ -13,7 +13,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
 import helpers.DynamoWriter;
@@ -67,6 +66,22 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     }
   }
 
+  private String tableName;
+  private Iterable<String> keySchema;
+  private Options options;
+
+  public String toString() {
+    return MoreObjects.toStringHelper("DynamoOutputPlugin")
+        //
+        .add("tableName", tableName)
+        //
+        .add("keySchema", keySchema)
+        //
+        .add("options", options)
+        //
+        .toString();
+  }
+
   @Override
   public int mtu() {
     return 25;
@@ -79,19 +94,18 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
-    String tableName = Args.base(arg).split(":")[1];
-    Options options = Args.options(arg, Options.class);
+    tableName = Args.base(arg).split(":")[1];
 
     DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
-  
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
 
-    Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
+    keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
 
     int availableProcessors = Runtime.getRuntime().availableProcessors();
     int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
+    options = Args.options(arg, Options.class);
     options.c = options.c > 0 ? options.c : availableProcessors;
     options.wcu = options.wcu > 0 ? options.wcu : provisionedWcu;
 
@@ -104,34 +118,37 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
       return Defaults.defaultValue(Void.class);
     });
 
-    return new Supplier<OutputPlugin>() {
-      @Override
-      public OutputPlugin get() {
-        //###TODO REALLY NEEDED??
-        //###TODO REALLY NEEDED??
-        //###TODO REALLY NEEDED??
-        preWarm.get();
-        //###TODO REALLY NEEDED??
-        //###TODO REALLY NEEDED??
-        //###TODO REALLY NEEDED??
-        return new DynamoOutputPlugin(client, tableName, keySchema, c, writeLimiter, options.delete);
-      }
-      public String toString() {
-        return MoreObjects.toStringHelper("DynamoOutputPlugin")
-            //
-            .add("tableName", tableName)
-            //
-            .add("keySchema", keySchema)
-            //
-            .add("c", options.c)
-            //
-            .add("wcu", options.wcu)
-            //
-            .add("delete", options.delete)
-            //
-            .toString();
-      }
-    };
+    return new AbstractSupplier(this, ()->{
+      return new DynamoOutputPlugin(client, tableName, keySchema, c, writeLimiter, options.delete);
+    });
+    // return new Supplier<OutputPlugin>() {
+    //   @Override
+    //   public OutputPlugin get() {
+    //     //###TODO REALLY NEEDED??
+    //     //###TODO REALLY NEEDED??
+    //     //###TODO REALLY NEEDED??
+    //     preWarm.get();
+    //     //###TODO REALLY NEEDED??
+    //     //###TODO REALLY NEEDED??
+    //     //###TODO REALLY NEEDED??
+    //     return new DynamoOutputPlugin(client, tableName, keySchema, c, writeLimiter, options.delete);
+    //   }
+    //   public String toString() {
+    //     return MoreObjects.toStringHelper("DynamoOutputPlugin")
+    //         //
+    //         .add("tableName", tableName)
+    //         //
+    //         .add("keySchema", keySchema)
+    //         //
+    //         .add("c", options.c)
+    //         //
+    //         .add("wcu", options.wcu)
+    //         //
+    //         .add("delete", options.delete)
+    //         //
+    //         .toString();
+    //   }
+    // };
   }
 
   private void debug(Object... args) {
