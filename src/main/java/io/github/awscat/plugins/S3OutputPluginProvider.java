@@ -15,28 +15,6 @@ import io.github.awscat.OutputPlugin;
 import io.github.awscat.OutputPluginProvider;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-// delegates toString to the provider
-class AbstractSupplier implements Supplier<OutputPlugin> {
-
-    private final OutputPluginProvider provider;
-    private final Supplier<OutputPlugin> supplier;
-
-    AbstractSupplier(OutputPluginProvider provider, Supplier<OutputPlugin> supplier) {
-        this.provider = provider;
-        this.supplier = supplier;
-    }
-
-    @Override
-    public OutputPlugin get() {
-        return supplier.get();
-    }
-
-    public String toString() {
-        return provider.toString();
-    }
-
-}
-
 @Service
 public class S3OutputPluginProvider implements OutputPluginProvider {
 
