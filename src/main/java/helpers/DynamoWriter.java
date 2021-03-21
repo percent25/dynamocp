@@ -61,7 +61,7 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
   // ###TODO
-  private final Semaphore sem = new Semaphore(Runtime.getRuntime().availableProcessors());
+  private static final Semaphore sem = new Semaphore(5*Runtime.getRuntime().availableProcessors());
   // ###TODO
   // ###TODO
   // ###TODO
@@ -199,6 +199,8 @@ public class DynamoWriter {
       {
         run(() -> {
 
+          sem.acquire();
+
           var items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
           partition.keySet().forEach(key -> {
             var partitionValue = Iterables.getLast(partition.get(key)); // last one wins
@@ -279,8 +281,8 @@ public class DynamoWriter {
               partitionValue.lf.setException(e);
             });
             // throw e;
-          }, () -> { 
-            // finally
+          }, () -> { // finally
+            sem.release();
             work.wcuMeter = wcuMeter.toString();
           });
         });
