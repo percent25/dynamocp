@@ -1,8 +1,11 @@
 package io.github.awscat.plugins;
 
+import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
+import com.google.common.base.Defaults;
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -29,9 +32,9 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoWriter writer;
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, boolean delete) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, Semaphore c, boolean delete) {
     debug("ctor");
-    this.writer = new DynamoWriter(client, tableName, keySchema, writeLimiter, delete);
+    this.writer = new DynamoWriter(client, tableName, keySchema, writeLimiter, c, delete);
   }
 
   @Override
@@ -57,6 +60,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   class Options {
     public int wcu;
+    public int c;
     public boolean delete;
     public String toString() {
       return new Gson().toJson(this);
@@ -101,20 +105,37 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
 
     options.wcu = options.wcu > 0 ? options.wcu : provisionedWcu;
+    options.c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
 
     var writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
+    var c = new Semaphore(options.c);
+
+    Supplier<?> preWarm = Suppliers.memoize(() -> {
+      if (options.wcu > 0)
+        writeLimiter.acquire(options.wcu);
+      return Defaults.defaultValue(Void.class);
+    });
 
     return new Supplier<OutputPlugin>() {
       @Override
       public OutputPlugin get() {
-        return new DynamoOutputPlugin(client, tableName, keySchema, writeLimiter, options.delete);
+        preWarm.get();
+        return new DynamoOutputPlugin(client, tableName, keySchema, writeLimiter, c, options.delete);
       }
       public String toString() {
         return MoreObjects.toStringHelper("DynamoOutputPlugin")
             //
-            .add("tableName", tableName).add("keySchema", keySchema).add("writeLimiter", writeLimiter)
+            .add("tableName", tableName)
             //
-            .add("options", options).toString();
+            .add("keySchema", keySchema)
+            //
+            .add("writeLimiter", writeLimiter)
+            //
+            .add("c", options.c)
+            //
+            .add("delete", options.delete)
+            //
+            .toString();
       }
     };
   }

@@ -3,7 +3,9 @@ package helpers;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,13 +57,14 @@ public class DynamoWriter {
   private final DynamoDbAsyncClient client;
   private final String tableName;
   private final Iterable<String> keySchema;
-  private final boolean delete; // PutItem vs DeleteItem
   private final RateLimiter writeLimiter;
+  private final Semaphore c;
+  private final boolean delete; // PutItem vs DeleteItem
 
   // ###TODO
   // ###TODO
   // ###TODO
-  private static final Semaphore sem = new Semaphore(5*Runtime.getRuntime().availableProcessors());
+  // private static final Semaphore sem = new Semaphore(5*Runtime.getRuntime().availableProcessors());
   // ###TODO
   // ###TODO
   // ###TODO
@@ -89,13 +92,16 @@ public class DynamoWriter {
   // ###TODO
 
   static Timer timer = new HashedWheelTimer(new ThreadFactoryBuilder().daemonThreads(true).build());
+  // static ThreadFactory threadFactory = new ThreadFactoryBuilder().daemonThreads(true).build();
+  // static Timer timer = new HashedWheelTimer(threadFactory, 5, TimeUnit.MILLISECONDS);
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, boolean delete) {
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter writeLimiter, Semaphore c, boolean delete) {
     debug("ctor", client, tableName, keySchema, writeLimiter, delete);
     this.client = client;
     this.tableName = tableName;
     this.keySchema = keySchema;
     this.writeLimiter = writeLimiter;
+    this.c = c;
     this.delete = delete;
   }
 
@@ -186,9 +192,10 @@ public class DynamoWriter {
         if (writeLimiter.tryAcquire(permits))
           throttle.setVoid();
         else {
-          long delay = Double.valueOf(1000.0*permits/writeLimiter.getRate()).longValue();
-          // delay=500;
-          // debug("delay", delay);
+          // random backoff
+          var r = new Random().nextDouble();
+          long delay = Double.valueOf(r*1000*permits/writeLimiter.getRate()).longValue();
+          // System.out.println("delay:"+delay);
           timer.newTimeout(timeout->{
             acquire(permits);
           }, delay, TimeUnit.MILLISECONDS);
@@ -199,7 +206,7 @@ public class DynamoWriter {
       {
         run(() -> {
 
-          sem.acquire();
+          c.acquire();
 
           var items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
           partition.keySet().forEach(key -> {
@@ -282,7 +289,7 @@ public class DynamoWriter {
             });
             // throw e;
           }, () -> { // finally
-            sem.release();
+            c.release();
             work.wcuMeter = wcuMeter.toString();
           });
         });
