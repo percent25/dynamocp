@@ -29,9 +29,11 @@ class SystemInPlugin implements InputPlugin {
   private final InputStream in;
   private final int concurrency;
   private final Executor executor;
+  private final int limit;
+
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  public SystemInPlugin(InputStream in, int concurrency) {
+  public SystemInPlugin(InputStream in, int concurrency, int limit) {
     debug("ctor", in, concurrency);
     this.in = in;
     this.concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
@@ -39,6 +41,7 @@ class SystemInPlugin implements InputPlugin {
       0, this.concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(this.concurrency));
     executor.setRejectedExecutionHandler(new QueuePutPolicy());
     this.executor = executor;
+    this.limit = limit;
   }
 
   public String toString() {
@@ -55,6 +58,7 @@ class SystemInPlugin implements InputPlugin {
   public ListenableFuture<?> read(int mtu) throws Exception {
     debug("read", "mtu", mtu);
     return new FutureRunner() {
+      int count;
       int effectiveMtu = mtu > 0 ? mtu : 40000;
       List<JsonElement> partition = new ArrayList<>();
       {
@@ -62,8 +66,9 @@ class SystemInPlugin implements InputPlugin {
         try {
           JsonStreamParser parser = new JsonStreamParser(br);
           while (parser.hasNext()) {
+            ++count;
             partition.add(parser.next());
-            if (!parser.hasNext() || partition.size() == effectiveMtu) {
+            if (!parser.hasNext() || partition.size() == effectiveMtu || count == limit) {
               run(() -> {
                 var copyOfPartition = partition;
                 // var copyOfPartition = ImmutableList.copyOf(partition);
@@ -73,6 +78,8 @@ class SystemInPlugin implements InputPlugin {
                 }, executor);
               });
             }
+            if (count == limit)
+              break;
           }
         } finally {
           br.close();
@@ -92,6 +99,7 @@ public class SystemInPluginProvider implements InputPluginProvider {
   // in.txt,c=1
   class SystemInOptions {
     int c;
+    int limit;
   }
 
   private final ApplicationArguments args;
@@ -110,7 +118,7 @@ public class SystemInPluginProvider implements InputPluginProvider {
     var arg = args.getNonOptionArgs().get(0);
     var base = Args.base(arg);
     var options = Args.options(arg, SystemInOptions.class);
-    return new SystemInPlugin("-".equals(base) ? System.in : new FileInputStream(base), options.c);
+    return new SystemInPlugin("-".equals(base) ? System.in : new FileInputStream(base), options.c, options.limit);
   }
 
   private void debug(Object... args) {
