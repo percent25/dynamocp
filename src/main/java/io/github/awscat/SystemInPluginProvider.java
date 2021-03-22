@@ -2,7 +2,6 @@ package io.github.awscat;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,26 +25,33 @@ import helpers.QueuePutPolicy;
 
 class SystemInPlugin implements InputPlugin {
 
-  private final InputStream in;
+  private final String file;
   private final int concurrency;
-  private final Executor executor;
+  private final boolean cycle;
   private final int limit;
+
+  private final Executor executor;
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  public SystemInPlugin(InputStream in, int concurrency, int limit) {
-    debug("ctor", in, concurrency);
-    this.in = in;
+  public SystemInPlugin(String file, int concurrency, boolean cycle, int limit) {
+    debug("ctor", file, concurrency, cycle, limit);
+
+    this.file = file;
     this.concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
+    this.cycle = cycle;
+    this.limit = limit;
+
     var executor = new ThreadPoolExecutor(
       0, this.concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(this.concurrency));
     executor.setRejectedExecutionHandler(new QueuePutPolicy());
     this.executor = executor;
-    this.limit = limit;
   }
 
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("in", in).add("concurrency", concurrency).toString();
+    return MoreObjects.toStringHelper(this)
+        //
+        .add("file", file).add("concurrency", concurrency).add("cycle", cycle).add("limit", limit).toString();
   }
 
   @Override
@@ -62,28 +68,32 @@ class SystemInPlugin implements InputPlugin {
       int effectiveMtu = mtu > 0 ? mtu : 40000;
       List<JsonElement> partition = new ArrayList<>();
       {
-        final BufferedReader br = new BufferedReader(new InputStreamReader(in));
-        try {
-          JsonStreamParser parser = new JsonStreamParser(br);
-          while (parser.hasNext()) {
-            ++count;
-            partition.add(parser.next());
-            if (!parser.hasNext() || partition.size() == effectiveMtu || count == limit) {
-              run(() -> {
-                var copyOfPartition = partition;
-                // var copyOfPartition = ImmutableList.copyOf(partition);
-                partition = new ArrayList<>();
-                return Futures.submitAsync(()->{
-                  return listener.apply(copyOfPartition);
-                }, executor);
-              });
+        do {
+          final BufferedReader br = new BufferedReader(new InputStreamReader("-".equals(file) ? System.in : new FileInputStream(file)));
+          try {
+            JsonStreamParser parser = new JsonStreamParser(br);
+            while (parser.hasNext()) {
+              ++count;
+              partition.add(parser.next());
+              if (!parser.hasNext() || partition.size() == effectiveMtu || count == limit) {
+                run(() -> {
+                  var copyOfPartition = partition;
+                  // var copyOfPartition = ImmutableList.copyOf(partition);
+                  partition = new ArrayList<>();
+                  return Futures.submitAsync(()->{
+                    return listener.apply(copyOfPartition);
+                  }, executor);
+                });
+              }
+              if (count == limit)
+                break;
             }
-            if (count == limit)
-              break;
+          } finally {
+            br.close();
           }
-        } finally {
-          br.close();
-        }
+          if (count == limit)
+            break;
+        } while (cycle);
       }
     }.get();
   }
@@ -99,6 +109,7 @@ public class SystemInPluginProvider implements InputPluginProvider {
   // in.txt,c=1
   class SystemInOptions {
     int c;
+    boolean cycle;
     int limit;
   }
 
@@ -116,9 +127,9 @@ public class SystemInPluginProvider implements InputPluginProvider {
   @Override
   public InputPlugin activate() throws Exception {
     var arg = args.getNonOptionArgs().get(0);
-    var base = Args.base(arg);
+    var file = Args.base(arg);
     var options = Args.options(arg, SystemInOptions.class);
-    return new SystemInPlugin("-".equals(base) ? System.in : new FileInputStream(base), options.c, options.limit);
+    return new SystemInPlugin(file, options.c, options.cycle, options.limit);
   }
 
   private void debug(Object... args) {
