@@ -1,8 +1,12 @@
 
+
+
 sudo yum install htop java-11 -y
 sudo yum groupinstall "Development Tools" -y
 mkdir git
 git -C git clone https://github.com/percent25/awscat.git
+
+
 
 export LOGGING_LEVEL_HELPERS=DEBUG
 export LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG
@@ -16,9 +20,20 @@ rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java
 OPEN
 ======================================================================
 
- - scale down issue..
-rrizun@rrizuns-MacBook-Air dynamocat % ./x dynamo:MyTable dynamo:MyTable
- - slow down because dynamoWriter is .acquire()ing in caller's thread
+concurrency
+ vs
+parallelism
+
+
+
+[ssm-user@ip-10-0-197-2 awscat]$ ./x queue.json dynamo:OnDemand,wcu=20000
+ - ^^^ this is pretty choppy on .8xlarge.. queue.json was 9GB
+java.util.concurrent.ExecutionException: software.amazon.awssdk.core.exception.SdkClientException: Unable to execute HTTP request: Acquire operation took longer than the configured maximum time. This indicates that a request cannot get a connection from the pool within the specified maximum time. This can be due to high request rate.
+Consider taking any of the following actions to mitigate the issue: increase max connections, increase acquire timeout, or slowing the request rate.
+Increasing the max connections can increase client throughput (unless the network interface is already fully utilized), but can eventually start to hit operation system limitations on the number of file descriptors used by the process. If you already are fully utilizing your network interface or cannot further increase your connection count, increasing the acquire timeout gives extra time for requests to acquire a connection before timing out. If the connections doesn't free up, the subsequent requests will still timeout.
+If the above mechanisms are not able to fix the issue, try smoothing out your requests so that large traffic bursts cannot overload the client, being more efficient with the number of times you need to call AWS, or by increasing the number of hosts sending requests.
+ - ah.. source is SystemIn, so, high concurrency, large batch.. target is dynamo writer.. small batch = 25 hmmm...
+ - "concurrency" for dynamoWriter ?!? ?!? ?!?
 
 
 
@@ -45,11 +60,6 @@ rrizun@rrizuns-MacBook-Air dynamocat %
 
 dynamoOutputPlugin: handle unprocessedItems.. dlq or retry?
 
-
-
-"random" source
- - rrizun@rrizuns-MacBook-Air dynamocat % awscat in.json,loop=true,limit=1000 dynamo:MyTable --transform="{id:{s:'#{#uuid()}'}}"
- 
 
 
 transform is a little bit weird atm.. inplace transform? vs output=transform(input)
@@ -109,6 +119,12 @@ print unrecognized options
 
 
 Zero or more output targets? (i.e., tee)
+
+
+
+gzip compression???
+
+
 
 ======================================================================
 CLOSED
@@ -235,5 +251,19 @@ counters in/out still wierd never shows in greater than out
  - its because only printed stats in finally block
  - if printing stats at 'request' time then u would see requests vs success/failure difference
 
+
+
+ - scale down issue..
+rrizun@rrizuns-MacBook-Air dynamocat % ./x dynamo:MyTable dynamo:MyTable
+ - slow down because dynamoWriter is .acquire()ing in caller's thread
+   - UPDATE: THIS SEEMS TO BE FIXED NOW WITH ASYNC THROTTLE
+   - UPDATE: THIS SEEMS TO BE FIXED NOW WITH ASYNC THROTTLE
+   - UPDATE: THIS SEEMS TO BE FIXED NOW WITH ASYNC THROTTLE
+
+
+
+"random" source
+ - rrizun@rrizuns-MacBook-Air dynamocat % awscat in.json,loop=true,limit=1000 dynamo:MyTable --transform="{id:{s:'#{#uuid()}'}}"
+ 
 
 
