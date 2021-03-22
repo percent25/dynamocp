@@ -55,7 +55,7 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
   }
 
   private final ApplicationArguments args;
-  private String base;
+  private String file;
   private SystemOutOptions options;
 
   public SystemOutPluginProvider(ApplicationArguments args) {
@@ -63,12 +63,12 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
     String arg = "-";
     if (args.getNonOptionArgs().size() > 1)
       arg = args.getNonOptionArgs().get(1);
-    base = Args.base(arg);
+    file = Args.base(arg);
     options = Args.options(arg, SystemOutOptions.class);
   }
 
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("base", base).add("options", options).toString();
+    return MoreObjects.toStringHelper(this).add("file", file).add("options", options).toString();
   }
 
   @Override
@@ -78,7 +78,7 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
 
   @Override
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
-    PrintStream out = "-".equals(base) ? System.out : new PrintStream(new BufferedOutputStream(new FileOutputStream(base, options.append)));
+    PrintStream out = "-".equals(file) ? System.out : new PrintStream(new BufferedOutputStream(new FileOutputStream(file, options.append)));
     return ()->new SystemOutPlugin(out);
   }
 
