@@ -30,8 +30,8 @@
 		</dependencies>
 	</dependencyManagement>
 
-	<!-- https://docs.spring.io/spring-boot/docs/current/reference/html/appendix-dependency-versions.html#dependency-versions-properties -->
-
+	<!-- managed dependencies -->
+	<!-- https://docs.spring.io/spring-boot/docs/current/reference/html/appendix-dependency-versions.html -->
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -62,18 +62,6 @@
 			<artifactId>netty-nio-client</artifactId>
 			<!-- <scope>runtime</scope> -->
 		</dependency>
-
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>30.1-jre</version>
-		</dependency>
-		<dependency>
-			<groupId>com.spotify</groupId>
-			<artifactId>futures-extra</artifactId>
-			<version>4.3.0</version>
-		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -84,6 +72,19 @@
 			<artifactId>assertj-core</artifactId>
 			<!-- <version>RELEASE</version> -->
 			<scope>test</scope>
+		</dependency>
+
+		<!-- unmanaged dependencies -->
+		<!-- https://docs.spring.io/spring-boot/docs/current/reference/html/appendix-dependency-versions.html -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>30.1-jre</version>
+		</dependency>
+		<dependency>
+			<groupId>com.spotify</groupId>
+			<artifactId>futures-extra</artifactId>
+			<version>4.3.0</version>
 		</dependency>
 	</dependencies>
 	
