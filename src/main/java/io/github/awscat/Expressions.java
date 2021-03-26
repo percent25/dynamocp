@@ -139,6 +139,11 @@ public class Expressions {
           return false;
         if ("false".equals(source))
           return false;
+        try {
+          return BigDecimal.ZERO.compareTo(new BigDecimal(source.toString())) != 0;
+        } catch (Exception e) {
+          // dont-care
+        }
         return true;
       }
     });
@@ -220,7 +225,7 @@ public class Expressions {
   }
 
   private void trace(Object... args) {
-    new LogHelper(this).log(args);
+    new LogHelper(this).trace(args);
   }
 
 }

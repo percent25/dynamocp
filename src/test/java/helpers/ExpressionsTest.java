@@ -9,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -92,49 +95,86 @@ public class ExpressionsTest {
 
   }
 
+  // https://developer.mozilla.org/en-US/docs/Glossary/Truthy
   @Test
   public void truthyTest() {
-    assertThat(bool(json("'null'"), "e")).isEqualTo(true);
-    assertThat(bool(json("true"), "e")).isEqualTo(true);
-    assertThat(bool(json("'true'"), "e")).isEqualTo(true);
-    assertThat(bool(json("'a'"), "e")).isEqualTo(true);
-    assertThat(bool(json("1"), "e")).isEqualTo(true);
-    assertThat(bool(json("-1"), "e")).isEqualTo(true);
-    assertThat(bool(json("1.0"), "e")).isEqualTo(true);
-    assertThat(bool(json("-1.0"), "e")).isEqualTo(true);
-    // assertThat(bool(json("0x0"), "e")).isEqualTo(false);
 
-    assertThat(bool(json("{}"), "e")).isEqualTo(true);
+    var truthy = ImmutableSet.of("true", "'true'", "'empty'", "1", "-1", "1.0", "-1.0", /*"[]", */"{}");
+    
+    for (var e : truthy) {
+      for (var entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
+        var fmt = entry.getKey();
+        var str = entry.getValue();
+        assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s", e).isEqualTo(true);
+      }
+    }
+    // assertThat(bool(json("[]"), "e")).isEqualTo(true); // ### <-- THIS SHOULD BE TRUTHY
+    assertThat(bool(json("[1]"), "e")).isEqualTo(true);
 
-    assertThat(bool(json("{foo:null}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:false}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:'false'}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:''}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:0}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:0.0}"), "e.foo")).isEqualTo(false);
+    // assertThat(bool(json("null"), "e")).isNotEqualTo(true); // json null
+    
+    // assertThat(bool(json("true"), "e")).isEqualTo(true); // json primitive bool
+    // assertThat(bool(json("'true'"), "e")).isEqualTo(true); // json primitive string
+    // assertThat(bool(json("'empty'"), "e")).isEqualTo(true); // json primitive string
+    
+    // assertThat(bool(json("1"), "e")).isEqualTo(true); // json number
+    // assertThat(bool(json("-1"), "e")).isEqualTo(true); // json number
+    // assertThat(bool(json("1.0"), "e")).isEqualTo(true); // json number
+    // assertThat(bool(json("-1.0"), "e")).isEqualTo(true); // json number
+    // // assertThat(bool(json("0x1"), "e")).isEqualTo(true);
+
+    // assertThat(bool(json("{}"), "e")).isEqualTo(true);
+
+    // assertThat(bool(json("{foo:'null'}"), "e.foo")).isEqualTo(true);
+    // assertThat(bool(json("{foo:true}"), "e.foo")).isEqualTo(true);
+    // assertThat(bool(json("{foo:'true'}"), "e.foo")).isEqualTo(true);
+    // assertThat(bool(json("{foo:'empty'}"), "e.foo")).isEqualTo(true);
+    // assertThat(bool(json("{foo:1}"), "e.foo")).isEqualTo(true);
+    // assertThat(bool(json("{foo:1.0}"), "e.foo")).isEqualTo(true);
   }
 
   // https://developer.mozilla.org/en-US/docs/Glossary/Falsy
   @Test
   public void falseyTest() {
-    assertThat(bool(json("null"), "e")).isEqualTo(false);
-    assertThat(bool(json("false"), "e")).isEqualTo(false);
-    assertThat(bool(json("'false'"), "e")).isEqualTo(false);
-    assertThat(bool(json("''"), "e")).isEqualTo(false);
-    assertThat(bool(json("0"), "e")).isEqualTo(false);
-    assertThat(bool(json("-0"), "e")).isEqualTo(false);
-    assertThat(bool(json("0.0"), "e")).isEqualTo(false);
-    assertThat(bool(json("-0.0"), "e")).isEqualTo(false);
-    // assertThat(bool(json("0x0"), "e")).isEqualTo(false);
 
-    assertThat(bool(json("{}"), "e.foo")).isEqualTo(false);
+    var falsey = ImmutableSet.of( //
+        "null", // json null
+        "false", // json primitive bool
+        "'false'", "''", "'0'", "'-0'", "'0.0'", "'-0.0'", // json primitive string
+        "0", "-0", "0.0", "-0.0" // json primitive number
+    );
 
-    assertThat(bool(json("{foo:null}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:false}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:'false'}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:''}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:0}"), "e.foo")).isEqualTo(false);
-    assertThat(bool(json("{foo:0.0}"), "e.foo")).isEqualTo(false);
+    for (var e : falsey) {
+      // assertThat(bool(json(String.format("%s", e)), "e")).as("e=%s", e).isEqualTo(false);
+      // assertThat(bool(json(String.format("[%s]", e)), "e[0]")).isEqualTo(false);
+      // assertThat(bool(json(String.format("{e:%s}", e)), "e.e")).isEqualTo(false);
+      for (var entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
+        var fmt = entry.getKey();
+        var str = entry.getValue();
+        assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s", e).isEqualTo(false);
+      }
+    }
+
+    // assertThat(bool(json("null"), "e")).isEqualTo(false); // json null
+
+    // assertThat(bool(json("false"), "e")).isEqualTo(false); // json primitive bool
+    // assertThat(bool(json("'false'"), "e")).isEqualTo(false); // json primitive string
+    // assertThat(bool(json("''"), "e")).isEqualTo(false); // json primitive string
+    
+    // assertThat(bool(json("0"), "e")).isEqualTo(false); // json number
+    // assertThat(bool(json("-0"), "e")).isEqualTo(false); // json number
+    // assertThat(bool(json("0.0"), "e")).isEqualTo(false); // json number
+    // assertThat(bool(json("-0.0"), "e")).isEqualTo(false); // json number
+    // // assertThat(bool(json("0x0"), "e")).isEqualTo(false);
+
+    // assertThat(bool(json("{}"), "e.foo")).isEqualTo(false);
+
+    // assertThat(bool(json("{foo:null}"), "e.foo")).isEqualTo(false);
+    // assertThat(bool(json("{foo:false}"), "e.foo")).isEqualTo(false);
+    // assertThat(bool(json("{foo:'false'}"), "e.foo")).isEqualTo(false);
+    // assertThat(bool(json("{foo:''}"), "e.foo")).isEqualTo(false);
+    // assertThat(bool(json("{foo:0}"), "e.foo")).isEqualTo(false);
+    // assertThat(bool(json("{foo:0.0}"), "e.foo")).isEqualTo(false);
   }
 
   @Test
