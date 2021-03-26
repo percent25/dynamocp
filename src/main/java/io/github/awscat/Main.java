@@ -15,9 +15,11 @@ import java.util.function.Supplier;
 import javax.annotation.PreDestroy;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Iterables;
 import com.google.common.hash.Hashing;
+import com.google.common.util.concurrent.Futures;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -57,23 +59,27 @@ public class Main implements ApplicationRunner {
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
-  private JsonObject transformExpressions = new JsonObject();
-
-  AtomicLong request = new AtomicLong();
-  AtomicLong success = new AtomicLong();
-  AtomicLong failure = new AtomicLong();
+  AtomicLong in = new AtomicLong(); // pre-filter
+  AtomicLong out = new AtomicLong(); // post-filter
+  AtomicLong request = new AtomicLong(); // output plugin
+  AtomicLong success = new AtomicLong(); // output plugin
+  AtomicLong failure = new AtomicLong(); // output plugin
 
   private final LocalMeter rate = new LocalMeter();
 
-  class Progress {
-    final Number request;
-    final Number success;
-    final Number failure;
+  class Working {
+    private final Number in; // filter
+    private final Number out; // filter
+    private final Number request;
+    private final Number success;
+    private final Number failure;
     String rate;
     public String toString() {
       return getClass().getSimpleName()+new Gson().toJson(this);
     }
-    Progress(Number request, Number success, Number failure) {
+    Working(Number in, Number out, Number request, Number success, Number failure) {
+      this.in = in;
+      this.out = out;
       this.request = request;
       this.success = success;
       this.failure = failure;
@@ -141,17 +147,6 @@ public class Main implements ApplicationRunner {
         var outputPluginSupplier = outputPluginProvider.activate(target);
         log("outputPlugin", outputPluginProvider);
 
-        var transformValues = args.getOptionValues("transform");
-        if (transformValues != null) {
-          if (transformValues.iterator().hasNext()) {
-            var transformValue = transformValues.iterator().next();
-
-            transformExpressions = new Gson().fromJson(transformValue, JsonObject.class);
-            // JsonObject transformExpressions = new Gson().fromJson("{'id.s':'#{ #uuid() }'}", JsonObject.class);
-
-          }
-        }
-
         // ----------------------------------------------------------------------
         // main loop
         // ----------------------------------------------------------------------
@@ -159,30 +154,35 @@ public class Main implements ApplicationRunner {
         inputPlugin.setListener(jsonElements->{
           debug("listener", Iterables.size(jsonElements));
           return new FutureRunner() {
-            Progress work = new Progress(request, success, failure);
+            Working work = new Working(in, out, request, success, failure);
             {
               run(()->{
                 OutputPlugin outputPlugin = outputPluginSupplier.get();
                 for (JsonElement jsonElement : jsonElements) {
-                  run(()->{
-                    // ++work.in;
-                    request.incrementAndGet();
-
-                    JsonElement jsonElementOut = jsonElement;
-                    jsonElementOut = new GsonTransform(transformExpressions, TransformUtils.class).transform(jsonElementOut);
-
-                    return outputPlugin.write(jsonElementOut);
-                  }, result->{
-                    // ++work.out;
-                    success.incrementAndGet();
-                  }, e->{
-                    log(e);
-                    // e.printStackTrace();
-                    failure.incrementAndGet();
-                    failures.get().println(jsonElement); // pre-transform
-                  }, ()->{
-                    rate.add(1);
-                    work.rate = rate.toString();
+                  run(() -> {
+                    if (has(options.filter)) {
+                      Expressions expressions = new Expressions(jsonElement);
+                      in.incrementAndGet();
+                      if (expressions.bool(options.filter)) {
+                        out.incrementAndGet();
+                        run(() -> {
+                          request.incrementAndGet();
+                          expressions.eval(options.action);
+                          return outputPlugin.write(expressions.e());
+                        }, result -> {
+                          success.incrementAndGet();
+                        }, e -> {
+                          log(e);
+                          // e.printStackTrace();
+                          failure.incrementAndGet();
+                          failures.get().println(jsonElement); // pre-transform
+                        }, () -> {
+                          rate.add(1);
+                          work.rate = rate.toString();
+                        });
+                      }
+                    }
+                    return Futures.immediateVoidFuture();
                   });
                 }
                 return outputPlugin.flush();
@@ -251,6 +251,10 @@ public class Main implements ApplicationRunner {
       }
     }
     return new SystemOutPluginProvider(args);
+  }
+
+  private boolean has(String s) {
+    return Strings.nullToEmpty(s).length()>0; 
   }
 
   // private static AppState parseState(String base64) throws Exception {

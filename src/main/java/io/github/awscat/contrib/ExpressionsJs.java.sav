@@ -1,0 +1,197 @@
+package io.github.awscat.contrib;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.TypeLiteral;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.Proxy;
+import org.graalvm.polyglot.proxy.ProxyArray;
+import org.graalvm.polyglot.proxy.ProxyObject;
+
+import helpers.LogHelper;
+
+// * assert context.eval("js", "(function(record) record.x)")
+// *               .execute(record).asInt() == 42;
+
+public class ExpressionsJs {
+
+  // static <T> Supplier<T> of(Supplier<T> supplier) {
+  //   return new Supplier<>(){
+  //     @Override
+  //     public T get() {
+  //       return supplier.get();
+  //     }};
+  // }
+
+  public static void main(String... args) {
+    Context context = Context.newBuilder()
+        //
+        .allowHostAccess(HostAccess.ALL)
+        //
+        .build();
+
+    JsonElement jsonElement = new Gson().fromJson("{id:{s:'abc'}}", JsonElement.class);
+
+    context.getBindings("js").putMember("e", fromJsonElement(context, jsonElement));
+    context.getBindings("js").putMember("uuid", context.asValue(Suppliers.ofInstance(UUID.randomUUID().toString())));
+
+    context.eval("js", "e.id.t=uuid(), e.version={a:1,b:2}");
+    // jsonElement = eval(jsonElement, context, "e.version.c=3");
+    // jsonElement = eval(jsonElement, context, "e.version.c=4.1");
+
+    // context.eval("js", "(function(s){return{Item:s}})");
+    // jsonElement = eval(jsonElement, context, "(function(s){ return [2,3,4,5.1,{}].length.toFixed(5) })");
+
+     context.eval("js", "e={e:e,uuid:uuid()}");
+     context.eval("js", "e={e:e,uuid:uuid()}");
+     context.eval("js", "e={e:e,uuid:uuid()}");
+
+    // System.out.println("e="+context.getBindings("js").getMember("e"));
+
+    Value e = context.getBindings("js").getMember("e");
+    JsonElement out = new Gson().toJsonTree(e.as(Object.class));
+    if (e.hasArrayElements())
+      out = new Gson().toJsonTree(e.as(new TypeLiteral<List<Object>>(){}));
+
+    log(jsonElement+" --> "+out);
+  }
+
+      // static JsonElement eval(Context context, String js) {
+      //   var eval = context.eval("js", js);
+      //   // if (eval.canExecute()) {
+      //   //   var value = eval.execute(fromJsonElement(context, jsonElement));
+      //   //             // log("hasMembers", value.hasMembers(), "hasArrayElements", value.hasArrayElements());
+      //   //             // // value.hasArrayElements();
+      //   //             // // value.as(targetType)
+      //   //             // if (value.hasMembers()) {
+      //   //             //   log("getMemberKeys", value.getMemberKeys());
+      //   //             // }
+      //   //             // if (value.hasArrayElements()) {
+      //   //             //   log("getArraySize", value.getArraySize());
+      //   //             // }
+      //   //   Object src = value.as(Object.class);
+      //   //   // log(src, src.getClass());
+      //   //   //     * static final TypeLiteral&lt;List&lt;String>> STRING_LIST = new TypeLiteral&lt;List&lt;String>>() {
+      //   //   if (value.hasArrayElements())
+      //   //     src = value.as(new TypeLiteral<List<Object>>(){});
+
+      //   //   jsonElement = new Gson().toJsonTree(src);
+      //   // }
+      //   return jsonElement;
+      // }
+
+  static Object fromJsonElement(Context context, JsonElement jsonElement) {
+
+    if (jsonElement.isJsonArray()) {
+      JsonArray values = jsonElement.getAsJsonArray();
+      return new ProxyArray() {
+        @Override
+        public Object get(long index) {
+            checkIndex(index);
+            return values.get((int) index);
+        }
+        @Override
+        public void set(long index, Value value) {
+            checkIndex(index);
+            values.set((int) index, new Gson().toJsonTree(value.as(Object.class)));
+        }
+        @Override
+        public boolean remove(long index) {
+            checkIndex(index);
+            values.remove((int) index);
+            return true;
+        }
+        private void checkIndex(long index) {
+            if (index < 0 || index > Integer.MAX_VALUE) {
+                throw new ArrayIndexOutOfBoundsException();
+            }
+        }
+        public long getSize() {
+            return values.size();
+        }
+      };
+    }
+
+    if (jsonElement.isJsonObject()) {
+      JsonObject values = jsonElement.getAsJsonObject();
+      return new ProxyObject() {
+
+        public void putMember(String key, Value value) {
+          log("putMember", key, value, value.as(Object.class).getClass());
+          values.add(key, new Gson().toJsonTree(value.as(Object.class)));
+        }
+
+        public boolean hasMember(String key) {
+          log("hasMember", key);
+            return values.has(key);
+        }
+
+        public Object getMemberKeys() {
+          log("getMemberKeys");
+            return new ProxyArray() {
+                private final Object[] keys = values.keySet().toArray();
+
+                public void set(long index, Value value) {
+                    throw new UnsupportedOperationException();
+                }
+
+                public long getSize() {
+                    return keys.length;
+                }
+
+                public Object get(long index) {
+                    if (index < 0 || index > Integer.MAX_VALUE) {
+                        throw new ArrayIndexOutOfBoundsException();
+                    }
+                    return keys[(int) index];
+                }
+            };
+        }
+
+        public Object getMember(String key) {
+          log("getMember", key);
+          return fromJsonElement(context, values.get(key));
+        }
+
+        @Override
+        public boolean removeMember(String key) {
+          log("removeMember", key);
+            if (values.has(key)) {
+                values.remove(key);
+                return true;
+            } else {
+                return false;
+            }
+        }
+      };
+    }
+    //###WORKAROUND
+    if (jsonElement.isJsonPrimitive()) {
+      if (jsonElement.getAsJsonPrimitive().isNumber())
+        return context.asValue(new Gson().fromJson(jsonElement, BigDecimal.class));
+    }
+    //###WORKAROUND
+    return context.asValue(new Gson().fromJson(jsonElement, Object.class));
+  }
+
+  static void log(Object... args) {
+    new LogHelper(ExpressionsJs.class).log(args);
+  }
+
+}
