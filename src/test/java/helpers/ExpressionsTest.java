@@ -99,8 +99,8 @@ public class ExpressionsTest {
   @Test
   public void truthyTest() {
 
-    var truthy = ImmutableSet.of("true", "'true'", "'empty'", "1", "-1", "1.0", "-1.0", /*"[]", */"{}");
-    
+    var truthy = ImmutableSet.of("true", "'true'", "'empty'", "1", "-1", "1.0", "-1.0", "[]", "{}");
+
     for (var e : truthy) {
       for (var entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
         var fmt = entry.getKey();

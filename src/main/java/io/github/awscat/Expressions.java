@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -123,7 +124,7 @@ public class Expressions {
 
     context.setTypeConverter(new StandardTypeConverter(conversionService));
 
-    // https://developer.mozilla.org/en-US/docs/Glossary/Falsy
+    // https://developer.mozilla.org/en-US/docs/Glossary/Truthy
     conversionService.addConverter(new Converter<Boolean, Boolean>() {
       @Override
       public Boolean convert(Boolean source) {
@@ -131,7 +132,15 @@ public class Expressions {
       }
     });
     
-    // https://developer.mozilla.org/en-US/docs/Glossary/Falsy
+    // https://developer.mozilla.org/en-US/docs/Glossary/Truthy
+    conversionService.addConverter(new Converter<Number, Boolean>() {
+      @Override
+      public Boolean convert(Number source) {
+        return BigDecimal.ZERO.compareTo(new BigDecimal(source.toString())) != 0;
+      }
+    });
+
+    // https://developer.mozilla.org/en-US/docs/Glossary/Truthy
     conversionService.addConverter(new Converter<String, Boolean>() {
       @Override
       public Boolean convert(String source) {
@@ -148,15 +157,15 @@ public class Expressions {
       }
     });
 
-    // https://developer.mozilla.org/en-US/docs/Glossary/Falsy
-    conversionService.addConverter(new Converter<Number, Boolean>() {
+    // https://developer.mozilla.org/en-US/docs/Glossary/Truthy
+    conversionService.addConverter(new Converter<Collection<?>, Boolean>() {
       @Override
-      public Boolean convert(Number source) {
-        return BigDecimal.ZERO.compareTo(new BigDecimal(source.toString())) != 0;
+      public Boolean convert(Collection<?> source) {
+        return true;
       }
     });
 
-    // https://developer.mozilla.org/en-US/docs/Glossary/Falsy
+    // https://developer.mozilla.org/en-US/docs/Glossary/Truthy
     conversionService.addConverter(new Converter<Object, Boolean>() {
       @Override
       public Boolean convert(Object source) {
