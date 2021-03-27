@@ -27,6 +27,7 @@ import helpers.FutureRunner;
 import helpers.LocalMeter;
 import helpers.LogHelper;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
@@ -103,6 +104,9 @@ public class Main implements ApplicationRunner {
     }
   });
 
+  @Value("${project-version}")
+  private String projectVersion;
+
   /**
    * ctor
    */
@@ -114,6 +118,10 @@ public class Main implements ApplicationRunner {
     this.inputPluginProviders.add(new SystemInPluginProvider(args)); // ensure last
     this.outputPluginProviders.addAll(outputPluginProviders);
     this.outputPluginProviders.add(new SystemOutPluginProvider(args)); // ensure last
+
+    buildProperties.ifPresent(value->{
+      log("buildProperties", value);
+    });
   }
 
   /**
@@ -122,6 +130,8 @@ public class Main implements ApplicationRunner {
   @Override
   public void run(ApplicationArguments args) throws Exception {
     log("run");
+
+    log("project-version", projectVersion);
 
     CatOptions options = Args.parseOptions(args, CatOptions.class);
     

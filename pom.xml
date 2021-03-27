@@ -12,12 +12,14 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>awscat</name>
 	<description>awscat</description>
+
 	<properties>
 		<java.version>11</java.version>
 		<!-- <maven.compiler.source>11</maven.compiler.source>
 		<maven.compiler.target>11</maven.compiler.target> -->
 		<aws.java.sdk.version>2.16.1</aws.java.sdk.version>
 	</properties>
+
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
