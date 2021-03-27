@@ -17,12 +17,7 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient;
 @Service
 public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
 
-    // private final ApplicationArguments args;
     private String topicArn;
-
-    public AwsTopicOutputPluginProvider(ApplicationArguments args) {
-        // this.args = args;
-    }
 
     public String toString() {
         return MoreObjects.toStringHelper(this).add("topicArn", topicArn).toString();
