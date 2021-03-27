@@ -73,8 +73,14 @@ import helpers.ObjectHelper;
     //   }
     // }
 
-
-// https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions
+/**
+ * "In JavaScript, a truthy value is a value that is considered true when
+ * encountered in a Boolean context. All values are truthy unless they are
+ * defined as falsy (i.e., except for false, 0, -0, 0n, "", null, undefined, and
+ * NaN).""
+ * 
+ * https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions
+ */
 public class Expressions {
 
   class RootObject {
@@ -196,6 +202,10 @@ public class Expressions {
     return value;
   }
 
+  private void trace(Object... args) {
+    new LogHelper(this).trace(args);
+  }
+
   public static void main(String... args) {
 
         // e = new Expressions(e).apply("e.id=222");
@@ -231,10 +241,6 @@ public class Expressions {
     // // System.out.println(parser.parseExpression("#this = 5.0").getValue(context));
 
     // System.out.println("e=" + theRoot.e);
-  }
-
-  private void trace(Object... args) {
-    new LogHelper(this).trace(args);
   }
 
 }
