@@ -58,8 +58,11 @@ public class DynamoOutputPlugin implements OutputPlugin {
 class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   class Options {
+    // concurrency
     public int c;
+    // write capacity units
     public int wcu;
+    // issue deleteItem (vs putItem)
     public boolean delete;
     public String toString() {
       return new Gson().toJson(this);
@@ -68,16 +71,6 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   private String tableName;
   private Options options;
-
-  public String toString() {
-    return MoreObjects.toStringHelper("DynamoOutputPlugin")
-        //
-        .add("tableName", tableName)
-        //
-        .add("options", options)
-        //
-        .toString();
-  }
 
   @Override
   public int mtu() {
@@ -89,6 +82,10 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     tableName = Args.base(arg).split(":")[1];
     options = Args.options(arg, Options.class);
     return ImmutableSet.of("dynamo", "dynamodb").contains(arg.split(":")[0]);
+  }
+
+  public String toString() {
+    return new Gson().toJson(this);
   }
 
   @Override
