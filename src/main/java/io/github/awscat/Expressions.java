@@ -12,6 +12,7 @@ import com.google.gson.JsonElement;
 
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.convert.converter.ConverterRegistry;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -154,6 +155,21 @@ public class Expressions {
 
   private void trace(Object... args) {
     new LogHelper(this).trace(args);
+  }
+
+  public static void addGsonConverters(ConverterRegistry converterRegistry) {
+    converterRegistry.addConverter(new Converter<JsonElement, Object>() {
+      @Override
+      public Object convert(JsonElement source) {
+        return ObjectHelper.toObject(source);
+      }
+    });
+    converterRegistry.addConverter(new Converter<Object, JsonElement>() {
+      @Override
+      public JsonElement convert(Object source) {
+        return new Gson().toJsonTree(source);
+      }
+    });
   }
 
 }
