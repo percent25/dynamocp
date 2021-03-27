@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>io.github</groupId>
 	<artifactId>awscat</artifactId>
-	<version>${revision}</version>
+	<version>${revision}</version> <!-- https://maven.apache.org/maven-ci-friendly.html -->
 	<name>awscat</name>
 	<description>awscat</description>
 
