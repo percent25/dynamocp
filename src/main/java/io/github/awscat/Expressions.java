@@ -13,6 +13,7 @@ import com.google.gson.JsonElement;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterRegistry;
+import org.springframework.core.convert.support.ConfigurableConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -71,7 +72,7 @@ public class Expressions {
 
     context.addPropertyAccessor(new SafeNavigationMapAccessor());
 
-    var conversionService = new DefaultConversionService() {
+    ConfigurableConversionService conversionService = new DefaultConversionService() {
       @Override
       protected Object convertNullSource(TypeDescriptor sourceType, TypeDescriptor targetType) {
         if (targetType.getObjectType() == Boolean.class)
@@ -138,7 +139,7 @@ public class Expressions {
   }
 
   public boolean bool(String expressionString) {
-    var value = parser.parseExpression(expressionString).getValue(context, Boolean.class);
+    Boolean value = parser.parseExpression(expressionString).getValue(context, Boolean.class);
     trace("bool", expressionString, value);
     // ### falsey
     if (value == null)
@@ -148,7 +149,7 @@ public class Expressions {
   }
 
   public Object eval(String expressionString) {
-    var value = parser.parseExpression(expressionString).getValue(context);
+    Object value = parser.parseExpression(expressionString).getValue(context);
     trace("eval", expressionString, value);
     return value;
   }

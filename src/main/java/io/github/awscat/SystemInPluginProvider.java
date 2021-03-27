@@ -42,7 +42,7 @@ class SystemInPlugin implements InputPlugin {
     this.cycle = cycle;
     this.limit = limit;
 
-    var executor = new ThreadPoolExecutor(
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(
       0, this.concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(this.concurrency));
     executor.setRejectedExecutionHandler(new QueuePutPolicy());
     this.executor = executor;
@@ -77,7 +77,7 @@ class SystemInPlugin implements InputPlugin {
               partition.add(parser.next());
               if (!parser.hasNext() || partition.size() == effectiveMtu || count == limit) {
                 run(() -> {
-                  var copyOfPartition = partition;
+                  List<JsonElement> copyOfPartition = partition;
                   // var copyOfPartition = ImmutableList.copyOf(partition);
                   partition = new ArrayList<>();
                   return Futures.submitAsync(()->{
@@ -126,9 +126,9 @@ public class SystemInPluginProvider implements InputPluginProvider {
 
   @Override
   public InputPlugin activate() throws Exception {
-    var arg = args.getNonOptionArgs().get(0);
-    var file = Args.base(arg);
-    var options = Args.options(arg, SystemInOptions.class);
+    String arg = args.getNonOptionArgs().get(0);
+    String file = Args.base(arg);
+    SystemInOptions options = Args.options(arg, SystemInOptions.class);
     return new SystemInPlugin(file, options.c, options.cycle, options.limit);
   }
 

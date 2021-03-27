@@ -1,9 +1,11 @@
 package helpers;
 
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.jupiter.api.Test;
 
@@ -12,9 +14,9 @@ public class FutureRunnerTest {
   @Test
   public void futureRunnerTest() throws Exception {
 
-    var executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     try {
-        var lf = new FutureRunner() {
+        Object result = new FutureRunner() {
             int count;
             int listenCount;
             {
@@ -46,7 +48,7 @@ public class FutureRunnerTest {
                 System.out.println("onListen:"+listenCount);
             }
         }.get().get();
-        System.out.println(lf);
+        System.out.println(result);
     } finally {
         executor.shutdown();
     }

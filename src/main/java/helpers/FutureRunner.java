@@ -13,6 +13,13 @@ import com.spotify.futures.CompletableFuturesExtra;
 
 /**
  * Opinionated robust facade/runner for listenablefuture(s).
+ * 
+ * TODO if .get() is not called then onListen is not called
+ * TODO if .get() is not called then onListen is not called
+ * TODO if .get() is not called then onListen is not called
+ * TODO if .get() is not called then onListen is not called
+ * TODO if .get() is not called then onListen is not called
+ * 
  */
 public class FutureRunner {
     

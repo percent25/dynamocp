@@ -149,10 +149,10 @@ public class DynamoInputPlugin implements InputPlugin {
           for (Map<String, AttributeValue> item : scanResponse.items())
             jsonElements.add(parse(item));
 
-          var futures = new ArrayList<ListenableFuture<?>>();
-          for (var partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
+          List<ListenableFuture<?>> futures = new ArrayList<>();
+          for (List<JsonElement> partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
             run(()->{
-              var lf = listener.apply(partition);
+              ListenableFuture<?> lf = listener.apply(partition);
               futures.add(lf);
               return lf;
             });
@@ -179,13 +179,13 @@ public class DynamoInputPlugin implements InputPlugin {
   private JsonElement parse(Map<String, AttributeValue> item) {
     
     // aesthetics
-    var sortedItem = new LinkedHashMap<String, AttributeValue>();
-    for (var key : keySchema)
+    Map<String, AttributeValue> sortedItem = new LinkedHashMap<String, AttributeValue>();
+    for (String key : keySchema)
       sortedItem.put(key, item.get(key));
     // if (!options.keys)
       sortedItem.putAll(ImmutableSortedMap.copyOf(item));
     
-    var jsonElement = new Gson().toJsonTree(Maps.transformValues(sortedItem, value -> {
+    JsonElement jsonElement = new Gson().toJsonTree(Maps.transformValues(sortedItem, value -> {
       try {
         return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
       } catch (Exception e) {

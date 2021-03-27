@@ -3,8 +3,9 @@ package io.github.awscat.contrib;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
@@ -31,6 +32,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 
 class MyRecord {
@@ -109,7 +111,7 @@ public class DynamoExperiment2 {
 
     while (true) {
 
-      var myRecord = new MyRecord();
+      MyRecord myRecord = new MyRecord();
 
       sem.acquire();
 
@@ -118,7 +120,7 @@ public class DynamoExperiment2 {
       try {
         String key = Hashing.sha256().hashLong(id.incrementAndGet()).toString();
         
-        var item = new HashMap<String, AttributeValue>();
+        Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
         item.put("id", AttributeValue.builder().s(key).build());
         item.put("val1", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
         item.put("val2", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
@@ -126,7 +128,7 @@ public class DynamoExperiment2 {
 
         int retryCount[] = new int[1];
         long serviceCallDuration[] = new long[1];
-        var putItemRequest = PutItemRequest.builder()
+        PutItemRequest putItemRequest = PutItemRequest.builder()
         //
         .tableName(tableName).item(item).returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
         // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/metrics.html
@@ -151,25 +153,25 @@ public class DynamoExperiment2 {
         //
         .build();
 
-        var lf = lf(client.putItem(putItemRequest));
+        ListenableFuture<PutItemResponse> lf = lf(client.putItem(putItemRequest));
 
         lf.addListener(()->{
           synchronized (lock) {
           try {
-            final var t0 = System.currentTimeMillis();
+            final long t0 = System.currentTimeMillis();
 
-            var putItemResponse = lf.get();
-            var consumedCapacityUnits = putItemResponse.consumedCapacity().capacityUnits();
+            PutItemResponse putItemResponse = lf.get();
+            Double consumedCapacityUnits = putItemResponse.consumedCapacity().capacityUnits();
 
-            var instantRate = Double.valueOf(1000.0 * consumedCapacityUnits / serviceCallDuration[0] * concurrency).doubleValue();
+            double instantRate = Double.valueOf(1000.0 * consumedCapacityUnits / serviceCallDuration[0] * concurrency).doubleValue();
             myRecord.instantRate = instantRate;
 
             reportedMeter.add(consumedCapacityUnits.longValue());
 
-            var fastRate = reportedMeter.avg(fastWindow).doubleValue();
+            double fastRate = reportedMeter.avg(fastWindow).doubleValue();
             myRecord.fastRate = reportedMeter.avg(fastWindow).doubleValue();
 
-            var slowRate = reportedMeter.avg(slowWindow).doubleValue();
+            double slowRate = reportedMeter.avg(slowWindow).doubleValue();
             myRecord.slowRate = reportedMeter.avg(slowWindow).doubleValue();
 
             myRecord.rateIn = rateLimiter.getRate();
@@ -183,9 +185,9 @@ public class DynamoExperiment2 {
 
               //"rateIn":5.0,"instantRate":46.8,"fastRate":0.1,"slowRate":0.06,"rateOut":25.9}
 
-              var rateIn = rateLimiter.getRate();
+              double rateIn = rateLimiter.getRate();
               // var maxRate = Math.max(rateIn, instantRate); //###TODO PONDER THIS
-              var ratio = 3/2 * (fastRate-slowRate)/slowRate; // (to-from)/from
+              double ratio = 3/2 * (fastRate-slowRate)/slowRate; // (to-from)/from
               
               // var deltaRate = maxRate - rateIn;
 
@@ -197,7 +199,7 @@ public class DynamoExperiment2 {
 
               // var rateOut = rateIn + deltaRate * multiplier; // creep up slowly
               // var rateOut = rateIn + desiredDelta*slowRate/fastRate;
-              var rateOut = rateIn + ratio*rateIn;
+              double rateOut = rateIn + ratio*rateIn;
 
               if (rateOut>instantRate)
                 rateOut=instantRate;
@@ -223,9 +225,9 @@ public class DynamoExperiment2 {
 
                     // var absDesire = Math.min(instantRate, fastRate);
               
-              var rateIn = rateLimiter.getRate();
+              double rateIn = rateLimiter.getRate();
 
-              var minRate = Math.min(fastRate, slowRate); //###TODO PONDER THIS
+              double minRate = Math.min(fastRate, slowRate); //###TODO PONDER THIS
               // var minRate = Math.min(rateIn, Math.min(fastRate, slowRate)); //###TODO PONDER THIS
               // var desiredRate = Math.min(instantRate, slowRate);
               // var deltaRate = rateIn - minRate;
@@ -235,14 +237,14 @@ public class DynamoExperiment2 {
                     //   if (fastRate < instantRate)
                     //     desiredRate = fastRate;
                     // }
-              var ratio = 3/2 * Math.abs(fastRate-slowRate)/slowRate; // (to-from)/from
+              double ratio = 3/2 * Math.abs(fastRate-slowRate)/slowRate; // (to-from)/from
 
               // if (rateIn>minRate) {
               //   multiplier = (rateIn-minRate)/minRate;
               //   // if (mulitipli)
               // }
 
-              var rateOut = rateIn - ratio*rateIn;
+              double rateOut = rateIn - ratio*rateIn;
 
               if (rateOut>instantRate)
                 rateOut=instantRate;

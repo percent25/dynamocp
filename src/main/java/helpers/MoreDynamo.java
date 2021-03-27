@@ -1,6 +1,7 @@
 package helpers;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -9,7 +10,7 @@ public class MoreDynamo {
   // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
   public static int itemSize(Map<String, AttributeValue> item) {
     int size = 0;
-    for (var entry : item.entrySet()) {
+    for (Entry<String, AttributeValue> entry : item.entrySet()) {
       String attributeName = entry.getKey();
       AttributeValue attributeValue = entry.getValue();
 

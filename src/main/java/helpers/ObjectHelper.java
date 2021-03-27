@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -15,13 +16,13 @@ public class ObjectHelper {
   public static Object toObject(JsonElement jsonElement) {
     if (jsonElement.isJsonArray()) {
       List<Object> list = new ArrayList<>();
-      for (var element : jsonElement.getAsJsonArray())
+      for (JsonElement element : jsonElement.getAsJsonArray())
         list.add(toObject(element));
       return list;
     }
     if (jsonElement.isJsonObject()) {
       Map<String, Object> object = new LinkedHashMap<>();
-      for (var entry : jsonElement.getAsJsonObject().entrySet())
+      for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet())
         object.put(entry.getKey(), toObject(entry.getValue()));
       return object;
     }

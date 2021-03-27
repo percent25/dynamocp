@@ -143,9 +143,9 @@ public class Main implements ApplicationRunner {
 
       if (args.getNonOptionArgs().size() > 0) {
 
-        var inputPlugin = inputPluginProvider.activate();
+        InputPlugin inputPlugin = inputPluginProvider.activate();
         log("inputPlugin", inputPlugin);
-        var outputPluginSupplier = outputPluginProvider.activate(target);
+        Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
         log("outputPlugin", outputPluginProvider);
 
         // ----------------------------------------------------------------------

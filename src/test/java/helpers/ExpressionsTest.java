@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -118,10 +119,10 @@ public class ExpressionsTest {
     //     "'true'", "'not-empty'", // json primitive string
     //     "[]", "{}");
 
-    for (var e : someTruthy) {
-      for (var entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
-        var fmt = entry.getKey();
-        var str = entry.getValue();
+    for (String e : someTruthy) {
+      for (Entry<String, String> entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
+        String fmt = entry.getKey();
+        String str = entry.getValue();
         assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s", e).isEqualTo(true);
       }
     }
@@ -139,10 +140,10 @@ public class ExpressionsTest {
     //     "0", "-0", "0.0", "-0.0", // json primitive number
     //     "'false'", "''", "'0'", "'-0'", "'0.0'", "'-0.0'"); // json primitive string
 
-    for (var e : allFalsey) {
-      for (var entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
-        var fmt = entry.getKey();
-        var str = entry.getValue();
+    for (String e : allFalsey) {
+      for (Entry<String, String> entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
+        String fmt = entry.getKey();
+        String str = entry.getValue();
         assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s", e).isEqualTo(false);
       }
     }

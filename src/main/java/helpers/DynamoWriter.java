@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Map.Entry;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -174,7 +175,7 @@ public class DynamoWriter {
     //   }, MoreExecutors.directExecutor());
     // });
 
-    var lf = new FutureRunner() {
+    ListenableFuture<?> lf = new FutureRunner() {
       VoidFuture throttle = new VoidFuture();
       DoBatchWriteItemWork work = new DoBatchWriteItemWork();
       BiMap<Map<String, AttributeValue>/*key*/, WriteRequest> writeRequests = HashBiMap.create();
@@ -185,8 +186,7 @@ public class DynamoWriter {
           throttle.setVoid();
         else {
           // random backoff
-          var r = new Random().nextDouble();
-          long delay = Double.valueOf(r*1000*permits/writeLimiter.getRate()).longValue();
+          long delay = Double.valueOf(new Random().nextDouble()*1000*permits/writeLimiter.getRate()).longValue();
           // System.out.println("delay:"+delay);
           timer.newTimeout(timeout->{
             acquire(permits);
@@ -200,9 +200,9 @@ public class DynamoWriter {
 
           c.acquire();
 
-          var items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
+          Map<Map<String, AttributeValue>,Map<String, AttributeValue>> items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
           partition.keySet().forEach(key -> {
-            var partitionValue = Iterables.getLast(partition.get(key)); // last one wins
+            PartitionValue partitionValue = Iterables.getLast(partition.get(key)); // last one wins
             items.put(key, partitionValue.item);
             writeRequests.put(key, partitionValue.writeRequest);
           });
@@ -210,7 +210,7 @@ public class DynamoWriter {
           // pre-throttle
           // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
           int permits[] = new int[1];
-          for (var item : items.values()) {
+          for (Map<String, AttributeValue> item : items.values()) {
             int size = MoreDynamo.itemSize(item);
             permits[0] += (size + 1023) / 1024;
           }
@@ -256,7 +256,7 @@ public class DynamoWriter {
                 // ###TODO re-submit unprocessedItems
 
                 for (WriteRequest writeRequest : unprocessedItems) {
-                  var key = writeRequests.inverse().get(writeRequest);
+                  Map<String, AttributeValue> key = writeRequests.inverse().get(writeRequest);
                   partition.removeAll(key).forEach(partitionValue -> {
                     ++work.unprocessedItems;
                     partitionValue.lf.setException(new Exception("unprocessedItem=" + writeRequest));
@@ -299,10 +299,11 @@ public class DynamoWriter {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   private Map<String, AttributeValue> render(JsonElement jsonElement) throws Exception {
-    var item = new LinkedHashMap<String, AttributeValue>();
-    for (var entry : jsonElement.getAsJsonObject().entrySet()) {
-      var key = entry.getKey();
-      var attributeValue = objectMapper.readValue(entry.getValue().toString(), AttributeValue.serializableBuilderClass()).build();
+    Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
+    for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet()) {
+      String key = entry.getKey();
+      JsonElement value = entry.getValue();
+      AttributeValue attributeValue = objectMapper.readValue(value.toString(), AttributeValue.serializableBuilderClass()).build();
       item.put(key, attributeValue);
     }
     return item;

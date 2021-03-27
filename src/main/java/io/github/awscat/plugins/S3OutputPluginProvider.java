@@ -43,7 +43,7 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
         String exportPrefix = uri.getPath().substring(1);
 
         // Note- transport is thread safe
-        var transport = new ConcatenatedJsonWriterTransportAwsS3Export(client, bucket, exportPrefix);
+        ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsS3Export(client, bucket, exportPrefix);
         // Note- ConcatenatedJsonWriter is not thread safe
         return ()->{
             return new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));

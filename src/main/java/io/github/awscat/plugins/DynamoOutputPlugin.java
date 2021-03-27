@@ -99,8 +99,8 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
     options.wcu = options.wcu > 0 ? options.wcu : provisionedWcu;
 
-    var c = new Semaphore(options.c);
-    var writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
+    Semaphore c = new Semaphore(options.c);
+    RateLimiter writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
 
         // Supplier<?> preWarm = Suppliers.memoize(() -> {
         //   if (options.wcu > 0)

@@ -1,6 +1,7 @@
 package io.github.awscat;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Splitter;
@@ -33,7 +34,7 @@ public class Args {
 
     // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
     public static <T> T options(String arg, Class<T> classOfT) {
-        var options = new HashMap<String, String>();
+        Map<String, String> options = new HashMap<String, String>();
         int index = arg.indexOf(",");
         if (index != -1) {
         options.putAll(Splitter.on(",").trimResults().withKeyValueSeparator("=").split(arg.substring(index+1)));
@@ -54,7 +55,7 @@ public class Args {
         for (String name : args.getOptionNames()) {
             String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);
             options.addProperty(lowerCamel, true);
-            for (String value : args.getOptionValues(name))
+            for (String value : args.getOptionValues(name)) //###TODO doesn't handle multi-values
                 options.addProperty(lowerCamel, value);
         }
         return new Gson().fromJson(options, classOfT);

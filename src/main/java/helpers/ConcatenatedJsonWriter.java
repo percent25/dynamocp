@@ -89,7 +89,7 @@ public class ConcatenatedJsonWriter {
                         baos = flush(baos, partitions.get(baos));
                     baos.write(bytes, 0, bytes.length);
 
-                    var lf = new VoidFuture();
+                    VoidFuture lf = new VoidFuture();
                     partitions.put(baos, lf); // track futures on a per-baos/batch/partition basis
                     return lf;
                 });
@@ -118,7 +118,7 @@ public class ConcatenatedJsonWriter {
     // returns new baos
     private ByteArrayOutputStream flush(ByteArrayOutputStream baos, Iterable<VoidFuture> partition) {
         debug("flush", baos.size());
-        var lf = new FutureRunner() {
+        ListenableFuture<?> lf = new FutureRunner() {
             {
                 run(() -> {
                     // request
@@ -137,7 +137,7 @@ public class ConcatenatedJsonWriter {
     }
 
     private byte[] render(JsonElement jsonElement) {
-        var baos = new ByteArrayOutputStream();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         new PrintStream(baos, true).println(jsonElement);
         return baos.toByteArray();
     }
