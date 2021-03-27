@@ -234,7 +234,7 @@ public class Main implements ApplicationRunner {
         if (provider.canActivate())
           return provider;
       } catch (Exception e) {
-        log(e);
+        log(provider.name(), e);
       }
     }
     return new SystemInPluginProvider(args);
@@ -247,7 +247,7 @@ public class Main implements ApplicationRunner {
           if (provider.canActivate(args.getNonOptionArgs().get(1)))
             return provider;
         } catch (Exception e) {
-          log(e);
+          log(provider.name(), e);
         }
       }
     }
