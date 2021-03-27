@@ -32,7 +32,6 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationContext;
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
@@ -53,7 +52,6 @@ public class Main implements ApplicationRunner {
   };
 
   private final ApplicationContext context;
-  private final Optional<BuildProperties> buildProperties;
   
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
@@ -110,18 +108,13 @@ public class Main implements ApplicationRunner {
   /**
    * ctor
    */
-  public Main(ApplicationArguments args, List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context, Optional<BuildProperties> buildProperties) {
+  public Main(ApplicationArguments args, List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context) {
     log("ctor");
     this.context = context;
-    this.buildProperties = buildProperties;
     this.inputPluginProviders.addAll(inputPluginProviders);
     this.inputPluginProviders.add(new SystemInPluginProvider(args)); // ensure last
     this.outputPluginProviders.addAll(outputPluginProviders);
     this.outputPluginProviders.add(new SystemOutPluginProvider(args)); // ensure last
-
-    buildProperties.ifPresent(value->{
-      log("buildProperties", value);
-    });
   }
 
   /**
