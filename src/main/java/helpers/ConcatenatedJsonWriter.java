@@ -4,23 +4,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
 
-import com.google.common.base.Ascii;
 import com.google.common.base.Defaults;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 /**
  * ConcatenatedJsonWriter
  * 
- * <p>pipelined
  * <p>not thread-safe
  */
 public class ConcatenatedJsonWriter {
@@ -50,20 +46,24 @@ public class ConcatenatedJsonWriter {
         }
     }
 
+    // abstract write transport
     private final Transport transport;
 
+    // the current batch
     private ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+    // batch -> futures
     private final Multimap<ByteArrayOutputStream, VoidFuture> partitions = LinkedListMultimap.create();
+    
     private final List<ListenableFuture<?>> flushFutures = Lists.newArrayList();
 
     /**
      * ctor
      * 
      * @param transport
-     * @param tags
      */
     public ConcatenatedJsonWriter(Transport transport) {
-        debug("ctor");
+        debug("ctor", transport);
         this.transport = transport;
     }
 
@@ -89,22 +89,12 @@ public class ConcatenatedJsonWriter {
                         baos = flush(baos, partitions.get(baos));
                     baos.write(bytes, 0, bytes.length);
 
-                    VoidFuture lf = new VoidFuture();
-                    partitions.put(baos, lf); // track futures on a per-baos/partition basis
+                    var lf = new VoidFuture();
+                    partitions.put(baos, lf); // track futures on a per-baos/batch/partition basis
                     return lf;
                 });
             }
         }.get();
-    }
-
-    class FlushWork {
-        long in;
-        long inErr;
-        long out;
-        long outErr;
-        public String toString() {
-            return new Gson().toJson(this);
-        }
     }
 
     /**
@@ -115,17 +105,12 @@ public class ConcatenatedJsonWriter {
     public ListenableFuture<?> flush() {
         debug("flush");
         return new FutureRunner() {
-            FlushWork work = new FlushWork();
             {
                 run(() -> {
                     if (baos.size() > 0)
                         baos = flush(baos, partitions.get(baos));
                     return Futures.successfulAsList(flushFutures);
                 });
-            }
-            @Override
-            protected void onListen() {
-                debug(work);
             }
         }.get();
     }
@@ -152,8 +137,8 @@ public class ConcatenatedJsonWriter {
     }
 
     private byte[] render(JsonElement jsonElement) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        new PrintStream(baos, true).println(jsonElement.toString());
+        var baos = new ByteArrayOutputStream();
+        new PrintStream(baos, true).println(jsonElement);
         return baos.toByteArray();
     }
 
