@@ -49,7 +49,7 @@ public class Args {
     //     return parseArg(args.getNonOptionArgs().get(1));
     // }
 
-    public static <T> T parse(ApplicationArguments args, Class<T> classOfT) {
+    public static <T> T parseOptions(ApplicationArguments args, Class<T> classOfT) {
         JsonObject options = new JsonObject();
         for (String name : args.getOptionNames()) {
             String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);

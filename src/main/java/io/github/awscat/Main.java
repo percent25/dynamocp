@@ -125,7 +125,7 @@ public class Main implements ApplicationRunner {
   public void run(ApplicationArguments args) throws Exception {
     log("run");
 
-    CatOptions options = Args.parse(args, CatOptions.class);
+    CatOptions options = Args.parseOptions(args, CatOptions.class);
     
     log("options", options);
 
