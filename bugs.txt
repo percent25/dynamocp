@@ -16,6 +16,13 @@ export LOGGING_LEVEL_IO_GITHUB_AWSCAT=TRACE
 
 rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java -jar target/awscat-0.0.1-SNAPSHOT.jar dynamo:MyTableOnDemand
 
+spel downsides
+ 1. no comma expressions
+ 1. weird inline array syntax
+
+javascript downsides
+ 1. while (true)
+
 ======================================================================
 OPEN
 ======================================================================
@@ -37,34 +44,7 @@ If the above mechanisms are not able to fix the issue, try smoothing out your re
 
 
 
-+ target/awscat-0.0.1-SNAPSHOT.jar -
-main[-]
-ctor
-run
-inputPlugin io.github.awscat.SystemInInputPlugin@3d1cfad4
-outputPlugin io.github.awscat.SystemOutOutputPluginProvider$$Lambda$381/0x0000000800d112e0@62230c58
-input.read().get();111
-asdf
-1
-2
-3
-java.lang.IllegalStateException: Not a JSON Object: "asdf"
-java.lang.IllegalStateException: Not a JSON Object: 1
-java.lang.IllegalStateException: Not a JSON Object: 2
-java.lang.IllegalStateException: Not a JSON Object: 3
-Progress{"in":4,"out":0,"rate":"0/0/0 0/0/0"}
-input.read().get();222
-rrizun@rrizuns-MacBook-Air dynamocat % 
-
-
-
 dynamoOutputPlugin: handle unprocessedItems.. dlq or retry?
-
-
-
-transform is a little bit weird atm.. inplace transform? vs output=transform(input)
- --transform={"asdf":"#{#input}"}
- --apply={...}
 
 
 
@@ -94,15 +74,6 @@ s3outputplugin
           awscat.jar dynamo:MyTableOnDemand dynamo:MyTableOnDemand,wcu=500
   - update: maybe don't need to go this far.. would not be able to leverage 'natural' source batching, e.g., sqs receiveMessage, dynamo scan, etc..
   - InputPlugins deliver in terms of their natural batching.. outputPlugins can write individual JsonElement objects in terms of their natural batching
-
-
-
-SpEL based filter/transform expressions?
- --filter=id?.s?.startsWith('tax:')
- --action=delete ??
- --transform={Item:"#{#in}"}
-
- --action={Item:"#{ #this }"} --action={"Item.id.s":"#uuid()"}
 
 
 
@@ -265,5 +236,72 @@ rrizun@rrizuns-MacBook-Air dynamocat % ./x dynamo:MyTable dynamo:MyTable
 "random" source
  - rrizun@rrizuns-MacBook-Air dynamocat % awscat in.json,loop=true,limit=1000 dynamo:MyTable --transform="{id:{s:'#{#uuid()}'}}"
  
+
+
+EVALUATION CONTEXT: STATE AND/OR BEHAVIOR
+
+--spel="e.id.s=uuid()"
+
+--filter="?!?
+--expression="?!?"
+      <int:transformer input-channel="inChannel"
+        output-channel="outChannel"
+        expression="payload.toUpperCase() + '- [' + T(System).currentTimeMillis() + ']'"/>
+--enrich ?!?
+      headers and payload
+"By using SpEL for such simple cases, you no longer have to provide a separate class and configure it in the application context.
+All you need do is configured the expression attribute with a valid SpEL expression.
+The 'payload' and 'headers' variables are bound to the SpEL evaluation context, giving you full access to the incoming message."
+
+#root and #this
+
+--filter="length()>1"
+--filter="#root?.length()>1"
+
+--filter="id?.s?.startsWith('foo:')" # safe navigation operator
+--apply="id.s"
+--apply="#root*2"
+--apply="#root*=2" <-- can u do this?
+--expression="id.s=#uuid()" <-- this can be done w/getValue.. only for objects??
+  UNQUALIFIED REFERENCES ARE RELATIVE TO #THIS
+  UNQUALIFIED REFERENCES ARE RELATIVE TO #THIS
+  UNQUALIFIED REFERENCES ARE RELATIVE TO #THIS
+
+
+
++ target/awscat-0.0.1-SNAPSHOT.jar -
+main[-]
+ctor
+run
+inputPlugin io.github.awscat.SystemInInputPlugin@3d1cfad4
+outputPlugin io.github.awscat.SystemOutOutputPluginProvider$$Lambda$381/0x0000000800d112e0@62230c58
+input.read().get();111
+asdf
+1
+2
+3
+java.lang.IllegalStateException: Not a JSON Object: "asdf"
+java.lang.IllegalStateException: Not a JSON Object: 1
+java.lang.IllegalStateException: Not a JSON Object: 2
+java.lang.IllegalStateException: Not a JSON Object: 3
+Progress{"in":4,"out":0,"rate":"0/0/0 0/0/0"}
+input.read().get();222
+rrizun@rrizuns-MacBook-Air dynamocat % 
+
+
+
+transform is a little bit weird atm.. inplace transform? vs output=transform(input)
+ --transform={"asdf":"#{#input}"}
+ --apply={...}
+
+
+
+SpEL based filter/transform expressions?
+ --filter=id?.s?.startsWith('tax:')
+ --action=delete ??
+ --transform={Item:"#{#in}"}
+
+ --action={Item:"#{ #this }"} --action={"Item.id.s":"#uuid()"}
+
 
 

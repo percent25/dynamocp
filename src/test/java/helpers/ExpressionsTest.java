@@ -8,10 +8,10 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -23,12 +23,27 @@ public class ExpressionsTest {
   private final String now = Instant.now().toString();
   // private final JsonElement jsonElement = new JsonObject();
   // private final Expressions expressions = new Expressions(jsonElement);
+  
+  // the set of falsey values is static.. here are the falsey values
+  private final Set<String> allFalsey = ImmutableSet.of( //
+      "null", // json null
+      "false", // json primitive bool
+      "0", "-0", "0.0", "-0.0", // json primitive number
+      "''", "'false'", "'0'", "'-0'", "'0.0'", "'-0.0'"); // json primitive string      
+
+  // if it is not falsey then it is truthy.. here are some truthy values
+  private final Set<String> someTruthy = ImmutableSet.of( //
+      "true", // json primitive bool
+      "1", "-1", "1.0", "-1.0", // json primitive number
+      "'true'", // json primitive string
+      "[]", "[null]", "[false]", "[0]", "['']", "['false']", "['0']", // any json array
+      "{}"); // any json object
 
   @Test
-  public void evalTest() {
+  public void boolTest() {
 
-    assertThat(eval(json("{id:{s:1}}"), "e.id.s==1")).isEqualTo(true);
-    assertThat(eval(json("{id:{s:1}}"), "e.id.s==2")).isEqualTo(false);
+    assertThat(bool(json("{id:{s:1}}"), "e.id.s==1")).isEqualTo(true);
+    assertThat(bool(json("{id:{s:1}}"), "e.id.s==2")).isEqualTo(false);
 
     // System.out.println(parser.parseExpression("e.id?.s?.length").getValue(context));
     // System.out.println(parser.parseExpression("e.id?.s?.length>0").getValue(context));
@@ -44,18 +59,18 @@ public class ExpressionsTest {
   }
 
   @Test
-  public void evalSafeNavigationTest() {
+  public void safeNavigationTest() {
 
     assertThrows(Exception.class, ()->{
-      eval(json("null"), "e.id.s==1");
+      bool(json("null"), "e.id.s==1");
     });
     assertThrows(Exception.class, ()->{
-      eval(json("null"), "e?.id.s==1");
+      bool(json("null"), "e?.id.s==1");
     });
-    assertThat(eval(json("null"), "e?.id?.s==1")).isEqualTo(false);
-    assertThat(eval(json("{}"), "e?.id?.s==1")).isEqualTo(false);
-    assertThat(eval(json("{id:{}}"), "e?.id?.s==1")).isEqualTo(false);
-    assertThat(eval(json("{id:{s:1}}"), "e?.id?.s==1")).isEqualTo(true);
+    assertThat(bool(json("null"), "e?.id?.s==1")).isEqualTo(false);
+    assertThat(bool(json("{}"), "e?.id?.s==1")).isEqualTo(false);
+    assertThat(bool(json("{id:{}}"), "e?.id?.s==1")).isEqualTo(false);
+    assertThat(bool(json("{id:{s:1}}"), "e?.id?.s==1")).isEqualTo(true);
 
   }
 
@@ -91,63 +106,40 @@ public class ExpressionsTest {
     assertThat(output(json("{}"), "e.id={s:'foo'}")).isEqualTo(json("{id:{s:'foo'}}"));
     assertThat(output(json("{}"), "e.id={s:'bar'}")).isEqualTo(json("{id:{s:'bar'}}"));
 
-
-
   }
 
   // https://developer.mozilla.org/en-US/docs/Glossary/Truthy
   @Test
   public void truthyTest() {
 
-    var truthy = ImmutableSet.of("true", "'true'", "'empty'", "1", "-1", "1.0", "-1.0", "[]", "{}");
+    // var truthy = ImmutableSet.of( //
+    //     "true", // json primitive bool
+    //     "1", "-1", "1.0", "-1.0", // json primitive number
+    //     "'true'", "'not-empty'", // json primitive string
+    //     "[]", "{}");
 
-    for (var e : truthy) {
+    for (var e : someTruthy) {
       for (var entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
         var fmt = entry.getKey();
         var str = entry.getValue();
         assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s", e).isEqualTo(true);
       }
     }
-    // assertThat(bool(json("[]"), "e")).isEqualTo(true); // ### <-- THIS SHOULD BE TRUTHY
-    assertThat(bool(json("[1]"), "e")).isEqualTo(true);
 
-    // assertThat(bool(json("null"), "e")).isNotEqualTo(true); // json null
-    
-    // assertThat(bool(json("true"), "e")).isEqualTo(true); // json primitive bool
-    // assertThat(bool(json("'true'"), "e")).isEqualTo(true); // json primitive string
-    // assertThat(bool(json("'empty'"), "e")).isEqualTo(true); // json primitive string
-    
-    // assertThat(bool(json("1"), "e")).isEqualTo(true); // json number
-    // assertThat(bool(json("-1"), "e")).isEqualTo(true); // json number
-    // assertThat(bool(json("1.0"), "e")).isEqualTo(true); // json number
-    // assertThat(bool(json("-1.0"), "e")).isEqualTo(true); // json number
-    // // assertThat(bool(json("0x1"), "e")).isEqualTo(true);
+    assertThat(bool(json("[1]"), "e")).isEqualTo(true); //###TODO put this in someTruthy ?
 
-    // assertThat(bool(json("{}"), "e")).isEqualTo(true);
-
-    // assertThat(bool(json("{foo:'null'}"), "e.foo")).isEqualTo(true);
-    // assertThat(bool(json("{foo:true}"), "e.foo")).isEqualTo(true);
-    // assertThat(bool(json("{foo:'true'}"), "e.foo")).isEqualTo(true);
-    // assertThat(bool(json("{foo:'empty'}"), "e.foo")).isEqualTo(true);
-    // assertThat(bool(json("{foo:1}"), "e.foo")).isEqualTo(true);
-    // assertThat(bool(json("{foo:1.0}"), "e.foo")).isEqualTo(true);
   }
 
   // https://developer.mozilla.org/en-US/docs/Glossary/Falsy
   @Test
   public void falseyTest() {
 
-    var falsey = ImmutableSet.of( //
-        "null", // json null
-        "false", // json primitive bool
-        "'false'", "''", "'0'", "'-0'", "'0.0'", "'-0.0'", // json primitive string
-        "0", "-0", "0.0", "-0.0" // json primitive number
-    );
+    // var falsey = ImmutableSet.of("null", // json null
+    //     "false", // json primitive bool
+    //     "0", "-0", "0.0", "-0.0", // json primitive number
+    //     "'false'", "''", "'0'", "'-0'", "'0.0'", "'-0.0'"); // json primitive string
 
-    for (var e : falsey) {
-      // assertThat(bool(json(String.format("%s", e)), "e")).as("e=%s", e).isEqualTo(false);
-      // assertThat(bool(json(String.format("[%s]", e)), "e[0]")).isEqualTo(false);
-      // assertThat(bool(json(String.format("{e:%s}", e)), "e.e")).isEqualTo(false);
+    for (var e : allFalsey) {
       for (var entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
         var fmt = entry.getKey();
         var str = entry.getValue();
@@ -155,26 +147,6 @@ public class ExpressionsTest {
       }
     }
 
-    // assertThat(bool(json("null"), "e")).isEqualTo(false); // json null
-
-    // assertThat(bool(json("false"), "e")).isEqualTo(false); // json primitive bool
-    // assertThat(bool(json("'false'"), "e")).isEqualTo(false); // json primitive string
-    // assertThat(bool(json("''"), "e")).isEqualTo(false); // json primitive string
-    
-    // assertThat(bool(json("0"), "e")).isEqualTo(false); // json number
-    // assertThat(bool(json("-0"), "e")).isEqualTo(false); // json number
-    // assertThat(bool(json("0.0"), "e")).isEqualTo(false); // json number
-    // assertThat(bool(json("-0.0"), "e")).isEqualTo(false); // json number
-    // // assertThat(bool(json("0x0"), "e")).isEqualTo(false);
-
-    // assertThat(bool(json("{}"), "e.foo")).isEqualTo(false);
-
-    // assertThat(bool(json("{foo:null}"), "e.foo")).isEqualTo(false);
-    // assertThat(bool(json("{foo:false}"), "e.foo")).isEqualTo(false);
-    // assertThat(bool(json("{foo:'false'}"), "e.foo")).isEqualTo(false);
-    // assertThat(bool(json("{foo:''}"), "e.foo")).isEqualTo(false);
-    // assertThat(bool(json("{foo:0}"), "e.foo")).isEqualTo(false);
-    // assertThat(bool(json("{foo:0.0}"), "e.foo")).isEqualTo(false);
   }
 
   @Test
@@ -189,6 +161,26 @@ public class ExpressionsTest {
 
     assertThat(bool(json("{test:'yeah'}"), "e?.test")).isEqualTo(true);
     assertThat(bool(json("{test:'yeah'}"), "e?.test!=null")).isEqualTo(true);
+
+  }
+
+  @Test
+  public void testTest() {
+
+    assertThat(bool(json("{}"), "e.test")).isEqualTo(false);
+
+    for (String e : allFalsey)
+      assertThat(bool(json(String.format("{test:%s}", e)), "e.test")).isEqualTo(false);
+
+    // assertThat(bool(json("{test:null}"), "e.test")).isEqualTo(false);
+    // assertThat(bool(json("{test:0}"), "e.test")).isEqualTo(false);
+    // assertThat(bool(json("{test:0.0}"), "e.test")).isEqualTo(false);
+    // assertThat(bool(json("{test:''}"), "e.test")).isEqualTo(false);
+    // assertThat(bool(json("{test:'0'}"), "e.test")).isEqualTo(false);
+    // assertThat(bool(json("{test:'false'}"), "e.test")).isEqualTo(false);
+
+    assertThat(bool(json("{test:'true'}"), "e.test")).isEqualTo(true);
+    assertThat(bool(json("{test:'testing123'}"), "e.test")).isEqualTo(true);
 
   }
 
@@ -215,11 +207,6 @@ public class ExpressionsTest {
     return new Expressions(input, now).bool(expressionString);
   }
   
-  // aka filters
-  private Object eval(JsonElement input, String expressionString) {
-    return new Expressions(input, now).eval(expressionString);
-  }
-
   // aka transforms
   private JsonElement output(JsonElement input, String expressionString) {
     Expressions expressions = new Expressions(input, now);
