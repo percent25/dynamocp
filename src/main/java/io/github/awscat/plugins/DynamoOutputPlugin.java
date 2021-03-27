@@ -3,9 +3,6 @@ package io.github.awscat.plugins;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
-import com.google.common.base.Defaults;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -111,9 +108,9 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
         //   return Defaults.defaultValue(Void.class);
         // });
 
-    return new AbstractSupplier(this, ()->{
+    return ()->{
       return new DynamoOutputPlugin(client, tableName, keySchema, c, writeLimiter, options.delete);
-    });
+    };
   }
 
   private void debug(Object... args) {

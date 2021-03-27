@@ -4,7 +4,6 @@ import java.util.function.Supplier;
 
 import com.google.common.base.MoreObjects;
 
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
 import helpers.ConcatenatedJsonWriter;
@@ -36,7 +35,7 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
         ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(client, topicArn);
         // ConcatenatedJsonWriter is not thread-safe
         // which makes ConcatenatedJsonWriterOutputPlugin not thread-safe
-        return new AbstractSupplier(this,()->new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport)));
+        return ()->new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
     }
 
 }

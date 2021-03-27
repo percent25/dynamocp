@@ -45,9 +45,9 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
         // Note- transport is thread safe
         var transport = new ConcatenatedJsonWriterTransportAwsS3Export(client, bucket, exportPrefix);
         // Note- ConcatenatedJsonWriter is not thread safe
-        return new AbstractSupplier(this, ()->{
+        return ()->{
             return new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
-        });
+        };
     }
 
 }
