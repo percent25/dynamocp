@@ -6,6 +6,7 @@ import io.github.awscat.OutputPlugin;
 import io.github.awscat.OutputPluginProvider;
 
 // delegates toString to the provider
+@Deprecated
 public class AbstractSupplier implements Supplier<OutputPlugin> {
 
   private final OutputPluginProvider provider;
