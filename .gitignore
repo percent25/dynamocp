@@ -1,4 +1,5 @@
 .classpath
+.factorypath
 .project
 .gradle/
 .settings/
@@ -6,3 +7,6 @@
 bin/
 build/
 target/
+
+awscat.jar
+awscat.zip
