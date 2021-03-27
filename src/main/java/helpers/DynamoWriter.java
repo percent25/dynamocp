@@ -61,14 +61,6 @@ public class DynamoWriter {
   private final RateLimiter writeLimiter;
   private final boolean delete; // PutItem vs DeleteItem
 
-  // ###TODO
-  // ###TODO
-  // ###TODO
-  // private static final Semaphore sem = new Semaphore(5*Runtime.getRuntime().availableProcessors());
-  // ###TODO
-  // ###TODO
-  // ###TODO
-
   private class PartitionValue {
     public final Map<String, AttributeValue> item;
     public final WriteRequest writeRequest;
