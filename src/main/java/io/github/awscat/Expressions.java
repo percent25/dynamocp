@@ -45,10 +45,19 @@ public class Expressions {
     public String uuid() {
       return UUID.randomUUID().toString();
     }
-    public String randomString(int bound) {
-      byte[] bytes = new byte[new SecureRandom().nextInt(3*bound/4)];
+    // returns a random string w/fixed length len
+    public String fixedString(int len) {
+      byte[] bytes = new byte[(3 * len + 3) / 4];
       new SecureRandom().nextBytes(bytes);
-      return BaseEncoding.base64().encode(bytes);
+      String randomString = BaseEncoding.base64().encode(bytes).substring(0);
+      return randomString.substring(0, Math.min(len, randomString.length()));
+    }
+    // returns a random string w/random length [1..bound]
+    public String randomString(int len) {
+      byte[] bytes = new byte[new SecureRandom().nextInt((3 * len + 3) / 4) + 1];
+      new SecureRandom().nextBytes(bytes);
+      String randomString = BaseEncoding.base64().encode(bytes).substring(0);
+      return randomString.substring(0, Math.min(len, randomString.length()));
     }
     public String toString() {
       return new Gson().toJson(this);

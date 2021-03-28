@@ -203,6 +203,12 @@ public class ExpressionsTest {
 
   }
 
+  @Test
+  public void randomStringTest() {
+    for (int i = 0; i < 10; ++i)
+      System.out.println("e="+output(json("null"), "e=randomString(4)"));
+  }
+
   // aka filters
   private boolean bool(JsonElement input, String expressionString) {
     return new Expressions(input, now).bool(expressionString);
