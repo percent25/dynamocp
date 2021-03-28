@@ -52,16 +52,20 @@ public class Args {
     //     return parseArg(args.getNonOptionArgs().get(1));
     // }
 
-    public static <T> T parseOptions(ApplicationArguments args, Class<T> classOfT) {
-        JsonObject options = new JsonObject();
+    public static <T> T parseOptions(ApplicationArguments args, Class<T> classOfT) throws Exception {
+        JsonObject options = new Gson().toJsonTree(classOfT.getConstructor().newInstance()).getAsJsonObject();
         for (String name : args.getOptionNames()) {
             String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);
-            options.addProperty(lowerCamel, true);
-            for (String value : args.getOptionValues(name)) {
-                JsonElement jsonElement = options.get(lowerCamel);
-                if (jsonElement == null || !jsonElement.isJsonArray())
-                    options.add(lowerCamel, jsonElement = new JsonArray());
-                jsonElement.getAsJsonArray().add(value);
+            if (args.getOptionValues(name).size()==0) {
+                options.addProperty(lowerCamel, true);
+            } else {
+                for (String value : args.getOptionValues(name)) {
+                    JsonElement jsonElement = options.get(lowerCamel);
+                    if (jsonElement == null || !jsonElement.isJsonArray())
+                        options.addProperty(lowerCamel, value);
+                    else
+                        jsonElement.getAsJsonArray().add(value);
+                }    
             }
         }
         return new Gson().fromJson(options, classOfT);
