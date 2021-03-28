@@ -209,7 +209,7 @@ public class DynamoWriter {
 
           // pre-throttle
           // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
-          int permits[] = new int[1];
+          int[] permits = new int[1];
           for (Map<String, AttributeValue> item : items.values()) {
             int size = MoreDynamo.itemSize(item);
             permits[0] += (size + 1023) / 1024;

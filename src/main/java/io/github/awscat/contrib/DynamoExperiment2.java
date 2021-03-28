@@ -126,8 +126,8 @@ public class DynamoExperiment2 {
         item.put("val2", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
         item.put("val3", AttributeValue.builder().s(UUID.randomUUID().toString()).build());
 
-        int retryCount[] = new int[1];
-        long serviceCallDuration[] = new long[1];
+        int[] retryCount = new int[1];
+        long[] serviceCallDuration = new long[1];
         PutItemRequest putItemRequest = PutItemRequest.builder()
         //
         .tableName(tableName).item(item).returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
