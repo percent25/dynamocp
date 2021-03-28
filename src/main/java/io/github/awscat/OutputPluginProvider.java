@@ -13,4 +13,5 @@ public interface OutputPluginProvider {
   }
   boolean canActivate(String arg);
   Supplier<OutputPlugin> activate(String arg) throws Exception;
+  // void deactivate();
 }

@@ -8,4 +8,5 @@ public interface InputPluginProvider {
   }
   boolean canActivate();
   InputPlugin activate() throws Exception;
+  // void deactivate();
 }
