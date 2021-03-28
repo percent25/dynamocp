@@ -7,8 +7,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -23,16 +21,15 @@ import com.google.common.util.concurrent.Futures;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
-import helpers.FutureRunner;
-import helpers.LocalMeter;
-import helpers.LogHelper;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
+
+import helpers.FutureRunner;
+import helpers.LocalMeter;
+import helpers.LogHelper;
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
@@ -42,16 +39,8 @@ public class Main implements ApplicationRunner {
     System.err.println("main"+Arrays.asList(args));
     // args = new String[]{"dynamo:MyTable"};
     // args= new String[]{"dynamo:MyTableOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
-    SpringApplication.run(Main.class, args);
+    System.exit(SpringApplication.exit(SpringApplication.run(Main.class, args)));
   }
-
-  static class TransformUtils {
-    public static String uuid() {
-      return UUID.randomUUID().toString();
-    }
-  };
-
-  private final ApplicationContext context;
   
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
@@ -108,9 +97,8 @@ public class Main implements ApplicationRunner {
   /**
    * ctor
    */
-  public Main(ApplicationArguments args, List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders, ApplicationContext context) {
+  public Main(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders) {
     log("ctor");
-    this.context = context;
     this.inputPluginProviders.addAll(inputPluginProviders);
     this.inputPluginProviders.add(new SystemInPluginProvider()); // ensure last
     this.outputPluginProviders.addAll(outputPluginProviders);
@@ -122,102 +110,93 @@ public class Main implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
-    log("run");
-
-    log("project-version", projectVersion);
+    log("run", projectVersion);
 
     CatOptions options = Args.parseOptions(args, CatOptions.class);
     
     log("options", options);
 
-    try {
+    //###TODO probably eradicate this
+    if (args.getNonOptionArgs().size() == 0) //###TODO probably eradicate this
+      throw new Exception("missing source!");
+    //###TODO probably eradicate this
 
-      // input plugin
-      String source = "-";
-      if (args.getNonOptionArgs().size()>0)
-        source = args.getNonOptionArgs().get(0);
-      InputPluginProvider inputPluginProvider = resolveInputPlugin(source);
-      
-      // output plugin
-      String target = "-";
-      if (args.getNonOptionArgs().size()>1)
-        target = args.getNonOptionArgs().get(1);
-      OutputPluginProvider outputPluginProvider = resolveOutputPlugin(target);
+    // input plugin
+    String source = "-";
+    if (args.getNonOptionArgs().size()>0)
+      source = args.getNonOptionArgs().get(0);
+    InputPluginProvider inputPluginProvider = resolveInputPlugin(source);
+    
+    // output plugin
+    String target = "-";
+    if (args.getNonOptionArgs().size()>1)
+      target = args.getNonOptionArgs().get(1);
+    OutputPluginProvider outputPluginProvider = resolveOutputPlugin(target);
 
-      if (args.getNonOptionArgs().size() > 0) { //###TODO probably eradicate this
+    InputPlugin inputPlugin = inputPluginProvider.activate(source);
+    log("inputPlugin", inputPlugin);
+    Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
+    log("outputPlugin", outputPluginProvider);
 
-        InputPlugin inputPlugin = inputPluginProvider.activate(source);
-        log("inputPlugin", inputPlugin);
-        Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
-        log("outputPlugin", outputPluginProvider);
+    // ----------------------------------------------------------------------
+    // main loop
+    // ----------------------------------------------------------------------
 
-        // ----------------------------------------------------------------------
-        // main loop
-        // ----------------------------------------------------------------------
-
-        inputPlugin.setListener(jsonElements->{
-          debug("listener", Iterables.size(jsonElements));
-          return new FutureRunner() {
-            Working work = new Working(in, out, request, success, failure);
-            {
-              run(()->{
-                OutputPlugin outputPlugin = outputPluginSupplier.get();
-                for (JsonElement jsonElement : jsonElements) {
-                  run(() -> {
-                    if (has(options.filter)) {
-                      Expressions expressions = new Expressions(jsonElement);
-                      in.incrementAndGet();
-                      if (expressions.bool(options.filter)) {
-                        out.incrementAndGet();
-                        run(() -> {
-                          request.incrementAndGet();
-                          expressions.eval(options.action);
-                          return outputPlugin.write(expressions.e());
-                        }, result -> {
-                          success.incrementAndGet();
-                        }, e -> {
-                          log(e);
-                          // e.printStackTrace();
-                          failure.incrementAndGet();
-                          failures.get().println(jsonElement); // pre-transform
-                        }, () -> {
-                          rate.add(1);
-                          work.rate = rate.toString();
-                        });
-                      }
-                    }
-                    return Futures.immediateVoidFuture();
-                  });
+    inputPlugin.setListener(jsonElements->{
+      debug("listener", Iterables.size(jsonElements));
+      return new FutureRunner() {
+        Working work = new Working(in, out, request, success, failure);
+        {
+          run(()->{
+            OutputPlugin outputPlugin = outputPluginSupplier.get();
+            for (JsonElement jsonElement : jsonElements) {
+              run(() -> {
+                if (has(options.filter)) {
+                  Expressions expressions = new Expressions(jsonElement);
+                  in.incrementAndGet();
+                  if (expressions.bool(options.filter)) {
+                    out.incrementAndGet();
+                    run(() -> {
+                      request.incrementAndGet();
+                      expressions.eval(options.action);
+                      return outputPlugin.write(expressions.e());
+                    }, result -> {
+                      success.incrementAndGet();
+                    }, e -> {
+                      log(e);
+                      // e.printStackTrace();
+                      failure.incrementAndGet();
+                      failures.get().println(jsonElement); // pre-transform
+                    }, () -> {
+                      rate.add(1);
+                      work.rate = rate.toString();
+                    });
+                  }
                 }
-                return outputPlugin.flush();
-              }, ()->{
-                log(work);
-                //###TODO flush failuresPrintStream here??
-                //###TODO flush failuresPrintStream here??
-                //###TODO flush failuresPrintStream here??
+                return Futures.immediateVoidFuture();
               });
             }
-          }.get();
+            return outputPlugin.flush();
+          }, ()->{
+            log(work);
+            //###TODO flush failuresPrintStream here??
+            //###TODO flush failuresPrintStream here??
+            //###TODO flush failuresPrintStream here??
+          });
+        }
+      }.get();
 
-        });
+    });
 
-        int mtu = outputPluginProvider.mtu();
-        log("start", "mtu", mtu);
-        inputPlugin.read(mtu).get();
-        log("finish", "mtu", mtu);
+    int mtu = outputPluginProvider.mtu();
+    log("start", "mtu", mtu);
+    inputPlugin.read(mtu).get();
+    log("finish", "mtu", mtu);
 
-        // log("output.flush().get();111");
-        // outputPlugin.flush().get();
-        // log("output.flush().get();222");
+    // log("output.flush().get();111");
+    // outputPlugin.flush().get();
+    // log("output.flush().get();222");
 
-      } else
-        throw new Exception("missing source!");
-
-    } catch (Exception e) {
-      log(e);
-      e.printStackTrace();
-    } finally {
-    }
   }
 
   @PreDestroy
