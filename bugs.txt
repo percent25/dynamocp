@@ -3,8 +3,7 @@
 
 sudo yum install htop java-11 -y
 sudo yum groupinstall "Development Tools" -y
-mkdir git
-git -C git clone https://github.com/percent25/awscat.git
+mkdir -p ${HOME?}/git && git -C ${HOME?}/git clone https://github.com/percent25/awscat.git
 
 
 
@@ -26,6 +25,20 @@ javascript downsides
 ======================================================================
 OPEN
 ======================================================================
+
+dynamo reader/writer
+ - if preAcquire < consumedCapacityUnits then acquire the difference!!
+
+
+
+s3 output plugin
+ - embed segment/totalSegments/startElement/finishElement in object names??
+
+
+ 
+github actions?
+
+
 
 concurrency
  vs
@@ -302,6 +315,14 @@ SpEL based filter/transform expressions?
  --transform={Item:"#{#in}"}
 
  --action={Item:"#{ #this }"} --action={"Item.id.s":"#uuid()"}
+
+
+
+JsonElement conversion + JsonElementMapAccessor?
+
+
+
+inputPluginProvider: pass arg to canActivate and canActivate
 
 
 
