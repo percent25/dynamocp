@@ -76,8 +76,6 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public boolean canActivate(String arg) {
-    tableName = Args.base(arg).split(":")[1];
-    options = Args.options(arg, Options.class);
     return ImmutableSet.of("dynamo", "dynamodb").contains(arg.split(":")[0]);
   }
 
@@ -87,6 +85,8 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
+    tableName = Args.base(arg).split(":")[1];
+    options = Args.options(arg, Options.class);
     DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
     DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
     DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
