@@ -45,8 +45,8 @@ public class Expressions {
     public String uuid() {
       return UUID.randomUUID().toString();
     }
-    public String randomString(int len) {
-      byte[] bytes = new byte[new SecureRandom().nextInt(len/2)+len/2];
+    public String randomString(int bound) {
+      byte[] bytes = new byte[new SecureRandom().nextInt(3*bound/4)];
       new SecureRandom().nextBytes(bytes);
       return BaseEncoding.base64().encode(bytes);
     }
