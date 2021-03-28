@@ -99,7 +99,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
     options.wcu = options.wcu > 0 ? options.wcu : provisionedWcu;
 
-    Semaphore c = new Semaphore(options.c);
+    Semaphore sem = new Semaphore(options.c);
     RateLimiter writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
 
         // Supplier<?> preWarm = Suppliers.memoize(() -> {
@@ -109,7 +109,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
         // });
 
     return ()->{
-      return new DynamoOutputPlugin(client, tableName, keySchema, c, writeLimiter, options.delete);
+      return new DynamoOutputPlugin(client, tableName, keySchema, sem, writeLimiter, options.delete);
     };
   }
 
