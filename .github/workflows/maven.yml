@@ -22,6 +22,10 @@ jobs:
     - uses: actions/setup-python@v2
       with:
         python-version: '3.x'
-    - run: mvn -B package --file pom.xml
+    - run: ./github-action.sh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: awscat.zip
+        path: awscat.zip
