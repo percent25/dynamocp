@@ -19,7 +19,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
 
 import helpers.FutureRunner;
@@ -226,22 +225,15 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     }
   }
 
-  private final ApplicationArguments args;
   private final DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
 
-  public DynamoInputPluginProvider(ApplicationArguments args) {
-    this.args = args;
-  }
-
   @Override
-  public boolean canActivate() {
-    String arg = args.getNonOptionArgs().get(0);
+  public boolean canActivate(String arg) {
     return ImmutableSet.of("dynamo", "dynamodb").contains(Args.base(arg).split(":")[0]);
   }
 
   @Override
-  public InputPlugin activate() throws Exception {
-    String arg = args.getNonOptionArgs().get(0);
+  public InputPlugin activate(String arg) throws Exception {
     String tableName = Args.base(arg).split(":")[1];  
     Options options = Args.options(arg, Options.class);  
     debug("desired", options);

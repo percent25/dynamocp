@@ -11,8 +11,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
-import org.springframework.boot.ApplicationArguments;
-
 import helpers.LogHelper;
 
 class SystemOutPlugin implements OutputPlugin {
@@ -54,18 +52,8 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
     }
   }
 
-  private final ApplicationArguments args;
   private String file;
   private SystemOutOptions options;
-
-  public SystemOutPluginProvider(ApplicationArguments args) {
-    this.args = args;
-    String arg = "-";
-    if (args.getNonOptionArgs().size() > 1)
-      arg = args.getNonOptionArgs().get(1);
-    file = Args.base(arg);
-    options = Args.options(arg, SystemOutOptions.class);
-  }
 
   public String toString() {
     return MoreObjects.toStringHelper(this).add("file", file).add("options", options).toString();
@@ -73,7 +61,9 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
 
   @Override
   public boolean canActivate(String arg) {
-    return args.getNonOptionArgs().size()>0;
+    file = Args.base(arg);
+    options = Args.options(arg, SystemOutOptions.class);
+    return true;
   }
 
   @Override

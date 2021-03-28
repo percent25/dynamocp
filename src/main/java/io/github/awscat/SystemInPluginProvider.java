@@ -17,8 +17,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
-import org.springframework.boot.ApplicationArguments;
-
 import helpers.FutureRunner;
 import helpers.LogHelper;
 import helpers.QueuePutPolicy;
@@ -113,20 +111,13 @@ public class SystemInPluginProvider implements InputPluginProvider {
     int limit;
   }
 
-  private final ApplicationArguments args;
-
-  public SystemInPluginProvider(ApplicationArguments args) {
-    this.args = args;
+  @Override
+  public boolean canActivate(String arg) {
+    return true;
   }
 
   @Override
-  public boolean canActivate() {
-    return args.getNonOptionArgs().size()>0;
-  }
-
-  @Override
-  public InputPlugin activate() throws Exception {
-    String arg = args.getNonOptionArgs().get(0);
+  public InputPlugin activate(String arg) throws Exception {
     String file = Args.base(arg);
     SystemInOptions options = Args.options(arg, SystemInOptions.class);
     return new SystemInPlugin(file, options.c, options.cycle, options.limit);

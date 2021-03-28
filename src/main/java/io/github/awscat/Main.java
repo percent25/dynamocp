@@ -66,20 +66,20 @@ public class Main implements ApplicationRunner {
 
   class Working {
     private final Number in; // filter
-    private final Number out; // filter
-    private final Number request;
-    private final Number success;
-    private final Number failure;
+    // private final Number out; // filter
+    // private final Number request;
+    private final Number out;
+    private final Number err;
     String rate;
     public String toString() {
       return getClass().getSimpleName()+new Gson().toJson(this);
     }
     Working(Number in, Number out, Number request, Number success, Number failure) {
       this.in = in;
-      this.out = out;
-      this.request = request;
-      this.success = success;
-      this.failure = failure;
+      // this.out = out;
+      // this.request = request;
+      this.out = success;
+      this.err = failure;
     }
   }
 
@@ -112,9 +112,9 @@ public class Main implements ApplicationRunner {
     log("ctor");
     this.context = context;
     this.inputPluginProviders.addAll(inputPluginProviders);
-    this.inputPluginProviders.add(new SystemInPluginProvider(args)); // ensure last
+    this.inputPluginProviders.add(new SystemInPluginProvider()); // ensure last
     this.outputPluginProviders.addAll(outputPluginProviders);
-    this.outputPluginProviders.add(new SystemOutPluginProvider(args)); // ensure last
+    this.outputPluginProviders.add(new SystemOutPluginProvider()); // ensure last
   }
 
   /**
@@ -133,17 +133,20 @@ public class Main implements ApplicationRunner {
     try {
 
       // input plugin
-      InputPluginProvider inputPluginProvider = resolveInputPlugin(args);
+      String source = "-";
+      if (args.getNonOptionArgs().size()>0)
+        source = args.getNonOptionArgs().get(0);
+      InputPluginProvider inputPluginProvider = resolveInputPlugin(source);
       
       // output plugin
       String target = "-";
       if (args.getNonOptionArgs().size()>1)
         target = args.getNonOptionArgs().get(1);
-      OutputPluginProvider outputPluginProvider = resolveOutputPlugin(args);
+      OutputPluginProvider outputPluginProvider = resolveOutputPlugin(target);
 
-      if (args.getNonOptionArgs().size() > 0) {
+      if (args.getNonOptionArgs().size() > 0) { //###TODO probably eradicate this
 
-        InputPlugin inputPlugin = inputPluginProvider.activate();
+        InputPlugin inputPlugin = inputPluginProvider.activate(source);
         log("inputPlugin", inputPlugin);
         Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
         log("outputPlugin", outputPluginProvider);
@@ -228,30 +231,28 @@ public class Main implements ApplicationRunner {
     }
   }
 
-  private InputPluginProvider resolveInputPlugin(ApplicationArguments args) {
+  private InputPluginProvider resolveInputPlugin(String source) {
     for (InputPluginProvider provider : inputPluginProviders) {
       try {
-        if (provider.canActivate())
+        if (provider.canActivate(source))
           return provider;
       } catch (Exception e) {
         log(provider.name(), e);
       }
     }
-    return new SystemInPluginProvider(args);
+    return new SystemInPluginProvider();
   }
 
-  private OutputPluginProvider resolveOutputPlugin(ApplicationArguments args) {
-    if (args.getNonOptionArgs().size() > 1) {
-      for (OutputPluginProvider provider : outputPluginProviders) {
-        try {
-          if (provider.canActivate(args.getNonOptionArgs().get(1)))
-            return provider;
-        } catch (Exception e) {
-          log(provider.name(), e);
-        }
+  private OutputPluginProvider resolveOutputPlugin(String target) {
+    for (OutputPluginProvider provider : outputPluginProviders) {
+      try {
+        if (provider.canActivate(target))
+          return provider;
+      } catch (Exception e) {
+        log(provider.name(), e);
       }
     }
-    return new SystemOutPluginProvider(args);
+    return new SystemOutPluginProvider();
   }
 
   private boolean has(String s) {

@@ -61,15 +61,8 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
         int c;
     }
 
-    private final ApplicationArguments args;
-
-    public AwsQueueInputPluginProvider(ApplicationArguments args) {
-        this.args = args;
-    }
-
     @Override
-    public boolean canActivate() {
-        String arg = args.getNonOptionArgs().get(0);
+    public boolean canActivate(String arg) {
         String queueUrl = Args.base(arg);
         if (queueUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)"))
             return true;
@@ -79,8 +72,7 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
     }
 
     @Override
-    public InputPlugin activate() throws Exception {
-        String arg = args.getNonOptionArgs().get(0);
+    public InputPlugin activate(String arg) throws Exception {
         String queueUrl = Args.base(arg);
         Options options = Args.options(arg, Options.class);
         int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();

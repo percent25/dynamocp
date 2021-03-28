@@ -6,7 +6,7 @@ public interface InputPluginProvider {
   default String name() {
     return ClassUtils.getShortName(getClass());
   }
-  boolean canActivate();
-  InputPlugin activate() throws Exception;
+  boolean canActivate(String arg);
+  InputPlugin activate(String arg) throws Exception;
   // void deactivate();
 }
