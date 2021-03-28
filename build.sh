@@ -10,5 +10,6 @@ import setuptools
 setuptools.setup(name="awscat", version="${REVISION?}", scripts=["awscat.jar"])
 EOF
 
-zip awscat-${REVISION?}.zip setup.py awscat.jar
-ln -fs awscat-${REVISION?}.zip awscat.zip
+zip awscat.zip awscat.jar setup.py
+# zip awscat-${REVISION?}.zip awscat.jar setup.py
+# ln -fs awscat-${REVISION?}.zip awscat.zip
