@@ -1,7 +1,7 @@
 #!/bin/sh -ex
 
-${GITHUB_RUN_ID?}
-${GITHUB_SHA?}
+echo ${GITHUB_RUN_ID?}
+echo ${GITHUB_SHA?}
 
 REVISION=v0.9.${GITHUB_RUN_ID}-${GITHUB_SHA:0:7}
 
