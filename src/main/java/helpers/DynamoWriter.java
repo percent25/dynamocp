@@ -58,7 +58,7 @@ public class DynamoWriter {
   private final DynamoDbAsyncClient client;
   private final String tableName;
   private final Iterable<String> keySchema;
-  private final Semaphore c;
+  private final Semaphore sem;
   private final RateLimiter writeLimiter;
   private final boolean delete; // PutItem vs DeleteItem
 
@@ -88,12 +88,12 @@ public class DynamoWriter {
   // static ThreadFactory threadFactory = new ThreadFactoryBuilder().daemonThreads(true).build();
   // static Timer timer = new HashedWheelTimer(threadFactory, 5, TimeUnit.MILLISECONDS);
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore c, RateLimiter writeLimiter, boolean delete) {
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore sem, RateLimiter writeLimiter, boolean delete) {
     debug("ctor", client, tableName, keySchema, writeLimiter, delete);
     this.client = client;
     this.tableName = tableName;
     this.keySchema = keySchema;
-    this.c = c;
+    this.sem = sem;
     this.writeLimiter = writeLimiter;
     this.delete = delete;
   }
@@ -198,7 +198,7 @@ public class DynamoWriter {
       {
         run(() -> {
 
-          c.acquire();
+          sem.acquire();
 
           Map<Map<String, AttributeValue>,Map<String, AttributeValue>> items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
           partition.keySet().forEach(key -> {
@@ -281,7 +281,7 @@ public class DynamoWriter {
             });
             // throw e;
           }, () -> { // finally
-            c.release();
+            sem.release();
             work.wcuMeter = wcuMeter.toString();
           });
         });
