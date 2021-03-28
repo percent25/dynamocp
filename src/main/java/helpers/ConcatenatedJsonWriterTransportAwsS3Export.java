@@ -44,7 +44,8 @@ public class ConcatenatedJsonWriterTransportAwsS3Export implements ConcatenatedJ
         // export-prefix/AWSDynamoDB/ExportId/data/bafybeiczss3yxay3o4abnabbb.json.gz
         // export-prefix/AWSDynamoDB/ExportId/data/gkes5o3lnrhoznhnkyax3hxvya.json.gz
 
-        String key = String.format("%s/awscat/%s/%s", exportPrefix, exportId, dataObject());
+        String key = String.format("%s/%s", exportPrefix, dataObject());
+        // String key = String.format("%s/awscat/%s/%s", exportPrefix, exportId, dataObject());
         PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucket).key(key).build();
         AsyncRequestBody requestBody = AsyncRequestBody.fromString(message);
         return CompletableFuturesExtra.toListenableFuture(client.putObject(putObjectRequest, requestBody));
