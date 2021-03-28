@@ -6,6 +6,8 @@ import java.util.Map;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Splitter;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.springframework.boot.ApplicationArguments;
@@ -55,8 +57,12 @@ public class Args {
         for (String name : args.getOptionNames()) {
             String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);
             options.addProperty(lowerCamel, true);
-            for (String value : args.getOptionValues(name)) //###TODO doesn't handle multi-values
-                options.addProperty(lowerCamel, value);
+            for (String value : args.getOptionValues(name)) {
+                JsonElement jsonElement = options.get(lowerCamel);
+                if (jsonElement == null || !jsonElement.isJsonArray())
+                    options.add(lowerCamel, jsonElement = new JsonArray());
+                jsonElement.getAsJsonArray().add(value);
+            }
         }
         return new Gson().fromJson(options, classOfT);
     }
