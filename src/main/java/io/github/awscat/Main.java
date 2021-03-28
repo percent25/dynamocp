@@ -158,7 +158,8 @@ public class Main implements ApplicationRunner {
                     out.incrementAndGet();
                     run(() -> {
                       request.incrementAndGet();
-                      expressions.eval(options.action);
+                      for (String action : options.action )
+                        expressions.eval(action);
                       return outputPlugin.write(expressions.e());
                     }, result -> {
                       success.incrementAndGet();
