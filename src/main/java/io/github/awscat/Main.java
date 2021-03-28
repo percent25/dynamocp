@@ -170,7 +170,6 @@ public class Main implements ApplicationRunner {
                       failures.get().println(jsonElement); // pre-transform
                     }, () -> {
                       rate.add(1);
-                      work.rate = rate.toString();
                     });
                   }
                 }
@@ -179,6 +178,7 @@ public class Main implements ApplicationRunner {
             }
             return outputPlugin.flush();
           }, ()->{
+            work.rate = rate.toString();
             log(work);
             //###TODO flush failuresPrintStream here??
             //###TODO flush failuresPrintStream here??
