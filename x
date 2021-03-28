@@ -1,7 +1,2 @@
 #!/bin/sh -ex
-# ./gradlew run
-# REVISION=$(git describe --always --dirty)
-# mvn spring-boot:run -Dspring-boot.run.arguments="$*"
-# ./mvnw -Drevision=${REVISION?} package && target/awscat-${REVISION?}.jar "$@"
-# ./mvnw -Drevision=${REVISION?} clean package && target/awscat-${REVISION?}.jar "$@"
-./build.sh $(git describe --always --dirty) && ./awscat.jar "$@"
+./mvnw package && target/awscat-0.0.1-SNAPSHOT.jar "$@"
