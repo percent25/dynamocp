@@ -52,7 +52,7 @@ public class Expressions {
       String randomString = BaseEncoding.base64().encode(bytes).substring(0);
       return randomString.substring(0, Math.min(len, randomString.length()));
     }
-    // returns a random string w/random length [1..bound]
+    // returns a random string w/random length [1..len]
     public String randomString(int len) {
       byte[] bytes = new byte[new SecureRandom().nextInt((3 * len + 3) / 4) + 1];
       new SecureRandom().nextBytes(bytes);
