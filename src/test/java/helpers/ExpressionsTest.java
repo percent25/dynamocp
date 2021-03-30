@@ -197,15 +197,22 @@ public class ExpressionsTest {
   public void versionTest() {
 
     // tricky: JsonNull -> JsonNull
+    //###TODO THIS IS A REALLY WEIRD TEST.. NO ANALOGUE TO JAVASCRIPT??
+    //###TODO THIS IS A REALLY WEIRD TEST.. NO ANALOGUE TO JAVASCRIPT??
+    //###TODO THIS IS A REALLY WEIRD TEST.. NO ANALOGUE TO JAVASCRIPT??
     assertThat(output(json("null"), "e?.version = (e?.version?:0) + 1")).isEqualTo(json("null"));
+    //###TODO THIS IS A REALLY WEIRD TEST.. NO ANALOGUE TO JAVASCRIPT??
+    //###TODO THIS IS A REALLY WEIRD TEST.. NO ANALOGUE TO JAVASCRIPT??
+    //###TODO THIS IS A REALLY WEIRD TEST.. NO ANALOGUE TO JAVASCRIPT??
 
     // hmm..
     // assertThat(output(json("'abc'"), "e?.version = (e?.version?:0) + 1")).isEqualTo(json("'abc'"));
 
-    assertThrows(Exception.class, ()->{
-      output(json("{}"), "e.version = e.version?:0 + 1");
+    // org.springframework.expression.spel.SpelParseException: EL1041E: After parsing a valid expression, there is still more data in the expression: 'elvis(?:)'
+    Exception e = assertThrows(Exception.class, ()->{
+      output(json("{}"), "e.version = e.version?:0 + 1"); // spel syntax error
     });
-    // log(e);
+    log(e);
     assertThat(output(json("{}"), "e.version = (e.version?:0) + 1")).isEqualTo(json("{version:1}"));
     assertThat(output(json("{version:1}"), "e.version = e.version + 1")).isEqualTo(json("{version:2}"));
 
