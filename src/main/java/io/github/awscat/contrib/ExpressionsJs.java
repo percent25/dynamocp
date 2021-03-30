@@ -74,6 +74,7 @@ public class ExpressionsJs {
     bindings.putMember("e", fromJsonElement(e));
   }
 
+  // get
   public JsonElement e() {
     Value e = bindings.getMember("e");
     if (e.hasArrayElements())
@@ -81,30 +82,25 @@ public class ExpressionsJs {
     return new Gson().toJsonTree(e.as(Object.class));
   }
 
+  // set
   public void e(String e) {
     e(json(e));
   }
 
+  // set
   public void e(JsonElement e) {
     bindings.putMember("e", fromJsonElement(e));
   }
 
+  // eval
   public boolean eval(String expressionString) {
     Value value = context.eval("js", expressionString);
     // coerce to truthy/falsey
     return context.eval("js", "(function(s){return !!s})").execute(value).asBoolean();
   }
 
-  public static void main(String... args) {
-
-    ExpressionsJs js = new ExpressionsJs(json("{}"));
-
-    System.out.println("eval="+js.eval("e.a=1"));
-    System.out.println("eval="+js.eval("e.b=4/3")); // 1.3333333333333333
-    System.out.println("e="+js.e());
-  }
-
-  static Object fromJsonElement(JsonElement jsonElement) {
+  // @see ProxyObject.fromMap
+  private Object fromJsonElement(JsonElement jsonElement) {
 
     if (jsonElement.isJsonArray()) {
       JsonArray values = jsonElement.getAsJsonArray();
@@ -202,8 +198,17 @@ public class ExpressionsJs {
     return new JsonStreamParser(json).next();
   }
 
-  static void logzzz(Object... args) {
-    new LogHelper(ExpressionsJs.class).log(args);
+  private void logzzz(Object... args) {
+    new LogHelper(this).log(args);
+  }
+
+  public static void main(String... args) {
+
+    ExpressionsJs js = new ExpressionsJs(json("{}"));
+
+    System.out.println("eval="+js.eval("e.a=1"));
+    System.out.println("eval="+js.eval("e.b=4/3")); // 1.3333333333333333
+    System.out.println("e="+js.e());
   }
 
 }
