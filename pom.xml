@@ -89,6 +89,11 @@
 			<artifactId>futures-extra</artifactId>
 			<version>4.3.0</version>
 		</dependency>
+		<dependency>
+			<groupId>org.graalvm.js</groupId>
+			<artifactId>js</artifactId>
+			<version>21.0.0.2</version>
+		</dependency>
 	</dependencies>
 	
 	<build>
