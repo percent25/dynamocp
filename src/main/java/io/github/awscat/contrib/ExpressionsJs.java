@@ -1,45 +1,61 @@
 package io.github.awscat.contrib;
 
-import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.text.NumberFormat;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonStreamParser;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.TypeLiteral;
 import org.graalvm.polyglot.Value;
-import org.graalvm.polyglot.proxy.Proxy;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
 import helpers.LogHelper;
-import helpers.ObjectHelper;
-
-
-// * assert context.eval("js", "(function(record) record.x)")
-// *               .execute(record).asInt() == 42;
 
 public class ExpressionsJs {
 
+  public class RootObject {
+    private final String now;
+    public RootObject(String now) {
+      this.now = now;
+    }
+    // @HostAccess.Export
+    public String now() {
+      return now;
+    }
+    // @HostAccess.Export
+    public String uuid() {
+      return UUID.randomUUID().toString();
+    }
+    // returns a random string w/fixed length len
+    public String fixedString(int len) {
+      byte[] bytes = new byte[(3 * len + 3) / 4];
+      new SecureRandom().nextBytes(bytes);
+      String randomString = BaseEncoding.base64Url().encode(bytes).substring(0);
+      return randomString.substring(0, Math.min(len, randomString.length()));
+    }
+    // returns a random string w/random length [1..len]
+    public String randomString(int len) {
+      byte[] bytes = new byte[new SecureRandom().nextInt((3 * len + 3) / 4) + 1];
+      new SecureRandom().nextBytes(bytes);
+      String randomString = BaseEncoding.base64Url().encode(bytes).substring(0);
+      return randomString.substring(0, Math.min(len, randomString.length()));
+    }
+    public String toString() {
+      return new Gson().toJson(this);
+    }
+  }
+  
   private final Context context;
   private final Value bindings;
 
@@ -87,98 +103,6 @@ public class ExpressionsJs {
     System.out.println("eval="+js.eval("e.b=4/3")); // 1.3333333333333333
     System.out.println("e="+js.e());
   }
-
-  public static void mainz(String... args) {
-
-    // awscat.jar --filter="e?.id?.s"
-    Context context = Context.newBuilder().allowHostAccess(HostAccess.ALL).build();
-
-    Value bindings = context.getBindings("js");
-    Value rootObject = context.asValue(new RootObject(Instant.now().toString()));
-    for (String identifier : rootObject.getMemberKeys())
-      bindings.putMember(identifier, rootObject.getMember(identifier));
-
-    bindings.putMember("e", fromJsonElement(new JsonObject()));
-
-    // System.out.println("eval="+context.eval("js", "fixedString(128)"));
-    // System.out.println("eval="+context.eval("js", "e.abc=123"));
-    
-    System.out.println("eval="+context.eval("js", "e"));
-    System.out.println("eval="+context.eval("js", "e='asdf'"));
-    System.out.println("eval="+context.eval("js", "e"));
-    System.out.println("eval="+context.eval("js", "e={}"));
-    System.out.println("eval="+context.eval("js", "e"));
-
-    System.out.println("eval="+context.eval("js", "e.id={}"));
-    System.out.println("eval="+context.eval("js", "e.id.s=uuid()"));
-    System.out.println("eval="+context.eval("js", "e=[1]"));
-
-    System.out.println("### e ###="+bindings.getMember("e").as(Object.class));
-    // System.out.println("### e ###="+bindings.getMember("e").as(Object.class).getClass());
-    Value e = bindings.getMember("e");
-    System.out.println("e="+e.as(Object.class));
-    System.out.println("getClass="+e.as(Object.class).getClass());
-
-    JsonElement out = new Gson().toJsonTree(e.as(Object.class));
-    System.out.println("JsonElement out="+out);
-    System.out.println("JsonElement out="+out.getClass());
-
-    // System.out.println("eval="+context.eval("js", "this.a"));
-    // System.out.println("isHostObject="+root.isHostObject());
-
-    // System.out.println("zzz="+root.getMember("console"));
-
-    System.exit(0);
-
-    JsonElement jsonElement = new Gson().fromJson("{id:{s:'abc'}}", JsonElement.class);
-
-    context.getBindings("js").putMember("e", fromJsonElement(jsonElement));
-    context.getBindings("js").putMember("uuid", context.asValue(Suppliers.ofInstance(UUID.randomUUID().toString())));
-
-    context.eval("js", "e.id.t=uuid(), e.version={a:1,b:2}");
-    // jsonElement = eval(jsonElement, context, "e.version.c=3");
-    // jsonElement = eval(jsonElement, context, "e.version.c=4.1");
-
-    // context.eval("js", "(function(s){return{Item:s}})");
-    // jsonElement = eval(jsonElement, context, "(function(s){ return [2,3,4,5.1,{}].length.toFixed(5) })");
-
-     context.eval("js", "e={e:e,uuid:uuid()}");
-     context.eval("js", "e={e:e,uuid:uuid()}");
-     context.eval("js", "e={e:e,uuid:uuid()}");
-
-    // System.out.println("e="+context.getBindings("js").getMember("e"));
-
-          // Value e = context.getBindings("js").getMember("e");
-          // JsonElement out = new Gson().toJsonTree(e.as(Object.class));
-          // if (e.hasArrayElements())
-          //   out = new Gson().toJsonTree(e.as(new TypeLiteral<List<Object>>(){}));
-
-          // log(jsonElement+" --> "+out);
-  }
-
-      // static JsonElement eval(Context context, String js) {
-      //   var eval = context.eval("js", js);
-      //   // if (eval.canExecute()) {
-      //   //   var value = eval.execute(fromJsonElement(context, jsonElement));
-      //   //             // log("hasMembers", value.hasMembers(), "hasArrayElements", value.hasArrayElements());
-      //   //             // // value.hasArrayElements();
-      //   //             // // value.as(targetType)
-      //   //             // if (value.hasMembers()) {
-      //   //             //   log("getMemberKeys", value.getMemberKeys());
-      //   //             // }
-      //   //             // if (value.hasArrayElements()) {
-      //   //             //   log("getArraySize", value.getArraySize());
-      //   //             // }
-      //   //   Object src = value.as(Object.class);
-      //   //   // log(src, src.getClass());
-      //   //   //     * static final TypeLiteral&lt;List&lt;String>> STRING_LIST = new TypeLiteral&lt;List&lt;String>>() {
-      //   //   if (value.hasArrayElements())
-      //   //     src = value.as(new TypeLiteral<List<Object>>(){});
-
-      //   //   jsonElement = new Gson().toJsonTree(src);
-      //   // }
-      //   return jsonElement;
-      // }
 
   static Object fromJsonElement(JsonElement jsonElement) {
 
