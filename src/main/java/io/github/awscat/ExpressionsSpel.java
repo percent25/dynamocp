@@ -147,7 +147,7 @@ public class ExpressionsSpel {
     return new Gson().toJsonTree(rootObject.e);
   }
 
-  public boolean bool(String expressionString) {
+  public boolean eval(String expressionString) {
     Boolean value = parser.parseExpression(expressionString).getValue(context, Boolean.class);
     trace("bool", expressionString, value);
     // ### falsey
@@ -157,11 +157,11 @@ public class ExpressionsSpel {
     return value;
   }
 
-  public Object eval(String expressionString) {
-    Object value = parser.parseExpression(expressionString).getValue(context);
-    trace("eval", expressionString, value);
-    return value;
-  }
+  // public Object eval(String expressionString) {
+  //   Object value = parser.parseExpression(expressionString).getValue(context);
+  //   trace("eval", expressionString, value);
+  //   return value;
+  // }
 
   private void trace(Object... args) {
     new LogHelper(this).trace(args);

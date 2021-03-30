@@ -2,7 +2,7 @@ package helpers;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.awscat.Expressions;
+import io.github.awscat.ExpressionsSpel;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -211,12 +211,12 @@ public class ExpressionsTest {
 
   // aka filters
   private boolean bool(JsonElement input, String expressionString) {
-    return new Expressions(input, now).bool(expressionString);
+    return new ExpressionsSpel(input, now).eval(expressionString);
   }
   
   // aka transforms
   private JsonElement output(JsonElement input, String expressionString) {
-    Expressions expressions = new Expressions(input, now);
+    ExpressionsSpel expressions = new ExpressionsSpel(input, now);
     expressions.eval(expressionString);
     return expressions.e();
   }

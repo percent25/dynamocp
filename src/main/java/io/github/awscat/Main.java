@@ -151,13 +151,13 @@ public class Main implements ApplicationRunner {
             OutputPlugin outputPlugin = outputPluginSupplier.get();
             for (JsonElement jsonElement : jsonElements) {
               run(() -> {
+                in.incrementAndGet();
                 if (has(options.filter)) {
                   ExpressionsSpel expressions = new ExpressionsSpel(jsonElement);
-                  in.incrementAndGet();
-                  if (expressions.bool(options.filter)) {
-                    out.incrementAndGet();
+                  if (expressions.eval(options.filter)) {
+                    out.incrementAndGet(); //###TODO eradicate?
                     run(() -> {
-                      request.incrementAndGet();
+                      request.incrementAndGet(); //###TODO eradicate?
                       for (String action : options.action )
                         expressions.eval(action);
                       return outputPlugin.write(expressions.e());
