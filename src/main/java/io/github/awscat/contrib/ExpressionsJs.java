@@ -2,6 +2,7 @@ package io.github.awscat.contrib;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.text.NumberFormat;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -19,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonStreamParser;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
@@ -38,15 +40,52 @@ import helpers.ObjectHelper;
 
 public class ExpressionsJs {
 
-  // static <T> Supplier<T> of(Supplier<T> supplier) {
-  //   return new Supplier<>(){
-  //     @Override
-  //     public T get() {
-  //       return supplier.get();
-  //     }};
-  // }
+  private final Context context;
+  private final Value bindings;
+
+  public ExpressionsJs(JsonElement e) {
+    this(e, Instant.now().toString());
+  }
+  
+  public ExpressionsJs(JsonElement e, String now) {
+    context = Context.newBuilder().allowHostAccess(HostAccess.ALL).build();
+    bindings = context.getBindings("js");
+
+    Value rootObject = context.asValue(new RootObject(now));
+    for (String identifier : rootObject.getMemberKeys())
+      bindings.putMember(identifier, rootObject.getMember(identifier));
+
+    bindings.putMember("e", fromJsonElement(e));
+
+
+    // rootObject = new RootObject(now);
+    // context = new StandardEvaluationContext(rootObject);
+    // parser = new SpelExpressionParser();
+
+    // rootObject.e = ObjectHelper.toObject(e);
+  }
+
+  public JsonElement e() {
+    Value e = bindings.getMember("e");
+    //###TODO check for hasArrayElements
+    return new Gson().toJsonTree(e.as(Object.class));
+  }
+
+  public boolean eval(String expressionString) {
+    Value value = context.eval("js", expressionString);
+    return context.eval("js", "(function(s){return !!s})").execute(value).asBoolean();
+  }
 
   public static void main(String... args) {
+
+    ExpressionsJs js = new ExpressionsJs(json("'a'"));
+
+    System.out.println("e="+js.e());
+    System.out.println("eval="+js.eval("e?.b?.c"));
+    // System.out.println("eval="+js.eval("e.a==1"));
+  }
+
+  public static void mainz(String... args) {
 
     // awscat.jar --filter="e?.id?.s"
     Context context = Context.newBuilder().allowHostAccess(HostAccess.ALL).build();
@@ -225,11 +264,20 @@ public class ExpressionsJs {
     }
     //###WORKAROUND
     if (jsonElement.isJsonPrimitive()) {
-      if (jsonElement.getAsJsonPrimitive().isNumber())
-        return Value.asValue(new Gson().fromJson(jsonElement, BigDecimal.class));
+      if (jsonElement.getAsJsonPrimitive().isNumber()) {
+        try {
+          return Value.asValue(NumberFormat.getInstance().parse(jsonElement.getAsString()));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
     }
     //###WORKAROUND
     return Value.asValue(new Gson().fromJson(jsonElement, Object.class));
+  }
+
+  static JsonElement json(String json) {
+    return new JsonStreamParser(json).next();
   }
 
   static void log(Object... args) {
