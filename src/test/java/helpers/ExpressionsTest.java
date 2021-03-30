@@ -65,9 +65,17 @@ public class ExpressionsTest {
     assertThrows(Exception.class, ()->{
       bool(json("null"), "e.id.s==1");
     });
+
+    //###TODO THIS IS WRONG THIS SHOULD NOT THROW EXCEPTION
+    //###TODO THIS IS WRONG THIS SHOULD NOT THROW EXCEPTION
+    //###TODO THIS IS WRONG THIS SHOULD NOT THROW EXCEPTION
     assertThrows(Exception.class, ()->{
       bool(json("null"), "e?.id.s==1");
     });
+    //###TODO THIS IS WRONG THIS SHOULD NOT THROW EXCEPTION
+    //###TODO THIS IS WRONG THIS SHOULD NOT THROW EXCEPTION
+    //###TODO THIS IS WRONG THIS SHOULD NOT THROW EXCEPTION
+
     assertThat(bool(json("null"), "e?.id?.s==1")).isEqualTo(false);
     assertThat(bool(json("{}"), "e?.id?.s==1")).isEqualTo(false);
     assertThat(bool(json("{id:{}}"), "e?.id?.s==1")).isEqualTo(false);
