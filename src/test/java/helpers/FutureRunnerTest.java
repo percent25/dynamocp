@@ -5,22 +5,22 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.*;
 
 public class FutureRunnerTest {
 
   @Test
   public void futureRunnerTest() throws Exception {
 
-    ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     try {
         Object result = new FutureRunner() {
             int count;
             int listenCount;
             {
-                // run(() -> {
+                run(() -> {
                     for (int i = 0; i < 8; ++i) {
                         ++count;
                         System.out.println("count:"+count);
@@ -39,13 +39,14 @@ public class FutureRunnerTest {
                             });
                         }
                     }
-                    // return Futures.immediateVoidFuture();
-                // });
+                    return Futures.immediateVoidFuture();
+                });
             }
             @Override
             protected void onListen() {
                 ++listenCount;
                 System.out.println("onListen:"+listenCount);
+                assertThat(listenCount).isEqualTo(1);
             }
         }.get().get();
         System.out.println(result);
