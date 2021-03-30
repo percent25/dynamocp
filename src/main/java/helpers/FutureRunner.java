@@ -13,13 +13,6 @@ import com.spotify.futures.CompletableFuturesExtra;
 
 /**
  * Opinionated robust facade/runner for listenablefuture(s).
- * 
- * TODO if .get() is not called then onListen is not called
- * TODO if .get() is not called then onListen is not called
- * TODO if .get() is not called then onListen is not called
- * TODO if .get() is not called then onListen is not called
- * TODO if .get() is not called then onListen is not called
- * 
  */
 public class FutureRunner {
     
@@ -31,8 +24,10 @@ public class FutureRunner {
             return super.setException(throwable);
         }
     }
-      
+
+    // resolved when "running" transitions to zero
     private final VoidFuture facade = new VoidFuture();
+
     private final AtomicInteger running = new AtomicInteger();
     private final AtomicReference<Exception> firstException = new AtomicReference<>();
 
@@ -136,6 +131,7 @@ public class FutureRunner {
     }
 
     // convenience
+    // called when "running" transitions to zero
     protected void onListen() {
         // do nothing
     }
