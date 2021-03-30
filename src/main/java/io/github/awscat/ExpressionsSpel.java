@@ -31,7 +31,7 @@ import helpers.ObjectHelper;
  * 
  * https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions
  */
-public class Expressions {
+public class ExpressionsSpel {
 
   class RootObject {
     public Object e;
@@ -68,11 +68,11 @@ public class Expressions {
   private final StandardEvaluationContext context;
   private final ExpressionParser parser;
 
-  public Expressions(JsonElement e) {
+  public ExpressionsSpel(JsonElement e) {
     this(e, Instant.now().toString());
   }
   
-  public Expressions(JsonElement e, String now) {
+  public ExpressionsSpel(JsonElement e, String now) {
     rootObject = new RootObject(now);
     context = new StandardEvaluationContext(rootObject);
     parser = new SpelExpressionParser();

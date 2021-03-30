@@ -152,7 +152,7 @@ public class Main implements ApplicationRunner {
             for (JsonElement jsonElement : jsonElements) {
               run(() -> {
                 if (has(options.filter)) {
-                  Expressions expressions = new Expressions(jsonElement);
+                  ExpressionsSpel expressions = new ExpressionsSpel(jsonElement);
                   in.incrementAndGet();
                   if (expressions.bool(options.filter)) {
                     out.incrementAndGet();
