@@ -56,13 +56,6 @@ public class ExpressionsJs {
       bindings.putMember(identifier, rootObject.getMember(identifier));
 
     bindings.putMember("e", fromJsonElement(e));
-
-
-    // rootObject = new RootObject(now);
-    // context = new StandardEvaluationContext(rootObject);
-    // parser = new SpelExpressionParser();
-
-    // rootObject.e = ObjectHelper.toObject(e);
   }
 
   public JsonElement e() {
@@ -72,18 +65,27 @@ public class ExpressionsJs {
     return new Gson().toJsonTree(e.as(Object.class));
   }
 
+  public void e(String e) {
+    e(json(e));
+  }
+
+  public void e(JsonElement e) {
+    bindings.putMember("e", fromJsonElement(e));
+  }
+
   public boolean eval(String expressionString) {
     Value value = context.eval("js", expressionString);
+    // coerce to truthy/falsey
     return context.eval("js", "(function(s){return !!s})").execute(value).asBoolean();
   }
 
   public static void main(String... args) {
 
-    ExpressionsJs js = new ExpressionsJs(json("'a'"));
+    ExpressionsJs js = new ExpressionsJs(json("{}"));
 
+    System.out.println("eval="+js.eval("e.a=1"));
+    System.out.println("eval="+js.eval("e.b=4/3")); // 1.3333333333333333
     System.out.println("e="+js.e());
-    System.out.println("eval="+js.eval("e?.b?.c"));
-    // System.out.println("eval="+js.eval("e.a==1"));
   }
 
   public static void mainz(String... args) {
@@ -215,17 +217,14 @@ public class ExpressionsJs {
       return new ProxyObject() {
 
         public void putMember(String key, Value value) {
-          log("putMember", key, value, value.as(Object.class).getClass());
-          values.add(key, new Gson().toJsonTree(value.as(Object.class)));
+            values.add(key, new Gson().toJsonTree(value.as(Object.class)));
         }
 
         public boolean hasMember(String key) {
-          log("hasMember", key);
             return values.has(key);
         }
 
         public Object getMemberKeys() {
-          log("getMemberKeys");
             return new ProxyArray() {
                 private final Object[] keys = values.keySet().toArray();
 
@@ -247,13 +246,11 @@ public class ExpressionsJs {
         }
 
         public Object getMember(String key) {
-          log("getMember", key);
           return fromJsonElement(values.get(key));
         }
 
         @Override
         public boolean removeMember(String key) {
-          log("removeMember", key);
             if (values.has(key)) {
                 values.remove(key);
                 return true;
@@ -263,7 +260,7 @@ public class ExpressionsJs {
         }
       };
     }
-    //###WORKAROUND
+
     if (jsonElement.isJsonPrimitive()) {
       if (jsonElement.getAsJsonPrimitive().isNumber()) {
         try {
@@ -273,7 +270,7 @@ public class ExpressionsJs {
         }
       }
     }
-    //###WORKAROUND
+
     return Value.asValue(new Gson().fromJson(jsonElement, Object.class));
   }
 
@@ -281,7 +278,7 @@ public class ExpressionsJs {
     return new JsonStreamParser(json).next();
   }
 
-  static void log(Object... args) {
+  static void logzzz(Object... args) {
     new LogHelper(ExpressionsJs.class).log(args);
   }
 
