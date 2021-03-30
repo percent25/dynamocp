@@ -1,7 +1,10 @@
 package io.github.awscat.contrib;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,10 +13,12 @@ import java.util.function.Supplier;
 
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.BaseEncoding;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
@@ -25,6 +30,8 @@ import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
 import helpers.LogHelper;
+import helpers.ObjectHelper;
+
 
 // * assert context.eval("js", "(function(record) record.x)")
 // *               .execute(record).asInt() == 42;
@@ -40,15 +47,50 @@ public class ExpressionsJs {
   // }
 
   public static void main(String... args) {
-    Context context = Context.newBuilder()
-        //
-        .allowHostAccess(HostAccess.ALL)
-        //
-        .build();
+
+    // awscat.jar --filter="e?.id?.s"
+    Context context = Context.newBuilder().allowHostAccess(HostAccess.ALL).build();
+
+    Value bindings = context.getBindings("js");
+    Value rootObject = context.asValue(new RootObject(Instant.now().toString()));
+    for (String identifier : rootObject.getMemberKeys())
+      bindings.putMember(identifier, rootObject.getMember(identifier));
+
+    bindings.putMember("e", fromJsonElement(new JsonObject()));
+
+    // System.out.println("eval="+context.eval("js", "fixedString(128)"));
+    // System.out.println("eval="+context.eval("js", "e.abc=123"));
+    
+    System.out.println("eval="+context.eval("js", "e"));
+    System.out.println("eval="+context.eval("js", "e='asdf'"));
+    System.out.println("eval="+context.eval("js", "e"));
+    System.out.println("eval="+context.eval("js", "e={}"));
+    System.out.println("eval="+context.eval("js", "e"));
+
+    System.out.println("eval="+context.eval("js", "e.id={}"));
+    System.out.println("eval="+context.eval("js", "e.id.s=uuid()"));
+    System.out.println("eval="+context.eval("js", "e=[1]"));
+
+    System.out.println("### e ###="+bindings.getMember("e").as(Object.class));
+    // System.out.println("### e ###="+bindings.getMember("e").as(Object.class).getClass());
+    Value e = bindings.getMember("e");
+    System.out.println("e="+e.as(Object.class));
+    System.out.println("getClass="+e.as(Object.class).getClass());
+
+    JsonElement out = new Gson().toJsonTree(e.as(Object.class));
+    System.out.println("JsonElement out="+out);
+    System.out.println("JsonElement out="+out.getClass());
+
+    // System.out.println("eval="+context.eval("js", "this.a"));
+    // System.out.println("isHostObject="+root.isHostObject());
+
+    // System.out.println("zzz="+root.getMember("console"));
+
+    System.exit(0);
 
     JsonElement jsonElement = new Gson().fromJson("{id:{s:'abc'}}", JsonElement.class);
 
-    context.getBindings("js").putMember("e", fromJsonElement(context, jsonElement));
+    context.getBindings("js").putMember("e", fromJsonElement(jsonElement));
     context.getBindings("js").putMember("uuid", context.asValue(Suppliers.ofInstance(UUID.randomUUID().toString())));
 
     context.eval("js", "e.id.t=uuid(), e.version={a:1,b:2}");
@@ -64,12 +106,12 @@ public class ExpressionsJs {
 
     // System.out.println("e="+context.getBindings("js").getMember("e"));
 
-    Value e = context.getBindings("js").getMember("e");
-    JsonElement out = new Gson().toJsonTree(e.as(Object.class));
-    if (e.hasArrayElements())
-      out = new Gson().toJsonTree(e.as(new TypeLiteral<List<Object>>(){}));
+          // Value e = context.getBindings("js").getMember("e");
+          // JsonElement out = new Gson().toJsonTree(e.as(Object.class));
+          // if (e.hasArrayElements())
+          //   out = new Gson().toJsonTree(e.as(new TypeLiteral<List<Object>>(){}));
 
-    log(jsonElement+" --> "+out);
+          // log(jsonElement+" --> "+out);
   }
 
       // static JsonElement eval(Context context, String js) {
@@ -96,7 +138,7 @@ public class ExpressionsJs {
       //   return jsonElement;
       // }
 
-  static Object fromJsonElement(Context context, JsonElement jsonElement) {
+  static Object fromJsonElement(JsonElement jsonElement) {
 
     if (jsonElement.isJsonArray()) {
       JsonArray values = jsonElement.getAsJsonArray();
@@ -166,7 +208,7 @@ public class ExpressionsJs {
 
         public Object getMember(String key) {
           log("getMember", key);
-          return fromJsonElement(context, values.get(key));
+          return fromJsonElement(values.get(key));
         }
 
         @Override
@@ -184,10 +226,10 @@ public class ExpressionsJs {
     //###WORKAROUND
     if (jsonElement.isJsonPrimitive()) {
       if (jsonElement.getAsJsonPrimitive().isNumber())
-        return context.asValue(new Gson().fromJson(jsonElement, BigDecimal.class));
+        return Value.asValue(new Gson().fromJson(jsonElement, BigDecimal.class));
     }
     //###WORKAROUND
-    return context.asValue(new Gson().fromJson(jsonElement, Object.class));
+    return Value.asValue(new Gson().fromJson(jsonElement, Object.class));
   }
 
   static void log(Object... args) {
