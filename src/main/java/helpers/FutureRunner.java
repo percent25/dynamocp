@@ -33,11 +33,10 @@ public class FutureRunner {
     }
       
     private final VoidFuture facade = new VoidFuture();
-    private final AtomicInteger running = new AtomicInteger(1);
+    private final AtomicInteger running = new AtomicInteger();
     private final AtomicReference<Exception> firstException = new AtomicReference<>();
 
     public ListenableFuture<?> get() {
-        doFinally(); //###TODO
         return facade;
     }
 
@@ -155,7 +154,11 @@ public class FutureRunner {
     private void doFinally() {
         if (running.decrementAndGet() == 0) {
             try {
+                //###TODO IF REALLY WANT TO GUARANTEE ONCE ONLISTEN
+                //###TODO THEN CALL IF SETVOID/SETEXCEPTION RETURNS TRUE
                 onListen();
+                //###TODO IF REALLY WANT TO GUARANTEE ONCE ONLISTEN
+                //###TODO THEN CALL IF SETVOID/SETEXCEPTION RETURNS TRUE
             } catch (Exception e) {
                 doCatch(e);
             } finally {
