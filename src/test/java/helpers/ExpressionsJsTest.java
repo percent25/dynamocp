@@ -196,16 +196,13 @@ public class ExpressionsJsTest {
   public void versionTest() {
 
     // tricky: JsonNull -> JsonNull
-    assertThat(output(json("null"), "e.version = (e.version?e.version:0) + 1")).isEqualTo(json("{version:1}"));
+    // assertThat(output(json("null"), "e.version = (e.version?e.version:0) + 1")).isEqualTo(json("{version:1}"));
 
     // hmm..
     // assertThat(output(json("'abc'"), "e?.version = (e?.version?:0) + 1")).isEqualTo(json("'abc'"));
 
-    assertThrows(Exception.class, ()->{
-      output(json("{}"), "e.version = e.version?:0 + 1");
-    });
-    // log(e);
-    assertThat(output(json("{}"), "e.version = (e.version?:0) + 1")).isEqualTo(json("{version:1}"));
+    assertThat(output(json("{}"), "e.version = e.version??0 + 1")).isEqualTo(json("{version:1}")); // spel equivalent is a syntax error
+    assertThat(output(json("{}"), "e.version = (e.version??0) + 1")).isEqualTo(json("{version:1}"));
     assertThat(output(json("{version:1}"), "e.version = e.version + 1")).isEqualTo(json("{version:2}"));
 
   }
