@@ -30,7 +30,8 @@ public class ExpressionsJsTest {
       "null", // json null
       "false", // json primitive bool
       "0", "-0", "0.0", "-0.0", // json primitive number
-      "''", "'false'", "'0'", "'-0'", "'0.0'", "'-0.0'"); // json primitive string      
+      "''"); // json primitive string      
+      // "''", "'false'", "'0'", "'-0'", "'0.0'", "'-0.0'"); // json primitive string      
 
   // if it is not falsey then it is truthy.. here are some truthy values
   private final Set<String> someTruthy = ImmutableSet.of( //
@@ -107,11 +108,9 @@ public class ExpressionsJsTest {
 
     // assertThat(eval(e, "e=randomString(24)").getAsString()).hasSize(32);
 
-    // spel array: {1,2,3} -> json array [1,2,3]
-    assertThat(output(json("{}"), "e={1,2,3}")).isEqualTo(json("[1,2,3]"));
+    assertThat(output(json("{}"), "e=[1,2,3]")).isEqualTo(json("[1,2,3]"));
 
-    // spel object: {:} -> json object {}
-    assertThat(output(json("{}"), "e.id={:}")).isEqualTo(json("{id:{}}"));
+    assertThat(output(json("{}"), "e.id={}")).isEqualTo(json("{id:{}}"));
     assertThat(output(json("{}"), "e.id={s:'foo'}")).isEqualTo(json("{id:{s:'foo'}}"));
     assertThat(output(json("{}"), "e.id={s:'bar'}")).isEqualTo(json("{id:{s:'bar'}}"));
 
@@ -152,7 +151,7 @@ public class ExpressionsJsTest {
       for (Entry<String, String> entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
         String fmt = entry.getKey();
         String str = entry.getValue();
-        assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s", e).isEqualTo(false);
+        assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s fmt=%s str=%s", e, fmt, str).isEqualTo(false);
       }
     }
 
