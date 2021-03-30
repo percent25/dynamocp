@@ -29,7 +29,7 @@ public class ObjectHelper {
     Object object = new Gson().fromJson(jsonElement, Object.class);
     if (jsonElement.isJsonPrimitive()) {
       if (jsonElement.getAsJsonPrimitive().isNumber())
-        object = new BigDecimal(jsonElement.toString());
+        object = new BigDecimal(jsonElement.getAsString()); //###TODO use NumberFormat.parse here??
     }
     return object;
   }
