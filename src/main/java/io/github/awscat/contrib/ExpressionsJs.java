@@ -186,7 +186,7 @@ public class ExpressionsJs {
         @Override
         public Object get(long index) {
             checkIndex(index);
-            return values.get((int) index);
+            return fromJsonElement(values.get((int) index));
         }
         @Override
         public void set(long index, Value value) {
