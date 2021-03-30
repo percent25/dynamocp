@@ -67,7 +67,8 @@ public class ExpressionsJs {
 
   public JsonElement e() {
     Value e = bindings.getMember("e");
-    //###TODO check for hasArrayElements
+    if (e.hasArrayElements())
+      return new Gson().toJsonTree(e.as(new TypeLiteral<List<Object>>(){}));
     return new Gson().toJsonTree(e.as(Object.class));
   }
 
