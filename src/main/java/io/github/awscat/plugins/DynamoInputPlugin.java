@@ -5,28 +5,33 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import org.springframework.stereotype.Service;
 
+import helpers.AbstractThrottle;
+import helpers.AbstractThrottleGuava;
 import helpers.FutureRunner;
 import helpers.LogHelper;
 import io.github.awscat.Args;
 import io.github.awscat.InputPlugin;
 import io.github.awscat.InputPluginProvider;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
@@ -38,7 +43,7 @@ public class DynamoInputPlugin implements InputPlugin {
   private final DynamoDbAsyncClient client;
   private final String tableName;
   private final Iterable<String> keySchema;
-  private final RateLimiter readLimiter;
+  private final AbstractThrottle readLimiter;
   private final int totalSegments;
   private final int limit;
 
@@ -56,7 +61,7 @@ public class DynamoInputPlugin implements InputPlugin {
    * @param totalSegments
    * @param limit
    */
-  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, RateLimiter readLimiter, int totalSegments, int limit) {
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, AbstractThrottle readLimiter, int totalSegments, int limit) {
     debug("ctor");
 
     this.client = client;
@@ -94,9 +99,6 @@ public class DynamoInputPlugin implements InputPlugin {
   @Override
   public ListenableFuture<?> read(int mtu) throws Exception {
     debug("read", "mtu", mtu);
-
-    // prewarm limiter
-    readLimiter.acquire(Double.valueOf(readLimiter.getRate()).intValue());
 
     return new FutureRunner() {
       {
@@ -212,16 +214,9 @@ public class DynamoInputPlugin implements InputPlugin {
 class DynamoInputPluginProvider implements InputPluginProvider {
 
   class Options {
-    public int rcu;
     public int c; // concurrency, aka totalSegments
+    public int rcu;
     public int limit; // scan request limit
-
-    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
-    public void infer(int provisionedRcu, int availableProcessors) {
-      rcu = rcu > 0 ? rcu : provisionedRcu;
-      c = c > 0 ? c : rcu > 0 ? (rcu + 127) / 128 : availableProcessors;
-    }
-
     public String toString() {
       return new Gson().toJson(this);
     }
@@ -238,21 +233,33 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   public InputPlugin activate(String arg) throws Exception {
     String tableName = Args.base(arg).split(":")[1];  
     Options options = Args.options(arg, Options.class);  
-    debug("desired", options);
+    debug("options", options);
 
-    DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
-    DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
+    Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
+      return DynamoDbClient.create().describeTable(DescribeTableRequest.builder().tableName(tableName).build());
+    }, 25, TimeUnit.SECONDS);
+    
+    Iterable<String> keySchema = Lists.transform(describeTable.get().table().keySchema(), e->e.attributeName());      
 
-    Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
+    // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb/
+    int c = Runtime.getRuntime().availableProcessors();
+    if (options.c > 0)
+      c = options.c;
+    else {
+      if (options.rcu > 0)
+        c = (options.rcu + 127) / 128;
+    }
 
-    int provisionedRcu = describeTableResponse.table().provisionedThroughput().readCapacityUnits().intValue();
+    AbstractThrottle readLimiter = new AbstractThrottleGuava(() -> {
+      if (options.rcu > 0)
+        return options.rcu;
+      Number provisionedRcu = describeTable.get().table().provisionedThroughput().readCapacityUnits();
+      if (provisionedRcu.longValue() > 0)
+        return provisionedRcu;
+      return Double.MAX_VALUE;
+    });
 
-    options.infer(provisionedRcu, Runtime.getRuntime().availableProcessors());
-    debug("reported", options);
-
-    RateLimiter readLimiter = RateLimiter.create(options.rcu>0?options.rcu:Integer.MAX_VALUE);
-
-    return new DynamoInputPlugin(client, tableName, keySchema, readLimiter, options.c, options.limit);
+    return new DynamoInputPlugin(client, tableName, keySchema, readLimiter, c, options.limit);
   }
   
   private void debug(Object... args) {
