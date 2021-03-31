@@ -143,19 +143,21 @@ public class DynamoInputPlugin implements InputPlugin {
           exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
 
           // STEP 2 Process the scan
-          List<JsonElement> jsonElements = new ArrayList<>();
+          List<ListenableFuture<?>> futures = new ArrayList<>();
 
+          List<JsonElement> jsonElements = new ArrayList<>();
           for (Map<String, AttributeValue> item : scanResponse.items())
             jsonElements.add(parse(item));
-
-          List<ListenableFuture<?>> futures = new ArrayList<>();
-          for (List<JsonElement> partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
-            run(()->{
-              ListenableFuture<?> lf = listener.apply(partition);
-              futures.add(lf);
-              return lf;
-            });
+          if (jsonElements.size()>0) {
+            for (List<JsonElement> partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
+              run(()->{
+                ListenableFuture<?> lf = listener.apply(partition);
+                futures.add(lf);
+                return lf;
+              });
+            }  
           }
+
           run(()->{
             return Futures.successfulAsList(futures);
           }, ()->{ // finally
