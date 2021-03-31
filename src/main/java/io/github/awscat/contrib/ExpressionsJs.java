@@ -59,19 +59,17 @@ public class ExpressionsJs {
   private final Context context;
   private final Value bindings;
 
-  public ExpressionsJs(JsonElement e) {
-    this(e, Instant.now().toString());
+  public ExpressionsJs() {
+    this(Instant.now().toString());
   }
   
-  public ExpressionsJs(JsonElement e, String now) {
+  public ExpressionsJs(String now) {
     context = Context.newBuilder().allowHostAccess(HostAccess.ALL).build();
     bindings = context.getBindings("js");
 
     Value rootObject = context.asValue(new RootObject(now));
     for (String identifier : rootObject.getMemberKeys())
       bindings.putMember(identifier, rootObject.getMember(identifier));
-
-    bindings.putMember("e", fromJsonElement(e));
   }
 
   // get
@@ -204,8 +202,10 @@ public class ExpressionsJs {
 
   public static void main(String... args) {
 
-    ExpressionsJs js = new ExpressionsJs(json("{}"));
+    ExpressionsJs js = new ExpressionsJs();
 
+    js.e(json("{}"));
+    
     System.out.println("eval="+js.eval("e.a=1"));
     System.out.println("eval="+js.eval("e.b=4/3")); // 1.3333333333333333
     System.out.println("e="+js.e());

@@ -30,6 +30,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import helpers.FutureRunner;
 import helpers.LocalMeter;
 import helpers.LogHelper;
+import io.github.awscat.contrib.ExpressionsJs;
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
@@ -134,7 +135,7 @@ public class Main implements ApplicationRunner {
     OutputPluginProvider outputPluginProvider = resolveOutputPlugin(target);
 
     InputPlugin inputPlugin = inputPluginProvider.activate(source);
-    log("inputPlugin", inputPlugin);
+    log("inputPlugin", inputPlugin); //###TODO log inputPluginProvider here instead of inputPlugin
     Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
     log("outputPlugin", outputPluginProvider);
 
@@ -149,17 +150,18 @@ public class Main implements ApplicationRunner {
         {
           run(()->{
             OutputPlugin outputPlugin = outputPluginSupplier.get();
+            ExpressionsJs expressions = new ExpressionsJs();
             for (JsonElement jsonElement : jsonElements) {
               run(() -> {
                 in.incrementAndGet();
                 if (has(options.filter)) {
-                  ExpressionsSpel expressions = new ExpressionsSpel(jsonElement);
+                  expressions.e(jsonElement);
                   if (expressions.eval(options.filter)) {
                     out.incrementAndGet(); //###TODO eradicate?
                     run(() -> {
                       request.incrementAndGet(); //###TODO eradicate?
-                      for (String action : options.action )
-                        expressions.eval(action);
+                      for (String modify : options.modify )
+                        expressions.eval(modify);
                       return outputPlugin.write(expressions.e());
                     }, result -> {
                       success.incrementAndGet();

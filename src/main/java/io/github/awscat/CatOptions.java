@@ -7,7 +7,7 @@ import com.google.gson.Gson;
 
 public class CatOptions {
   public String filter = "true";
-  public final List<String> action = new ArrayList<>();
+  public final List<String> modify = new ArrayList<>();
   public String toString() {
     return new Gson().toJson(this);
   }

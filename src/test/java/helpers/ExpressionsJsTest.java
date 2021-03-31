@@ -22,6 +22,7 @@ import com.google.gson.JsonStreamParser;
 public class ExpressionsJsTest {
 
   private final String now = Instant.now().toString();
+  private final ExpressionsJs js = new ExpressionsJs(now);
   // private final JsonElement jsonElement = new JsonObject();
   // private final Expressions expressions = new Expressions(jsonElement);
   
@@ -215,14 +216,15 @@ public class ExpressionsJsTest {
 
   // aka filters
   private boolean bool(JsonElement input, String expressionString) {
-    return new ExpressionsJs(input, now).eval(expressionString);
+    js.e(input);
+    return js.eval(expressionString);
   }
   
   // aka transforms
   private JsonElement output(JsonElement input, String expressionString) {
-    ExpressionsJs expressions = new ExpressionsJs(input, now);
-    expressions.eval(expressionString);
-    return expressions.e();
+    js.e(input);
+    js.eval(expressionString);
+    return js.e();
   }
 
   private JsonElement json(String json) {
