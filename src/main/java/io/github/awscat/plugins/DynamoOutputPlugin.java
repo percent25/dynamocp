@@ -1,23 +1,27 @@
 package io.github.awscat.plugins;
 
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.RateLimiter;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import org.springframework.stereotype.Service;
 
+import helpers.AbstractThrottle;
+import helpers.AbstractThrottleGuava;
 import helpers.DynamoWriter;
 import helpers.LogHelper;
 import io.github.awscat.Args;
 import io.github.awscat.OutputPlugin;
 import io.github.awscat.OutputPluginProvider;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 
@@ -28,7 +32,7 @@ public class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoWriter writer;
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore c, RateLimiter writeLimiter, boolean delete) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore c, AbstractThrottle writeLimiter, boolean delete) {
     debug("ctor");
     this.writer = new DynamoWriter(client, tableName, keySchema, c, writeLimiter, delete);
   }
@@ -88,25 +92,25 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     tableName = Args.base(arg).split(":")[1];
     options = Args.options(arg, Options.class);
     DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
-    DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
-    DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
 
-    Iterable<String> keySchema = Lists.transform(describeTableResponse.table().keySchema(), e->e.attributeName());      
+    Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
+      return DynamoDbClient.create().describeTable(DescribeTableRequest.builder().tableName(tableName).build());
+    }, 25, TimeUnit.SECONDS);
 
-    int availableProcessors = Runtime.getRuntime().availableProcessors();
-    options.c = options.c > 0 ? options.c : availableProcessors;
+    Iterable<String> keySchema = Lists.transform(describeTable.get().table().keySchema(), e->e.attributeName());      
 
-    int provisionedWcu = describeTableResponse.table().provisionedThroughput().writeCapacityUnits().intValue();
-    options.wcu = options.wcu > 0 ? options.wcu : provisionedWcu;
+    options.c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
 
     Semaphore sem = new Semaphore(options.c);
-    RateLimiter writeLimiter = RateLimiter.create(options.wcu > 0 ? options.wcu : Integer.MAX_VALUE);
 
-        // Supplier<?> preWarm = Suppliers.memoize(() -> {
-        //   if (options.wcu > 0)
-        //     writeLimiter.acquire(options.wcu);
-        //   return Defaults.defaultValue(Void.class);
-        // });
+    AbstractThrottle writeLimiter = new AbstractThrottleGuava(() -> {
+      if (options.wcu > 0)
+        return options.wcu;
+      Number provisionedWcu = describeTable.get().table().provisionedThroughput().writeCapacityUnits();
+      if (provisionedWcu.longValue() > 0)
+        return provisionedWcu;
+      return Double.MAX_VALUE;
+    });
 
     return ()->{
       return new DynamoOutputPlugin(client, tableName, keySchema, sem, writeLimiter, options.delete);

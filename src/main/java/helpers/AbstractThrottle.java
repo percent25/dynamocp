@@ -1,5 +1,7 @@
 package helpers;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 /**
  * AbstractThrottle
  */
@@ -10,6 +12,6 @@ public interface AbstractThrottle {
    * 
    * @param permits
    */
-  void acquire(Number permits);
+  ListenableFuture<?> asyncAcquire(Number permits);
   
 }

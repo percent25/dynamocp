@@ -59,7 +59,7 @@ public class DynamoWriter {
   private final String tableName;
   private final Iterable<String> keySchema;
   private final Semaphore sem;
-  private final RateLimiter writeLimiter;
+  private final AbstractThrottle writeLimiter;
   private final boolean delete; // PutItem vs DeleteItem
 
   private class PartitionValue {
@@ -88,7 +88,7 @@ public class DynamoWriter {
   // static ThreadFactory threadFactory = new ThreadFactoryBuilder().daemonThreads(true).build();
   // static Timer timer = new HashedWheelTimer(threadFactory, 5, TimeUnit.MILLISECONDS);
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore sem, RateLimiter writeLimiter, boolean delete) {
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore sem, AbstractThrottle writeLimiter, boolean delete) {
     debug("ctor", client, tableName, keySchema, writeLimiter, delete);
     this.client = client;
     this.tableName = tableName;
@@ -176,29 +176,35 @@ public class DynamoWriter {
     // });
 
     ListenableFuture<?> lf = new FutureRunner() {
-      VoidFuture throttle = new VoidFuture();
+      // VoidFuture throttle = new VoidFuture();
       DoBatchWriteItemWork work = new DoBatchWriteItemWork();
       BiMap<Map<String, AttributeValue>/*key*/, WriteRequest> writeRequests = HashBiMap.create();
       
-      VoidFuture acquire(int permits) {
-        // debug("acquire", permits);
-        if (writeLimiter.tryAcquire(permits))
-          throttle.setVoid();
-        else {
-          // random backoff
-          long delay = Double.valueOf(new Random().nextDouble()*1000*permits/writeLimiter.getRate()).longValue();
-          // System.out.println("delay:"+delay);
-          timer.newTimeout(timeout->{
-            acquire(permits);
-          }, delay, TimeUnit.MILLISECONDS);
-        }
-        return throttle;
-      }
+      // VoidFuture acquire(int permits) {
+      //   // debug("acquire", permits);
+      //   if (writeLimiter.tryAcquire(permits))
+      //     throttle.setVoid();
+      //   else {
+      //     // random backoff
+      //     long delay = Double.valueOf(new Random().nextDouble()*1000*permits/writeLimiter.getRate()).longValue();
+      //     // System.out.println("delay:"+delay);
+      //     timer.newTimeout(timeout->{
+      //       acquire(permits);
+      //     }, delay, TimeUnit.MILLISECONDS);
+      //   }
+      //   return throttle;
+      // }
 
       {
         run(() -> {
 
-          sem.acquire();
+          //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
+          //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
+          //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
+          sem.acquire(); 
+          //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
+          //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
+          //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
 
           Map<Map<String, AttributeValue>,Map<String, AttributeValue>> items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
           partition.keySet().forEach(key -> {
@@ -218,7 +224,7 @@ public class DynamoWriter {
           // if (permits > 0)
           // writeLimiter.acquire(permits);
           // permits[0]=25; //###?!?
-          return acquire(permits[0]);
+          return writeLimiter.asyncAcquire(permits[0]);
         }, () -> {
 
           run(() -> {

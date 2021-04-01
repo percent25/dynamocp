@@ -113,7 +113,13 @@ public class DynamoInputPlugin implements InputPlugin {
   
           // pre-throttle
           // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb
-          readLimiter.acquire(128);
+          //###TODO make async
+          //###TODO make async
+          //###TODO make async
+          readLimiter.asyncAcquire(128).get(); //###TODO
+          //###TODO make async
+          //###TODO make async
+          //###TODO make async
 
           // STEP 1 Do the scan
           ScanRequest scanRequest = ScanRequest.builder()
