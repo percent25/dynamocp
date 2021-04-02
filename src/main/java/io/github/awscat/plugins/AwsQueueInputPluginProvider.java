@@ -62,6 +62,11 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
     }
 
     @Override
+    public String help() {
+        return "<queue-url>[,c]";
+    }
+
+    @Override
     public boolean canActivate(String arg) {
         String queueUrl = Args.base(arg);
         if (queueUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)"))

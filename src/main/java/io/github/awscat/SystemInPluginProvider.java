@@ -112,6 +112,11 @@ public class SystemInPluginProvider implements InputPluginProvider {
   }
 
   @Override
+  public String help() {
+      return "<file>[,c,cycle,limit]";
+  }
+
+  @Override
   public boolean canActivate(String arg) {
     return true;
   }

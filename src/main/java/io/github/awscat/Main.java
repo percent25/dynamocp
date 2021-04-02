@@ -1,36 +1,26 @@
 package io.github.awscat;
 
-import java.io.File;
-import java.io.PrintStream;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.io.*;
+import java.security.*;
+import java.time.*;
+import java.util.*;
+import java.util.concurrent.atomic.*;
 import java.util.function.Supplier;
 
-import javax.annotation.PreDestroy;
+import javax.annotation.*;
 
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Strings;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.Iterables;
+import com.google.common.base.*;
+import com.google.common.collect.*;
 import com.google.common.hash.Hashing;
-import com.google.common.util.concurrent.Futures;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.google.common.util.concurrent.*;
+import com.google.gson.*;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.boot.*;
+import org.springframework.boot.autoconfigure.*;
 
-import helpers.FutureRunner;
-import helpers.LocalMeter;
-import helpers.LogHelper;
-import io.github.awscat.contrib.ExpressionsJs;
+import helpers.*;
+import io.github.awscat.contrib.*;
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication
@@ -111,11 +101,33 @@ public class Main implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
-    log("run", projectVersion);
+    log("awscat.jar", projectVersion);
 
     CatOptions options = Args.parseOptions(args, CatOptions.class);
     
     log("options", options);
+
+    if (options.help) {
+
+      log("Usage:");
+      indent("awscat.jar [options] <source> [<target>]");
+      
+      log("options:");
+      indent("--help");
+      indent("--filter");
+      indent("--modify");
+
+      log("source:");
+      for (InputPluginProvider plugin : inputPluginProviders) {
+        indent(plugin.help());
+      }
+      log("target:");
+      for (OutputPluginProvider plugin : outputPluginProviders) {
+        indent(plugin.help());
+      }
+
+      return;
+    }
 
     //###TODO probably eradicate this
     if (args.getNonOptionArgs().size() == 0) //###TODO probably eradicate this
@@ -272,6 +284,9 @@ public class Main implements ApplicationRunner {
 
   private void log(Object... args) {
     new LogHelper(this).log(args);
+  }
+  private void indent(Object... args) {
+    System.err.println("   "+String.join(" ", Lists.transform(Arrays.asList(args), s->""+s)));
   }
 
   private void debug(Object... args) {

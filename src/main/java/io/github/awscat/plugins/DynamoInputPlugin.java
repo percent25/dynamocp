@@ -228,7 +228,10 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     }
   }
 
-  private final DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
+  @Override
+  public String help() {
+      return "dynamo:<tableName>[,c,rcu,limit]";
+  }
 
   @Override
   public boolean canActivate(String arg) {
@@ -265,6 +268,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       return Double.MAX_VALUE;
     });
 
+    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
     return new DynamoInputPlugin(client, tableName, keySchema, c, readLimiter, options.limit);
   }
   

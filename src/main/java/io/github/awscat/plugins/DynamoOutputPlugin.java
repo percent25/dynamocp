@@ -74,6 +74,11 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   private Options options;
 
   @Override
+  public String help() {
+      return "dynamo:<tableName>[,c,wcu,delete]";
+  }
+
+  @Override
   public int mtu() {
     return 25;
   }

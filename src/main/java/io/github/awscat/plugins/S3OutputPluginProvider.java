@@ -13,6 +13,11 @@ import software.amazon.awssdk.services.s3.*;
 public class S3OutputPluginProvider implements OutputPluginProvider {
 
     @Override
+    public String help() {
+        return "s3://<bucket>/<prefix>";
+    }
+
+    @Override
     public boolean canActivate(String arg) {
         return "s3".equals(arg.split(":")[0]);
     }

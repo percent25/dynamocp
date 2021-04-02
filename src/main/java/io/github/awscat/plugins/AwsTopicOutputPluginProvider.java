@@ -23,6 +23,11 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
     }
 
     @Override
+    public String help() {
+        return "<topic-arn>";
+    }
+
+    @Override
     public boolean canActivate(String arg) {
         topicArn = Args.base(arg);
         return topicArn.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)");

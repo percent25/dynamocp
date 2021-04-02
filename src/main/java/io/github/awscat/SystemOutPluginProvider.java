@@ -48,7 +48,6 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
     boolean append;
     public String toString() {
       return new Gson().toJson(this);
-      // return MoreObjects.toStringHelper(this).add("append", append).toString();
     }
   }
 
@@ -57,6 +56,11 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
 
   public String toString() {
     return MoreObjects.toStringHelper(this).add("file", file).add("options", options).toString();
+  }
+
+  @Override
+  public String help() {
+      return "<file>[,append]";
   }
 
   @Override

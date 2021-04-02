@@ -31,7 +31,7 @@ public class LogHelper {
    */
   public void log(Object... args) {
     List<String> parts = Lists.newArrayList();
-    parts.add(new Date().toString());
+    // parts.add(new Date().toString());
     // parts.add(String.format("[%s]", Thread.currentThread().getName()));
     // parts.add(ClassUtils.getShortName(self.getClass()));
     for (Object arg : args)

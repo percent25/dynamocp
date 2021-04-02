@@ -8,6 +8,7 @@ public interface OutputPluginProvider {
   default String name() {
     return ClassUtils.getShortName(getClass());
   }
+  String help();
   default int mtu() {
     return -1;
   }
