@@ -43,8 +43,8 @@ public class DynamoInputPlugin implements InputPlugin {
   private final DynamoDbAsyncClient client;
   private final String tableName;
   private final Iterable<String> keySchema;
-  private final AbstractThrottle readLimiter;
   private final int totalSegments;
+  private final AbstractThrottle readLimiter;
   private final int limit;
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
@@ -57,18 +57,18 @@ public class DynamoInputPlugin implements InputPlugin {
    * @param client
    * @param tableName
    * @param keySchema
-   * @param readLimiter
    * @param totalSegments
+   * @param readLimiter
    * @param limit
    */
-  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, AbstractThrottle readLimiter, int totalSegments, int limit) {
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, int totalSegments, AbstractThrottle readLimiter, int limit) {
     debug("ctor");
 
     this.client = client;
     this.tableName = tableName;
     this.keySchema = keySchema;
-    this.readLimiter = readLimiter;
     this.totalSegments = totalSegments;
+    this.readLimiter = readLimiter;
     this.limit = limit;
 
     // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb
@@ -82,9 +82,9 @@ public class DynamoInputPlugin implements InputPlugin {
         //
         .add("keySchema", keySchema)
         //
-        .add("readLimiter", readLimiter)
-        //
         .add("totalSegments", totalSegments)
+        //
+        .add("readLimiter", readLimiter)
         //
         // .add("limit", limit)
         //
@@ -265,7 +265,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       return Double.MAX_VALUE;
     });
 
-    return new DynamoInputPlugin(client, tableName, keySchema, readLimiter, c, options.limit);
+    return new DynamoInputPlugin(client, tableName, keySchema, c, readLimiter, options.limit);
   }
   
   private void debug(Object... args) {
