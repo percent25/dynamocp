@@ -1,11 +1,11 @@
 package helpers;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.spotify.futures.CompletableFuturesExtra;
+import com.google.common.base.*;
+import com.google.common.util.concurrent.*;
+import com.spotify.futures.*;
 
-import software.amazon.awssdk.services.sns.SnsAsyncClient;
-import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.*;
+import software.amazon.awssdk.services.sns.model.*;
 
 /**
  * ConcatenatedJsonWriterTransportAwsTopic
@@ -21,13 +21,13 @@ public class ConcatenatedJsonWriterTransportAwsTopic implements ConcatenatedJson
      * @param topicArn
      */
     public ConcatenatedJsonWriterTransportAwsTopic(SnsAsyncClient client, String topicArn) {
-        debug("ctor", client, topicArn);
+        debug("ctor", topicArn);
         this.client = client;
         this.topicArn = topicArn;
     }
 
     public String toString() {
-        return MoreObjects.toStringHelper(this).add("client", client).add("topicArn", topicArn).toString();
+        return MoreObjects.toStringHelper(this).add("topicArn", topicArn).toString();
     }
 
     @Override

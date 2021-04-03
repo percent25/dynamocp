@@ -106,8 +106,16 @@ public class Main implements ApplicationRunner {
     CatOptions options = Args.parseOptions(args, CatOptions.class);
     
     log("options", options);
+    
+    boolean help = false;
+    if (options.help)
+    	help = true;
+    if (ImmutableSet.of().equals(ImmutableSet.copyOf(args.getNonOptionArgs())))
+    	help = true;
+    if (ImmutableSet.of("-h").equals(ImmutableSet.copyOf(args.getNonOptionArgs())))
+    	help = true;
 
-    if (options.help) {
+    if (help) {
 
       log("Usage:");
       indent("awscat.jar [options] <source> [<target>]");
@@ -139,15 +147,14 @@ public class Main implements ApplicationRunner {
     if (args.getNonOptionArgs().size()>0)
       source = args.getNonOptionArgs().get(0);
     InputPluginProvider inputPluginProvider = resolveInputPlugin(source);
+    InputPlugin inputPlugin = inputPluginProvider.activate(source);
+    log("inputPlugin", inputPlugin); //###TODO log inputPluginProvider here instead of inputPlugin
     
     // output plugin
     String target = "-";
     if (args.getNonOptionArgs().size()>1)
       target = args.getNonOptionArgs().get(1);
     OutputPluginProvider outputPluginProvider = resolveOutputPlugin(target);
-
-    InputPlugin inputPlugin = inputPluginProvider.activate(source);
-    log("inputPlugin", inputPlugin); //###TODO log inputPluginProvider here instead of inputPlugin
     Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
     log("outputPlugin", outputPluginProvider);
 
@@ -207,10 +214,6 @@ public class Main implements ApplicationRunner {
     log("start", "mtu", mtu);
     inputPlugin.read(mtu).get();
     log("finish", "mtu", mtu);
-
-    // log("output.flush().get();111");
-    // outputPlugin.flush().get();
-    // log("output.flush().get();222");
 
   }
 

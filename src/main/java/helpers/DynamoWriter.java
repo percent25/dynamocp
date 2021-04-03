@@ -1,41 +1,16 @@
 package helpers;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Map.Entry;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.Map.*;
+import java.util.concurrent.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.util.concurrent.AbstractFuture;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.RateLimiter;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.fasterxml.jackson.databind.*;
+import com.google.common.collect.*;
+import com.google.common.util.concurrent.*;
+import com.google.gson.*;
 
-import io.netty.util.HashedWheelTimer;
-import io.netty.util.Timer;
-import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.ConsumedCapacity;
-import software.amazon.awssdk.services.dynamodb.model.DeleteRequest;
-import software.amazon.awssdk.services.dynamodb.model.PutRequest;
-import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
-import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
-import software.amazon.awssdk.utils.ThreadFactoryBuilder;
+import software.amazon.awssdk.services.dynamodb.*;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 /**
  * DynamoWriter
@@ -83,10 +58,6 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
   // ###TODO
-
-  static Timer timer = new HashedWheelTimer(new ThreadFactoryBuilder().daemonThreads(true).build());
-  // static ThreadFactory threadFactory = new ThreadFactoryBuilder().daemonThreads(true).build();
-  // static Timer timer = new HashedWheelTimer(threadFactory, 5, TimeUnit.MILLISECONDS);
 
   public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore sem, AbstractThrottle writeLimiter, boolean delete) {
     debug("ctor", client, tableName, keySchema, writeLimiter, delete);

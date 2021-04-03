@@ -2,27 +2,21 @@ package io.github.awscat.plugins;
 
 import java.util.function.Function;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonStreamParser;
+import com.google.common.base.*;
+import com.google.common.collect.*;
+import com.google.common.util.concurrent.*;
+import com.google.gson.*;
 
-import helpers.AwsQueueMessageReceiver;
-import helpers.LogHelper;
-import io.github.awscat.Args;
-import io.github.awscat.InputPlugin;
-import io.github.awscat.InputPluginProvider;
-
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Service;
+
+import helpers.*;
+import io.github.awscat.*;
 
 class AwsQueueInputPlugin implements InputPlugin {
 
-    private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
-
     private final AwsQueueMessageReceiver messageReceiver;
+
+    private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
     public AwsQueueInputPlugin(AwsQueueMessageReceiver messageReceiver) {
         debug("ctor");
