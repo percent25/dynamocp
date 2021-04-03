@@ -19,7 +19,7 @@ import com.google.gson.JsonStreamParser;
 
 import helpers.FutureRunner;
 import helpers.LogHelper;
-import helpers.QueuePutPolicy;
+import helpers.CallerBlocksPolicy;
 
 class SystemInPlugin implements InputPlugin {
 
@@ -42,7 +42,7 @@ class SystemInPlugin implements InputPlugin {
 
     ThreadPoolExecutor executor = new ThreadPoolExecutor(
       0, this.concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(this.concurrency));
-    executor.setRejectedExecutionHandler(new QueuePutPolicy());
+    executor.setRejectedExecutionHandler(new CallerBlocksPolicy());
     this.executor = executor;
   }
 

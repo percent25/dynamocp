@@ -4,7 +4,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class QueuePutPolicy implements RejectedExecutionHandler {
+public class CallerBlocksPolicy implements RejectedExecutionHandler {
 
 	@Override
 	public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
