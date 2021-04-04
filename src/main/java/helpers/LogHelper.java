@@ -32,13 +32,13 @@ public class LogHelper {
     return String.join(" ", parts);
   }
   
-  public void stdout(Object... args) {
-    System.out.println(str(args));
-  }
+  // public void stdout(Object... args) {
+  //   System.out.println(str(args));
+  // }
 
-  public void stderr(Object... args) {
-    System.err.println(str(args));
-  }
+  // public void stderr(Object... args) {
+  //   System.err.println(str(args));
+  // }
 
   public void debug(Object... args) {
     LoggerFactory.getLogger(self.getClass()).debug(Strings.repeat("{} ", args.length), args);

@@ -241,7 +241,7 @@ public class ExpressionsTest {
   }
 
   private void stdout(Object... args) {
-    new LogHelper(this).stdout(args);
+    System.out.println(new LogHelper(this).str(args));
   }
   
 }

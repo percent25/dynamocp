@@ -89,7 +89,7 @@ public class Main implements ApplicationRunner {
    * ctor
    */
   public Main(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders) {
-    log("ctor");
+    debug("ctor");
     this.inputPluginProviders.addAll(inputPluginProviders);
     this.inputPluginProviders.add(new SystemInPluginProvider()); // ensure last
     this.outputPluginProviders.addAll(outputPluginProviders);
@@ -101,11 +101,11 @@ public class Main implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
-    log("awscat.jar", projectVersion);
+    stderr("awscat.jar", projectVersion);
 
     CatOptions options = Args.parseOptions(args, CatOptions.class);
     
-    log("options", options);
+    stderr("options", options);
     
     boolean help = false;
     if (options.help)
@@ -119,21 +119,21 @@ public class Main implements ApplicationRunner {
 
       final String indent = "  ";
 
-      log("Usage:");
-      log(indent, "awscat.jar [options] <source> [<target>]");
+      stderr("Usage:");
+      stderr(indent, "awscat.jar [options] <source> [<target>]");
       
-      log("options:");
-      log(indent, "--help");
-      log(indent, "--filter");
-      log(indent, "--modify");
+      stderr("options:");
+      stderr(indent, "--help");
+      stderr(indent, "--filter");
+      stderr(indent, "--modify");
 
-      log("source:");
+      stderr("source:");
       for (InputPluginProvider plugin : inputPluginProviders) {
-        log(indent, plugin.help());
+        stderr(indent, plugin.help());
       }
-      log("target:");
+      stderr("target:");
       for (OutputPluginProvider plugin : outputPluginProviders) {
-        log(indent, plugin.help());
+        stderr(indent, plugin.help());
       }
 
       return;
@@ -150,7 +150,7 @@ public class Main implements ApplicationRunner {
       source = args.getNonOptionArgs().get(0);
     InputPluginProvider inputPluginProvider = resolveInputPlugin(source);
     InputPlugin inputPlugin = inputPluginProvider.activate(source);
-    log("inputPlugin", inputPlugin); //###TODO log inputPluginProvider here instead of inputPlugin
+    stderr("inputPlugin", inputPlugin); //###TODO log inputPluginProvider here instead of inputPlugin
     
     // output plugin
     String target = "-";
@@ -158,7 +158,7 @@ public class Main implements ApplicationRunner {
       target = args.getNonOptionArgs().get(1);
     OutputPluginProvider outputPluginProvider = resolveOutputPlugin(target);
     Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
-    log("outputPlugin", outputPluginProvider);
+    stderr("outputPlugin", outputPluginProvider);
 
     // ----------------------------------------------------------------------
     // main loop
@@ -187,7 +187,7 @@ public class Main implements ApplicationRunner {
                     }, result -> {
                       success.incrementAndGet();
                     }, e -> {
-                      log(e);
+                      stderr(e);
                       // e.printStackTrace();
                       failure.incrementAndGet();
                       failures.get().println(jsonElement); // pre-transform
@@ -202,7 +202,7 @@ public class Main implements ApplicationRunner {
             return outputPlugin.flush();
           }, ()->{
             work.rate = rate.toString();
-            log(work);
+            stderr(work);
             //###TODO flush failuresPrintStream here??
             //###TODO flush failuresPrintStream here??
             //###TODO flush failuresPrintStream here??
@@ -213,9 +213,9 @@ public class Main implements ApplicationRunner {
     });
 
     int mtu = outputPluginProvider.mtu();
-    log("start", "mtu", mtu);
+    stderr("start", "mtu", mtu);
     inputPlugin.read(mtu).get();
-    log("finish", "mtu", mtu);
+    stderr("finish", "mtu", mtu);
 
   }
 
@@ -225,7 +225,7 @@ public class Main implements ApplicationRunner {
       try {
         failuresPrintStream.close();
       } finally {
-        log(" ########## " + failuresName + " ########## ");
+        stderr(" ########## " + failuresName + " ########## ");
       }
     }
   }
@@ -236,7 +236,7 @@ public class Main implements ApplicationRunner {
         if (provider.canActivate(source))
           return provider;
       } catch (Exception e) {
-        log(provider.name(), e);
+        stderr(provider.name(), e);
       }
     }
     return new SystemInPluginProvider();
@@ -248,7 +248,7 @@ public class Main implements ApplicationRunner {
         if (provider.canActivate(target))
           return provider;
       } catch (Exception e) {
-        log(provider.name(), e);
+        stderr(provider.name(), e);
       }
     }
     return new SystemOutPluginProvider();
@@ -287,8 +287,8 @@ public class Main implements ApplicationRunner {
   //   return BaseEncoding.base64().encode(baos.toByteArray());
   // }
 
-  private void log(Object... args) {
-    new LogHelper(this).stderr(args);
+  private void stderr(Object... args) {
+    System.err.println(new LogHelper(this).str(args));
   }
 
   private void debug(Object... args) {
