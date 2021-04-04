@@ -10,6 +10,7 @@ import io.github.awscat.*;
 import software.amazon.awssdk.services.s3.*;
 
 @Service
+// @Help("s3://<bucket>/<prefix>")
 public class S3OutputPluginProvider implements OutputPluginProvider {
 
     @Override

@@ -117,21 +117,23 @@ public class Main implements ApplicationRunner {
 
     if (help) {
 
+      final String indent = "  ";
+
       log("Usage:");
-      indent("awscat.jar [options] <source> [<target>]");
+      log(indent, "awscat.jar [options] <source> [<target>]");
       
       log("options:");
-      indent("--help");
-      indent("--filter");
-      indent("--modify");
+      log(indent, "--help");
+      log(indent, "--filter");
+      log(indent, "--modify");
 
       log("source:");
       for (InputPluginProvider plugin : inputPluginProviders) {
-        indent(plugin.help());
+        log(indent, plugin.help());
       }
       log("target:");
       for (OutputPluginProvider plugin : outputPluginProviders) {
-        indent(plugin.help());
+        log(indent, plugin.help());
       }
 
       return;
@@ -286,13 +288,13 @@ public class Main implements ApplicationRunner {
   // }
 
   private void log(Object... args) {
-    new LogHelper(this).log(args);
-  }
-  private void indent(Object... args) {
-    System.err.println("   "+String.join(" ", Lists.transform(Arrays.asList(args), s->""+s)));
+    new LogHelper(this).stderr(args);
   }
 
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
+  }
+  private void trace(Object... args) {
+    new LogHelper(this).trace(args);
   }
 }

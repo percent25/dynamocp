@@ -231,8 +231,8 @@ public class ExpressionsJsTest {
     return new JsonStreamParser(json).next();
   }
 
-  private void log(Object... args) {
-    new LogHelper(this).log(args);
+  private void stdout(Object... args) {
+    new LogHelper(this).stdout(args);
   }
   
 }

@@ -196,9 +196,9 @@ public class ExpressionsJs {
     return new JsonStreamParser(json).next();
   }
 
-  private void logzzz(Object... args) {
-    new LogHelper(this).log(args);
-  }
+  // private void debug(Object... args) {
+  //   new LogHelper(this).debug(args);
+  // }
 
   public static void main(String... args) {
 
