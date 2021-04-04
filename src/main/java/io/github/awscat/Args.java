@@ -1,16 +1,11 @@
 package io.github.awscat;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-import com.google.common.base.CaseFormat;
-import com.google.common.base.Splitter;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.common.base.*;
+import com.google.gson.*;
 
-import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.*;
 
 // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
 public class Args {
@@ -36,10 +31,16 @@ public class Args {
 
     // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
     public static <T> T options(String arg, Class<T> classOfT) {
-        Map<String, String> options = new HashMap<String, String>();
-        int index = arg.indexOf(",");
-        if (index != -1) {
-        options.putAll(Splitter.on(",").trimResults().withKeyValueSeparator("=").split(arg.substring(index+1)));
+        Map<String, String> options = new HashMap<>();
+        Iterator<String> iter = Splitter.on(",").trimResults().split(arg).iterator();
+        iter.next();
+        while (iter.hasNext()) {
+            Iterator<String> keyValue = Splitter.on("=").trimResults().split(iter.next()).iterator();
+            String key = keyValue.next();
+            String value = "true";
+            if (keyValue.hasNext())
+                value = keyValue.next();
+            options.put(key, value);
         }
         return new Gson().fromJson(new Gson().toJson(options), classOfT);
     }
