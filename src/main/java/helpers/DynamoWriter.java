@@ -150,22 +150,6 @@ public class DynamoWriter {
       // VoidFuture throttle = new VoidFuture();
       DoBatchWriteItemWork work = new DoBatchWriteItemWork();
       BiMap<Map<String, AttributeValue>/*key*/, WriteRequest> writeRequests = HashBiMap.create();
-      
-      // VoidFuture acquire(int permits) {
-      //   // debug("acquire", permits);
-      //   if (writeLimiter.tryAcquire(permits))
-      //     throttle.setVoid();
-      //   else {
-      //     // random backoff
-      //     long delay = Double.valueOf(new Random().nextDouble()*1000*permits/writeLimiter.getRate()).longValue();
-      //     // System.out.println("delay:"+delay);
-      //     timer.newTimeout(timeout->{
-      //       acquire(permits);
-      //     }, delay, TimeUnit.MILLISECONDS);
-      //   }
-      //   return throttle;
-      // }
-
       {
         run(() -> {
 
@@ -265,7 +249,7 @@ public class DynamoWriter {
       }
 
       @Override
-      protected void onListen() {
+      protected void onLanded() {
         debug(work);
       }
     }.get();
