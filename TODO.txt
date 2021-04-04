@@ -18,13 +18,40 @@ rrizun@rrizuns-MacBook-Air dynamocat % LOGGING_LEVEL_IO_GITHUB_AWSCAT=DEBUG java
 spel downsides
  1. no comma expressions
  1. weird inline array syntax
+ 1. {:} is immutable!! wtf?
 
 javascript downsides
  1. while (true)
 
+spel ?: vs js ??
+arrays: spel {1,2,3} vs js [1,2,3]
+objects: spel {:} is immutable!! wtf?
+
 ======================================================================
 OPEN
 ======================================================================
+
+ - SystemInPlugin: can't cycle stdin
+
+
+
+ - dynamo input plugin read-ahead ??
+
+ 
+
+replace LogHelper.log w/stderr(...) ???
+ - [stderr] hello! ?!?
+
+
+
+--limiter=redis://blahblahblah
+ - really a dynamo option.. wcu=2000,limiter=redis://localhost
+
+
+
+--version
+
+
 
 dynamo reader/writer
  - if preAcquire < consumedCapacityUnits then acquire the difference!!
@@ -54,6 +81,7 @@ Increasing the max connections can increase client throughput (unless the networ
 If the above mechanisms are not able to fix the issue, try smoothing out your requests so that large traffic bursts cannot overload the client, being more efficient with the number of times you need to call AWS, or by increasing the number of hosts sending requests.
  - ah.. source is SystemIn, so, high concurrency, large batch.. target is dynamo writer.. small batch = 25 hmmm...
  - "concurrency" for dynamoWriter ?!? ?!? ?!?
+ - ### THIS IS CHOPPY BECAUSE THERE IS NO DYNAMO INPUT PLUGIN 'READ AHEAD'
 
 
 
@@ -323,6 +351,19 @@ JsonElement conversion + JsonElementMapAccessor?
 
 
 inputPluginProvider: pass arg to canActivate and canActivate
+
+
+
+can't cat empty dynamo table ??
+
+
+
+- dynamo: dynamically read provisioned capacity units 
+ - and periodically (every 25s) setRate
+
+
+ 
+--help w/plugin options
 
 
 
