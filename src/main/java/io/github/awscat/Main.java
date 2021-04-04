@@ -37,8 +37,8 @@ public class Main implements ApplicationRunner {
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
   AtomicLong in = new AtomicLong(); // pre-filter
-  AtomicLong out = new AtomicLong(); // post-filter
-  AtomicLong request = new AtomicLong(); // output plugin
+  // AtomicLong out = new AtomicLong(); // post-filter
+  // AtomicLong request = new AtomicLong(); // output plugin
   AtomicLong success = new AtomicLong(); // output plugin
   AtomicLong failure = new AtomicLong(); // output plugin
 
@@ -54,7 +54,7 @@ public class Main implements ApplicationRunner {
     public String toString() {
       return getClass().getSimpleName()+new Gson().toJson(this);
     }
-    Working(Number in, Number out, Number request, Number success, Number failure) {
+    Working(Number in, Number success, Number failure) {
       this.in = in;
       // this.out = out;
       // this.request = request;
@@ -167,7 +167,7 @@ public class Main implements ApplicationRunner {
     inputPlugin.setListener(jsonElements->{
       debug("listener", Iterables.size(jsonElements));
       return new FutureRunner() {
-        Working work = new Working(in, out, request, success, failure);
+        Working work = new Working(in, success, failure);
         {
           run(()->{
             OutputPlugin outputPlugin = outputPluginSupplier.get();
@@ -175,26 +175,24 @@ public class Main implements ApplicationRunner {
             for (JsonElement jsonElement : jsonElements) {
               run(() -> {
                 in.incrementAndGet();
-                if (has(options.filter)) {
-                  expressions.e(jsonElement);
-                  if (expressions.eval(options.filter)) {
-                    out.incrementAndGet(); //###TODO eradicate?
-                    run(() -> {
-                      request.incrementAndGet(); //###TODO eradicate?
-                      for (String modify : options.modify )
-                        expressions.eval(modify);
-                      return outputPlugin.write(expressions.e());
-                    }, result -> {
-                      success.incrementAndGet();
-                    }, e -> {
-                      stderr(e);
-                      // e.printStackTrace();
-                      failure.incrementAndGet();
-                      failures.get().println(jsonElement); // pre-transform
-                    }, () -> {
-                      rate.add(1);
-                    });
-                  }
+
+                boolean filter = true;
+                expressions.e(jsonElement); //###TODO .deepCopy
+                for (String js : options.js)
+                  filter = filter && expressions.eval(js);
+                if (filter) {
+                  run(() -> {
+                    return outputPlugin.write(expressions.e());
+                  }, result -> {
+                    success.incrementAndGet();
+                  }, e -> {
+                    stderr(e);
+                    // e.printStackTrace();
+                    failure.incrementAndGet();
+                    failures.get().println(jsonElement); // pre-transform
+                  }, () -> {
+                    rate.add(1);
+                  });
                 }
                 return Futures.immediateVoidFuture();
               });
