@@ -1,29 +1,21 @@
 package io.github.awscat.plugins;
 
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+import java.net.*;
+import java.util.concurrent.*;
 import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.google.common.base.*;
+import com.google.common.collect.*;
+import com.google.common.util.concurrent.*;
+import com.google.gson.*;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.*;
 
-import helpers.AbstractThrottle;
-import helpers.AbstractThrottleGuava;
-import helpers.DynamoWriter;
-import helpers.LogHelper;
-import io.github.awscat.Args;
-import io.github.awscat.OutputPlugin;
-import io.github.awscat.OutputPluginProvider;
-import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
-import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
+import helpers.*;
+import io.github.awscat.*;
+import software.amazon.awssdk.services.dynamodb.*;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 /**
  * DynamoOutputPlugin
@@ -65,6 +57,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     public int wcu;
     // issue deleteItem (vs putItem)
     public boolean delete;
+    public String endpoint;
     public String toString() {
       return new Gson().toJson(this);
     }
@@ -96,10 +89,18 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
     tableName = Args.base(arg).split(":")[1];
     options = Args.options(arg, Options.class);
-    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
+
+    DynamoDbAsyncClientBuilder builder = DynamoDbAsyncClient.builder();    
+    if (StringUtils.hasText(options.endpoint))
+      builder.endpointOverride(URI.create(options.endpoint)).build();
+    DynamoDbAsyncClient client = builder.build();
 
     Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
-      return DynamoDbClient.create().describeTable(DescribeTableRequest.builder().tableName(tableName).build());
+      try {
+        return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }, 25, TimeUnit.SECONDS);
 
     Iterable<String> keySchema = Lists.transform(describeTable.get().table().keySchema(), e->e.attributeName());      

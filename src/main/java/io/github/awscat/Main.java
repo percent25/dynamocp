@@ -147,16 +147,16 @@ public class Main implements ApplicationRunner {
     if (args.getNonOptionArgs().size()>0)
       source = args.getNonOptionArgs().get(0);
     InputPluginProvider inputPluginProvider = resolveInputPlugin(source);
+    stderr("inputPlugin", inputPluginProvider);
     InputPlugin inputPlugin = inputPluginProvider.activate(source);
-    stderr("inputPlugin", inputPlugin); //###TODO log inputPluginProvider here instead of inputPlugin
     
     // output plugin
     String target = "-";
     if (args.getNonOptionArgs().size()>1)
       target = args.getNonOptionArgs().get(1);
     OutputPluginProvider outputPluginProvider = resolveOutputPlugin(target);
-    Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
     stderr("outputPlugin", outputPluginProvider);
+    Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
 
     // ----------------------------------------------------------------------
     // main loop
