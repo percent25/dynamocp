@@ -27,7 +27,7 @@ import io.github.awscat.contrib.*;
 public class Main implements ApplicationRunner {
 
   public static void main(String[] args) throws Exception {
-    System.err.println("main"+Arrays.asList(args));
+    // System.err.println("main"+Arrays.asList(args));
     // args = new String[]{"dynamo:MyTable"};
     // args= new String[]{"dynamo:MyTableOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
     System.exit(SpringApplication.exit(SpringApplication.run(Main.class, args)));
@@ -101,12 +101,10 @@ public class Main implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
-    stderr("awscat.jar", projectVersion);
-
     CatOptions options = Args.parseOptions(args, CatOptions.class);
-    
-    stderr("options", options);
-    
+
+    stderr("awscat.jar", projectVersion, options);
+
     boolean help = false;
     if (options.help)
     	help = true;
