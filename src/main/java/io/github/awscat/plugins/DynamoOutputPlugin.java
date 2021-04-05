@@ -90,17 +90,18 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     tableName = Args.base(arg).split(":")[1];
     options = Args.options(arg, Options.class);
 
-    DynamoDbAsyncClientBuilder builder = DynamoDbAsyncClient.builder();    
+    DynamoDbClientBuilder builder = DynamoDbClient.builder();    
     if (StringUtils.hasText(options.endpoint))
       builder.endpointOverride(URI.create(options.endpoint)).build();
-    DynamoDbAsyncClient client = builder.build();
+    DynamoDbClient client = builder.build();
+
+    DynamoDbAsyncClientBuilder asyncBuilder = DynamoDbAsyncClient.builder();    
+    if (StringUtils.hasText(options.endpoint))
+      asyncBuilder.endpointOverride(URI.create(options.endpoint)).build();
+    DynamoDbAsyncClient asyncClient = asyncBuilder.build();
 
     Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
-      try {
-        return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+      return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build());
     }, 25, TimeUnit.SECONDS);
 
     Iterable<String> keySchema = Lists.transform(describeTable.get().table().keySchema(), e->e.attributeName());      
@@ -119,7 +120,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     });
 
     return ()->{
-      return new DynamoOutputPlugin(client, tableName, keySchema, sem, writeLimiter, options.delete);
+      return new DynamoOutputPlugin(asyncClient, tableName, keySchema, sem, writeLimiter, options.delete);
     };
   }
 

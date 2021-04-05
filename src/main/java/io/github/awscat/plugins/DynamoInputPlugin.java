@@ -1,41 +1,24 @@
 package io.github.awscat.plugins;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.fasterxml.jackson.databind.*;
+import com.google.common.base.*;
+import com.google.common.collect.*;
+import com.google.common.util.concurrent.*;
+import com.google.gson.*;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.*;
 
-import helpers.AbstractThrottle;
-import helpers.AbstractThrottleGuava;
-import helpers.FutureRunner;
-import helpers.LogHelper;
-import io.github.awscat.Args;
-import io.github.awscat.InputPlugin;
-import io.github.awscat.InputPluginProvider;
-import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest;
-import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
-import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import helpers.*;
+import io.github.awscat.*;
+import software.amazon.awssdk.services.dynamodb.*;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html
 public class DynamoInputPlugin implements InputPlugin {
@@ -223,6 +206,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     public int c; // concurrency, aka totalSegments
     public int rcu;
     public int limit; // scan request limit
+    public String endpoint;
     public String toString() {
       return new Gson().toJson(this);
     }
@@ -242,10 +226,19 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   public InputPlugin activate(String arg) throws Exception {
     String tableName = Args.base(arg).split(":")[1];  
     Options options = Args.options(arg, Options.class);  
-    debug("options", options);
+
+    DynamoDbClientBuilder builder = DynamoDbClient.builder();    
+    if (StringUtils.hasText(options.endpoint))
+      builder.endpointOverride(URI.create(options.endpoint)).build();
+    DynamoDbClient client = builder.build();
+
+    DynamoDbAsyncClientBuilder asyncBuilder = DynamoDbAsyncClient.builder();    
+    if (StringUtils.hasText(options.endpoint))
+      asyncBuilder.endpointOverride(URI.create(options.endpoint)).build();
+    DynamoDbAsyncClient asyncClient = asyncBuilder.build();
 
     Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
-      return DynamoDbClient.create().describeTable(DescribeTableRequest.builder().tableName(tableName).build());
+      return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build());
     }, 25, TimeUnit.SECONDS);
     
     Iterable<String> keySchema = Lists.transform(describeTable.get().table().keySchema(), e->e.attributeName());      
@@ -268,8 +261,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
       return Double.MAX_VALUE;
     });
 
-    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder().build();
-    return new DynamoInputPlugin(client, tableName, keySchema, c, readLimiter, options.limit);
+    return new DynamoInputPlugin(asyncClient, tableName, keySchema, c, readLimiter, options.limit);
   }
   
   private void debug(Object... args) {
