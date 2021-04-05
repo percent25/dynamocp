@@ -31,6 +31,10 @@ objects: spel {:} is immutable!! wtf?
 OPEN
 ======================================================================
 
+ - dynamo input plugin: limit is not what is intuitively limit.. it is scan limit, not overall limit
+
+
+
  - SystemInPlugin: can't cycle stdin
 
 
@@ -38,11 +42,6 @@ OPEN
  - dynamo input plugin read-ahead ??
 
  
-
-replace LogHelper.log w/stderr(...) ???
- - [stderr] hello! ?!?
-
-
 
 --limiter=redis://blahblahblah
  - really a dynamo option.. wcu=2000,limiter=redis://localhost
