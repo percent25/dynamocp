@@ -30,9 +30,9 @@ public class DynamoInputPlugin implements InputPlugin {
   private final AbstractThrottle readLimiter;
   private final int limit;
 
-  private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
+  private final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
 
-  public final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
+  private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   /**
    * ctor

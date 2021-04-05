@@ -108,9 +108,13 @@ public class Main implements ApplicationRunner {
     boolean help = false;
     if (options.help)
     	help = true;
+    if (options.version)
+    	help = true;
     if (ImmutableSet.of().equals(ImmutableSet.copyOf(args.getNonOptionArgs())))
     	help = true;
     if (ImmutableSet.of("-h").equals(ImmutableSet.copyOf(args.getNonOptionArgs())))
+    	help = true;
+    if (ImmutableSet.of("-v").equals(ImmutableSet.copyOf(args.getNonOptionArgs())))
     	help = true;
 
     if (help) {
@@ -122,8 +126,9 @@ public class Main implements ApplicationRunner {
       
       stderr("options:");
       stderr(indent, "--help");
-      stderr(indent, "--filter");
-      stderr(indent, "--modify");
+      stderr(indent, "--version");
+      stderr(indent, "--js");
+      stderr(indent, "--debug");
 
       stderr("source:");
       for (InputPluginProvider plugin : inputPluginProviders) {
