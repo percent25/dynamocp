@@ -214,7 +214,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
 
   @Override
   public String help() {
-      return "dynamo:<tableName>[,c,rcu,limit]";
+      return "dynamo:<tableName>[,c,rcu,endpoint,limit]";
   }
 
   @Override
