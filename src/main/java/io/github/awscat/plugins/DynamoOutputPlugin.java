@@ -56,8 +56,9 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     // write capacity units
     public int wcu;
     // issue deleteItem (vs putItem)
-    public boolean delete;
     public String endpoint;
+    public String profile;
+    public boolean delete;
     public String toString() {
       return new Gson().toJson(this);
     }
@@ -68,7 +69,7 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public String help() {
-      return "dynamo:<tableName>[,c,wcu,endpoint,delete]";
+      return "dynamo:<tableName>[,c,wcu,endpoint,profile,delete]";
   }
 
   @Override

@@ -203,9 +203,9 @@ class DynamoInputPluginProvider implements InputPluginProvider {
   class Options {
     public int c; // concurrency, aka totalSegments
     public int rcu;
-    public int limit; // scan request limit
     public String endpoint;
     public String profile;
+    public int limit; // scan request limit
     public String toString() {
       return new Gson().toJson(this);
     }
@@ -216,7 +216,7 @@ class DynamoInputPluginProvider implements InputPluginProvider {
 
   @Override
   public String help() {
-      return "dynamo:<tableName>[,c,rcu,endpoint,limit]";
+      return "dynamo:<tableName>[,c,rcu,endpoint,profile,limit]";
   }
 
   @Override
