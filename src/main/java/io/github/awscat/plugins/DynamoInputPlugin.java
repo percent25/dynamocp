@@ -1,6 +1,5 @@
 package io.github.awscat.plugins;
 
-import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -13,7 +12,6 @@ import com.google.common.util.concurrent.*;
 import com.google.gson.*;
 
 import org.springframework.stereotype.Service;
-import org.springframework.util.*;
 
 import helpers.*;
 import io.github.awscat.*;
@@ -207,10 +205,14 @@ class DynamoInputPluginProvider implements InputPluginProvider {
     public int rcu;
     public int limit; // scan request limit
     public String endpoint;
+    public String profile;
     public String toString() {
       return new Gson().toJson(this);
     }
   }
+
+  private String tableName;
+  private Options options;
 
   @Override
   public String help() {
@@ -219,23 +221,20 @@ class DynamoInputPluginProvider implements InputPluginProvider {
 
   @Override
   public boolean canActivate(String arg) {
+    tableName = Args.base(arg).split(":")[1];  
+    options = Args.options(arg, Options.class);  
     return ImmutableSet.of("dynamo", "dynamodb").contains(Args.base(arg).split(":")[0]);
+  }
+
+  public String toString() {
+    // return new Gson().toJson(this);
+    return MoreObjects.toStringHelper(this).add("tableName", tableName).add("options", options).toString();
   }
 
   @Override
   public InputPlugin activate(String arg) throws Exception {
-    String tableName = Args.base(arg).split(":")[1];  
-    Options options = Args.options(arg, Options.class);  
-
-    DynamoDbClientBuilder builder = DynamoDbClient.builder();    
-    if (StringUtils.hasText(options.endpoint))
-      builder.endpointOverride(URI.create(options.endpoint)).build();
-    DynamoDbClient client = builder.build();
-
-    DynamoDbAsyncClientBuilder asyncBuilder = DynamoDbAsyncClient.builder();    
-    if (StringUtils.hasText(options.endpoint))
-      asyncBuilder.endpointOverride(URI.create(options.endpoint)).build();
-    DynamoDbAsyncClient asyncClient = asyncBuilder.build();
+    DynamoDbClient client = AwsHelper.options(DynamoDbClient.builder(), options).build();
+    DynamoDbAsyncClient asyncClient = AwsHelper.options(DynamoDbAsyncClient.builder(), options).build();
 
     Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
       return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build());

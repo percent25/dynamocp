@@ -152,7 +152,7 @@ public class Main implements ApplicationRunner {
     if (args.getNonOptionArgs().size()>0)
       source = args.getNonOptionArgs().get(0);
     InputPluginProvider inputPluginProvider = resolveInputPlugin(source);
-    stderr("inputPlugin", inputPluginProvider);
+    stderr("inputPlugin", inputPluginProvider.name(), inputPluginProvider);
     InputPlugin inputPlugin = inputPluginProvider.activate(source);
     
     // output plugin
@@ -160,7 +160,7 @@ public class Main implements ApplicationRunner {
     if (args.getNonOptionArgs().size()>1)
       target = args.getNonOptionArgs().get(1);
     OutputPluginProvider outputPluginProvider = resolveOutputPlugin(target);
-    stderr("outputPlugin", outputPluginProvider);
+    stderr("outputPlugin", outputPluginProvider.name(), outputPluginProvider);
     Supplier<OutputPlugin> outputPluginSupplier = outputPluginProvider.activate(target);
 
     // ----------------------------------------------------------------------
@@ -253,10 +253,6 @@ public class Main implements ApplicationRunner {
       }
     }
     return new SystemOutPluginProvider();
-  }
-
-  private boolean has(String s) {
-    return Strings.nullToEmpty(s).length()>0; 
   }
 
   // private static AppState parseState(String base64) throws Exception {

@@ -90,15 +90,8 @@ class DynamoOutputPluginProvider implements OutputPluginProvider {
     tableName = Args.base(arg).split(":")[1];
     options = Args.options(arg, Options.class);
 
-    DynamoDbClientBuilder builder = DynamoDbClient.builder();    
-    if (StringUtils.hasText(options.endpoint))
-      builder.endpointOverride(URI.create(options.endpoint)).build();
-    DynamoDbClient client = builder.build();
-
-    DynamoDbAsyncClientBuilder asyncBuilder = DynamoDbAsyncClient.builder();    
-    if (StringUtils.hasText(options.endpoint))
-      asyncBuilder.endpointOverride(URI.create(options.endpoint)).build();
-    DynamoDbAsyncClient asyncClient = asyncBuilder.build();
+    DynamoDbClient client = AwsHelper.options(DynamoDbClient.builder(), options).build();
+    DynamoDbAsyncClient asyncClient = AwsHelper.options(DynamoDbAsyncClient.builder(), options).build();
 
     Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
       return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build());
