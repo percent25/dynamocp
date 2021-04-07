@@ -113,7 +113,7 @@ public class SystemInPluginProvider implements InputPluginProvider {
 
   @Override
   public String help() {
-      return "<file>[,c,cycle,limit]";
+      return "<filename>[,c,cycle,limit]";
   }
 
   @Override

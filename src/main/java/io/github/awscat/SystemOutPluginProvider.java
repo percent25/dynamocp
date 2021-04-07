@@ -60,7 +60,7 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
 
   @Override
   public String help() {
-      return "<file>[,append]";
+      return "<filename>[,append]";
   }
 
   @Override
