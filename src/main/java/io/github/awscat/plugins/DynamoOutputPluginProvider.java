@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.dynamodb.model.*;
 /**
  * DynamoOutputPlugin
  */
-public class DynamoOutputPlugin implements OutputPlugin {
+class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoWriter writer;
 
@@ -48,7 +48,7 @@ public class DynamoOutputPlugin implements OutputPlugin {
  * DynamoOutputPluginProvider
  */
 @Service
-class DynamoOutputPluginProvider implements OutputPluginProvider {
+public class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   class Options {
     // concurrency

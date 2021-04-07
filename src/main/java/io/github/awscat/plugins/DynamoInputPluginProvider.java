@@ -19,7 +19,7 @@ import software.amazon.awssdk.services.dynamodb.*;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html
-public class DynamoInputPlugin implements InputPlugin {
+class DynamoInputPlugin implements InputPlugin {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
@@ -198,7 +198,7 @@ public class DynamoInputPlugin implements InputPlugin {
 }
 
 @Service
-class DynamoInputPluginProvider implements InputPluginProvider {
+public class DynamoInputPluginProvider implements InputPluginProvider {
 
   class Options {
     public int c; // concurrency, aka totalSegments
