@@ -19,7 +19,8 @@ public class AwsHelper {
   /**
    * options
    * 
-   * <p>configure aws endpoint and aws profile
+   * <p>
+   * configure aws endpoint and aws profile
    * 
    * @param <BuilderT>
    * @param <ClientT>
@@ -27,7 +28,8 @@ public class AwsHelper {
    * @param options
    * @return
    */
-  public static <BuilderT extends AwsClientBuilder<BuilderT, ClientT>, ClientT> AwsClientBuilder<BuilderT, ClientT> options(AwsClientBuilder<BuilderT, ClientT> builder, Object options) {
+  public static <BuilderT extends AwsClientBuilder<BuilderT, ClientT>, ClientT> //
+  AwsClientBuilder<BuilderT, ClientT> options(AwsClientBuilder<BuilderT, ClientT> builder, Object options) {
     AwsOptions awsOptions = new Gson().fromJson(new Gson().toJson(options), AwsOptions.class);
     if (StringUtils.hasText(awsOptions.endpoint)) {
       builder.endpointOverride(URI.create(awsOptions.endpoint)).build();

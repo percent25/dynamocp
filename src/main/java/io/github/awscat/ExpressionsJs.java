@@ -1,26 +1,15 @@
-package io.github.awscat.contrib;
+package io.github.awscat;
 
-import java.security.SecureRandom;
-import java.text.NumberFormat;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import java.security.*;
+import java.text.*;
+import java.time.*;
+import java.util.*;
 
-import com.google.common.io.BaseEncoding;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonStreamParser;
+import com.google.common.io.*;
+import com.google.gson.*;
 
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.HostAccess;
-import org.graalvm.polyglot.TypeLiteral;
-import org.graalvm.polyglot.Value;
-import org.graalvm.polyglot.proxy.ProxyArray;
-import org.graalvm.polyglot.proxy.ProxyObject;
-
-import helpers.LogHelper;
+import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.proxy.*;
 
 public class ExpressionsJs {
 

@@ -1,22 +1,18 @@
 package helpers;
 
-import org.junit.jupiter.api.Test;
-
-import io.github.awscat.contrib.ExpressionsJs;
-
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.Instant;
-import java.util.Set;
-import java.util.Map.Entry;
+import java.time.*;
+import java.util.*;
+import java.util.Map.*;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonStreamParser;
+import com.google.common.collect.*;
+import com.google.gson.*;
+
+import org.junit.jupiter.api.*;
+
+import io.github.awscat.*;
 
 // https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions
 public class ExpressionsJsTest {
