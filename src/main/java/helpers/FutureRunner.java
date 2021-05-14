@@ -21,7 +21,7 @@ public class FutureRunner {
     }
   }
 
-  // resolved when "running" transitions to zero
+  // resolved when "inFlight" transitions to zero
   private final AtomicReference<VoidFuture> facade = new AtomicReference<>();
 
   private final AtomicInteger inFlight = new AtomicInteger();
