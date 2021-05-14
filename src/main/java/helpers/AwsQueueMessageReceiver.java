@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.function.Function;
 
-import com.google.common.base.MoreObjects;
+import com.google.common.base.*;
 import com.google.common.util.concurrent.*;
 import com.google.gson.Gson;
 
@@ -31,8 +31,8 @@ import software.amazon.awssdk.services.sqs.model.*;
 // At-most-once aws sqs message receiver
 public class AwsQueueMessageReceiver {
 
-  private final SqsAsyncClient sqsClient = SqsAsyncClient.create();
-  private final String queueUrl;
+  private final SqsAsyncClient sqsClient;
+  private final String queueArnOrUrl;
   private final int concurrency;
 
   private boolean running;
@@ -48,15 +48,30 @@ public class AwsQueueMessageReceiver {
   //###TODO USE HashedWheelTimer
   //###TODO USE HashedWheelTimer
 
+  private final Supplier<String> queueUrlSupplier;
+
   /**
    * ctor
    * 
-   * @param queueUrl
+   * @param queueArnOrUrl
    */
-  public AwsQueueMessageReceiver(String queueUrl, int concurrency) {
-    debug("ctor", queueUrl, concurrency);
-    this.queueUrl = queueUrl;
+  public AwsQueueMessageReceiver(SqsAsyncClient sqsClient, String queueArnOrUrl, int concurrency) {
+    debug("ctor", queueArnOrUrl, concurrency);
+    this.sqsClient = sqsClient;
+    this.queueArnOrUrl = queueArnOrUrl;
     this.concurrency = concurrency;
+    this.queueUrlSupplier = Suppliers.memoize(()->{
+      try {
+        // is it a queue arn?
+        if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
+          // yes
+          return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().build()).get().queueUrl();
+        }
+        return queueArnOrUrl;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   /**
@@ -69,14 +84,14 @@ public class AwsQueueMessageReceiver {
   }
 
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("queueUrl", queueUrl).add("c", concurrency).toString();
+    return MoreObjects.toStringHelper(this).add("queueArnOrUrl", queueArnOrUrl).add("c", concurrency).toString();
   }
 
   /**
    * start
    */
   public void start() {
-    debug("start", queueUrl);
+    debug("start", queueArnOrUrl, concurrency);
     running = true;
     for (int i = 0; i < concurrency; ++i)
       doReceiveMessage(i);
@@ -86,7 +101,7 @@ public class AwsQueueMessageReceiver {
    * close
    */
   public void close() {
-    debug("close", queueUrl);
+    debug("close", queueArnOrUrl, concurrency);
     running = false;
     // executorService.shutdownNow();
     // futures.forEach(f->f.cancel(true));
@@ -95,9 +110,9 @@ public class AwsQueueMessageReceiver {
   class MessageConsumedRecord {
     public boolean success;
     public String failureMessage;
-    public final String queueUrl;
-    public MessageConsumedRecord(String queueUrl) {
-      this.queueUrl = queueUrl;
+    public final String queueArnOrUrl;
+    public MessageConsumedRecord(String queueArnOrUrl) {
+      this.queueArnOrUrl = queueArnOrUrl;
     }
     public String toString() {
       return new Gson().toJson(this);
@@ -110,7 +125,7 @@ public class AwsQueueMessageReceiver {
         run(() -> {
           ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder()
               //
-              .queueUrl(queueUrl)
+              .queueUrl(queueUrlSupplier.get())
               //
               .waitTimeSeconds(20)
               //
@@ -122,10 +137,10 @@ public class AwsQueueMessageReceiver {
               run(() -> {
                 DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
                     //
-                    .queueUrl(queueUrl).receiptHandle(message.receiptHandle()).build();
+                    .queueUrl(queueUrlSupplier.get()).receiptHandle(message.receiptHandle()).build();
                 return lf(sqsClient.deleteMessage(deleteMessageRequest));
               }, deleteMessageResponse -> {
-                MessageConsumedRecord record = new MessageConsumedRecord(queueUrl);
+                MessageConsumedRecord record = new MessageConsumedRecord(queueArnOrUrl);
                 run(()->{
                   String body = message.body();
                   try {

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import helpers.*;
 import io.github.awscat.*;
+import software.amazon.awssdk.services.sqs.*;
 
 class AwsQueueInputPlugin implements InputPlugin {
 
@@ -51,8 +52,8 @@ class AwsQueueInputPlugin implements InputPlugin {
 @Service
 public class AwsQueueInputPluginProvider implements InputPluginProvider {
 
-    class Options {
-        int c;
+    class Options extends BaseOptions {
+        public int c;
     }
 
     @Override
@@ -62,20 +63,23 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
 
     @Override
     public boolean canActivate(String arg) {
-        String queueUrl = Args.base(arg);
-        if (queueUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)"))
+        String queueArnOrUrl = Args.base(arg);
+        if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
             return true;
-        if (queueUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)"))
+        if (queueArnOrUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)"))
+            return true;
+        if (queueArnOrUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)"))
             return true;
         return false;
     }
 
     @Override
     public InputPlugin activate(String arg) throws Exception {
-        String queueUrl = Args.base(arg);
+        String queueArnOrUrl = Args.base(arg);
         Options options = Args.options(arg, Options.class);
         int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
-        return new AwsQueueInputPlugin(new AwsQueueMessageReceiver(queueUrl, c));
+        SqsAsyncClient sqsClient = AwsHelper.options(SqsAsyncClient.builder(), options).build();
+        return new AwsQueueInputPlugin(new AwsQueueMessageReceiver(sqsClient, queueArnOrUrl, c));
     }
 
 }
