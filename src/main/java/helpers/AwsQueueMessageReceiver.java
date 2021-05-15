@@ -62,13 +62,15 @@ public class AwsQueueMessageReceiver {
     this.concurrency = concurrency;
     this.queueUrlSupplier = Suppliers.memoize(()->{
       try {
-        // is it a queue arn?
+        // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
         if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
           // yes
-          return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().build()).get().queueUrl();
+          String queueName = queueArnOrUrl.substring(queueArnOrUrl.lastIndexOf(':') + 1);
+          return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).get().queueUrl();
         }
         return queueArnOrUrl;
       } catch (Exception e) {
+        e.printStackTrace();
         throw new RuntimeException(e);
       }
     });
