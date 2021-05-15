@@ -48,32 +48,29 @@ public class AwsQueueMessageReceiver {
   //###TODO USE HashedWheelTimer
   //###TODO USE HashedWheelTimer
 
-  private final Supplier<String> queueUrlSupplier;
+  private final String queueUrl;
 
   /**
    * ctor
    * 
    * @param queueArnOrUrl
    */
-  public AwsQueueMessageReceiver(SqsAsyncClient sqsClient, String queueArnOrUrl, int concurrency) {
+  public AwsQueueMessageReceiver(SqsAsyncClient sqsClient, String queueArnOrUrl, int concurrency) throws Exception {
     debug("ctor", queueArnOrUrl, concurrency);
     this.sqsClient = sqsClient;
     this.queueArnOrUrl = queueArnOrUrl;
     this.concurrency = concurrency;
-    this.queueUrlSupplier = Suppliers.memoize(()->{
-      try {
-        // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
-        if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
-          // yes
-          String queueName = queueArnOrUrl.substring(queueArnOrUrl.lastIndexOf(':') + 1);
-          return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).get().queueUrl();
-        }
-        return queueArnOrUrl;
-      } catch (Exception e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
-    });
+    this.queueUrl = getQueueUrl(queueArnOrUrl);
+  }
+
+  private String getQueueUrl(String queueArnOrUrl) throws Exception {
+    // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
+    if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
+      // yes
+      String queueName = queueArnOrUrl.substring(queueArnOrUrl.lastIndexOf(':') + 1);
+      return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).get().queueUrl();
+    }
+    return queueArnOrUrl;
   }
 
   /**
@@ -127,7 +124,7 @@ public class AwsQueueMessageReceiver {
         run(() -> {
           ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder()
               //
-              .queueUrl(queueUrlSupplier.get())
+              .queueUrl(queueUrl)
               //
               .waitTimeSeconds(20)
               //
@@ -139,7 +136,7 @@ public class AwsQueueMessageReceiver {
               run(() -> {
                 DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
                     //
-                    .queueUrl(queueUrlSupplier.get()).receiptHandle(message.receiptHandle()).build();
+                    .queueUrl(queueUrl).receiptHandle(message.receiptHandle()).build();
                 return lf(sqsClient.deleteMessage(deleteMessageRequest));
               }, deleteMessageResponse -> {
                 MessageConsumedRecord record = new MessageConsumedRecord(queueArnOrUrl);
