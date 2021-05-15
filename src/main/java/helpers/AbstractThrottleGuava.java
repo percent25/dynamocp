@@ -41,9 +41,9 @@ public class AbstractThrottleGuava implements AbstractThrottle {
     limiter.setRate(rateProvider.get().doubleValue());
     return new AbstractFuture<Void>() {
       {
-        acquire0(permits);
+        doAcquire(permits);
       }
-      void acquire0(Number permits) {
+      void doAcquire(Number permits) {
         if (limiter.tryAcquire(permits.intValue()))
           set(null); // resolve future
         else {
@@ -53,7 +53,7 @@ public class AbstractThrottleGuava implements AbstractThrottle {
           // 1000*newRandom().nextDouble()*permits.doubleValue()/limiter.getRate();
           // System.out.println("delay:"+delay);
           timer.newTimeout(timeout -> {
-            acquire0(permits);
+            doAcquire(permits);
           }, Double.valueOf(delayMs).longValue(), TimeUnit.MILLISECONDS);
         }
       }

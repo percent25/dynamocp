@@ -48,10 +48,6 @@ OPEN
 
 
 
---version
-
-
-
 dynamo reader/writer
  - if preAcquire < consumedCapacityUnits then acquire the difference!!
 
@@ -114,10 +110,6 @@ s3outputplugin
           awscat.jar dynamo:MyTableOnDemand dynamo:MyTableOnDemand,wcu=500
   - update: maybe don't need to go this far.. would not be able to leverage 'natural' source batching, e.g., sqs receiveMessage, dynamo scan, etc..
   - InputPlugins deliver in terms of their natural batching.. outputPlugins can write individual JsonElement objects in terms of their natural batching
-
-
-
-independent aws profiles for source and target
 
 
 
@@ -363,6 +355,10 @@ can't cat empty dynamo table ??
 
  
 --help w/plugin options
+
+
+
+independent aws profiles for source and target
 
 
 

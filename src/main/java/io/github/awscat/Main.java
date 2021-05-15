@@ -64,7 +64,7 @@ public class Main implements ApplicationRunner {
   }
 
   // lazy
-  private String failuresName;
+  private String failuresFileName;
   private PrintStream failuresPrintStream;
   private final Supplier<PrintStream> failures = Suppliers.memoize(()->{
     try {
@@ -73,7 +73,7 @@ public class Main implements ApplicationRunner {
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
-      return failuresPrintStream = new PrintStream(new File(failuresName = String.format("failures-%s-%s.json", now, randomString)));
+      return failuresPrintStream = new PrintStream(new File(failuresFileName = String.format("failures-%s-%s.json", now, randomString)));
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
@@ -222,11 +222,11 @@ public class Main implements ApplicationRunner {
 
   @PreDestroy
   public void destroy() {
-    if (failuresName != null) {
+    if (failuresFileName != null) {
       try {
         failuresPrintStream.close();
       } finally {
-        stderr(" ########## " + failuresName + " ########## ");
+        stderr(" ########## " + failuresFileName + " ########## ");
       }
     }
   }

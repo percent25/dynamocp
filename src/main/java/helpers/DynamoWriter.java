@@ -77,9 +77,14 @@ public class DynamoWriter {
 
           Map<String, AttributeValue> item = render(jsonElement);
           Map<String, AttributeValue> key = Maps.toMap(keySchema, k -> item.get(k));
+
+          // assume write request
           PutRequest putRequest = PutRequest.builder().item(item).build();
           WriteRequest writeRequest = WriteRequest.builder().putRequest(putRequest).build();
+
+          // delete request?
           if (delete) {
+            // yes
             DeleteRequest deleteRequest = DeleteRequest.builder().key(key).build();
             writeRequest = WriteRequest.builder().deleteRequest(deleteRequest).build();
           }
