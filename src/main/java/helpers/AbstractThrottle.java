@@ -8,7 +8,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 public interface AbstractThrottle {
 
   /**
-   * acquire
+   * asyncAcquire
    * 
    * @param permits
    */
