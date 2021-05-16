@@ -28,6 +28,11 @@ public class AwsHelper {
    * @param options
    * @return
    */
+  //###TODO RENAME ME TO CONFIGCLIENT (VS OPTIONS)
+
+  //###TODO RENAME ME TO CONFIGCLIENT (VS OPTIONS)
+
+  //###TODO RENAME ME TO CONFIGCLIENT (VS OPTIONS)
   public static <BuilderT extends AwsClientBuilder<BuilderT, ClientT>, ClientT> //
   AwsClientBuilder<BuilderT, ClientT> options(AwsClientBuilder<BuilderT, ClientT> builder, Object options) {
     AwsOptions awsOptions = new Gson().fromJson(new Gson().toJson(options), AwsOptions.class);
