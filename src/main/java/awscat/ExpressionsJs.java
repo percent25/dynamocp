@@ -1,4 +1,4 @@
-package io.github.awscat;
+package awscat;
 
 import java.security.*;
 import java.text.*;

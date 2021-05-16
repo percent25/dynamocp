@@ -1,4 +1,4 @@
-package io.github.awscat.plugins;
+package awscat.plugins;
 
 import java.util.function.Function;
 
@@ -7,10 +7,11 @@ import com.google.common.collect.*;
 import com.google.common.util.concurrent.*;
 import com.google.gson.*;
 
+import awscat.*;
+
 import org.springframework.stereotype.Service;
 
 import helpers.*;
-import io.github.awscat.*;
 import software.amazon.awssdk.services.sqs.*;
 
 class AwsQueueInputPlugin implements InputPlugin {

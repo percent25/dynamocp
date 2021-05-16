@@ -1,4 +1,4 @@
-package io.github.awscat.plugins;
+package awscat.plugins;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Iterables;
@@ -6,9 +6,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.JsonElement;
 
+import awscat.OutputPlugin;
 import helpers.ConcatenatedJsonWriter;
 import helpers.LogHelper;
-import io.github.awscat.OutputPlugin;
 
 class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
 

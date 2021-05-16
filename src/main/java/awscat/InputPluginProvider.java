@@ -1,4 +1,4 @@
-package io.github.awscat;
+package awscat;
 
 import org.springframework.util.ClassUtils;
 

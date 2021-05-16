@@ -1,4 +1,4 @@
-package io.github.awscat;
+package awscat;
 
 import java.io.*;
 import java.security.*;
@@ -15,12 +15,13 @@ import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.*;
 import com.google.gson.*;
 
+import awscat.contrib.*;
+
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
 
 import helpers.*;
-import io.github.awscat.contrib.*;
 
 // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle
 @SpringBootApplication

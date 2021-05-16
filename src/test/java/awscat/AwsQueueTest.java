@@ -6,7 +6,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.boot.*;
 import org.springframework.boot.test.context.*;
 
-import io.github.awscat.*;
+import awscat.*;
 import software.amazon.awssdk.services.sqs.*;
 import software.amazon.awssdk.services.sqs.model.*;
 

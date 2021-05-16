@@ -1,16 +1,17 @@
-package io.github.awscat.plugins;
+package awscat.plugins;
 
 import java.util.function.Supplier;
 
 import com.google.common.base.MoreObjects;
 
+import awscat.Args;
+import awscat.OutputPlugin;
+import awscat.OutputPluginProvider;
+
 import org.springframework.stereotype.Service;
 
 import helpers.ConcatenatedJsonWriter;
 import helpers.ConcatenatedJsonWriterTransportAwsTopic;
-import io.github.awscat.Args;
-import io.github.awscat.OutputPlugin;
-import io.github.awscat.OutputPluginProvider;
 import software.amazon.awssdk.services.sns.SnsAsyncClient;
 
 @Service

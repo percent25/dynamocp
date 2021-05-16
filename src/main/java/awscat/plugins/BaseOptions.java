@@ -1,4 +1,4 @@
-package io.github.awscat.plugins;
+package awscat.plugins;
 
 public class BaseOptions {
   public String endpoint;

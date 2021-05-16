@@ -1,4 +1,4 @@
-package io.github.awscat.plugins;
+package awscat.plugins;
 
 import java.net.*;
 

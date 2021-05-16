@@ -2,9 +2,10 @@ package helpers;
 
 import com.google.gson.*;
 
+import awscat.*;
+
 import org.junit.jupiter.api.*;
 
-import io.github.awscat.*;
 import static org.assertj.core.api.Assertions.*;
 
 public class ArgsTest {

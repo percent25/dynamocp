@@ -2,8 +2,6 @@ package helpers;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.awscat.ExpressionsSpel;
-
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,6 +15,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonStreamParser;
+
+import awscat.ExpressionsSpel;
 
 // https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions
 public class ExpressionsTest {

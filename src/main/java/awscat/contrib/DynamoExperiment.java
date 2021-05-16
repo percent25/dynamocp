@@ -1,4 +1,4 @@
-package io.github.awscat.contrib;
+package awscat.contrib;
 
 import java.util.ArrayList;
 import java.util.HashMap;

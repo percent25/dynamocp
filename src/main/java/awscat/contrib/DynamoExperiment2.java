@@ -1,4 +1,4 @@
-package io.github.awscat.contrib;
+package awscat.contrib;
 
 import java.time.Duration;
 import java.time.Instant;

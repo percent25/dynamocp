@@ -1,4 +1,4 @@
-package io.github.awscat;
+package awscat;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;

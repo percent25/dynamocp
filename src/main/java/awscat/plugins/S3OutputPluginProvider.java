@@ -1,12 +1,12 @@
-package io.github.awscat.plugins;
+package awscat.plugins;
 
 import java.net.*;
 import java.util.function.*;
 
 import org.springframework.stereotype.*;
 
+import awscat.*;
 import helpers.*;
-import io.github.awscat.*;
 import software.amazon.awssdk.services.s3.*;
 
 @Service

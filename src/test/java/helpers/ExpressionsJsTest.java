@@ -10,9 +10,9 @@ import java.util.Map.*;
 import com.google.common.collect.*;
 import com.google.gson.*;
 
-import org.junit.jupiter.api.*;
+import awscat.*;
 
-import io.github.awscat.*;
+import org.junit.jupiter.api.*;
 
 // https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions
 public class ExpressionsJsTest {

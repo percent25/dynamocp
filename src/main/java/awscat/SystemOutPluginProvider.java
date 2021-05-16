@@ -1,4 +1,4 @@
-package io.github.awscat;
+package awscat;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
