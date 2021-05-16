@@ -31,6 +31,7 @@ public class Main implements ApplicationRunner {
     // args = new String[]{"dynamo:MyTable"};
     // args= new String[]{"dynamo:MyTableOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
     System.exit(SpringApplication.exit(SpringApplication.run(Main.class, args)));
+    // System.exit(SpringApplication.exit(SpringApplication.run(Main.class, "arn:aws:sqs:us-east-1:000000000000:MyQueue,endpoint=http://localhost:4566,limit=1")));
   }
   
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
@@ -128,15 +129,15 @@ public class Main implements ApplicationRunner {
       stderr(indent, "--help");
       stderr(indent, "--version");
       stderr(indent, "--js");
-      stderr(indent, "--debug");
+      stderr(indent, "--debug"); // this is spring boot's debug
 
       stderr("source:");
-      for (InputPluginProvider plugin : inputPluginProviders) {
-        stderr(indent, plugin.help());
+      for (InputPluginProvider pluginProvider : inputPluginProviders) {
+        stderr(indent, pluginProvider.help());
       }
       stderr("target:");
-      for (OutputPluginProvider plugin : outputPluginProviders) {
-        stderr(indent, plugin.help());
+      for (OutputPluginProvider pluginProvider : outputPluginProviders) {
+        stderr(indent, pluginProvider.help());
       }
 
       return;
