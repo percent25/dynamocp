@@ -164,16 +164,18 @@ public class AwsQueueMessageReceiver {
           }
         }, e->{ // receiveMessage
             debug(e);
-            run(()->{
-              // backoff
-              // ###TODO USE HashedWheelTimer
-              // ###TODO USE HashedWheelTimer
-              // ###TODO USE HashedWheelTimer
-              return Futures.scheduleAsync(()->Futures.immediateVoidFuture(), Duration.ofSeconds(25), executorService);
-              // ###TODO USE HashedWheelTimer
-              // ###TODO USE HashedWheelTimer
-              // ###TODO USE HashedWheelTimer
-            });
+            if (running) {
+              run(()->{
+                // backoff
+                // ###TODO USE HashedWheelTimer
+                // ###TODO USE HashedWheelTimer
+                // ###TODO USE HashedWheelTimer
+                return Futures.scheduleAsync(()->Futures.immediateVoidFuture(), Duration.ofSeconds(25), executorService);
+                // ###TODO USE HashedWheelTimer
+                // ###TODO USE HashedWheelTimer
+                // ###TODO USE HashedWheelTimer
+              });
+            }
           });
         }}.get();
 
