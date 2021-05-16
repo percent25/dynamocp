@@ -112,7 +112,7 @@ public class FutureRunnerTest {
 
             run(() -> {
               return Futures.submit(() -> {
-                Thread.sleep(2000);
+                Thread.sleep(50);
                 return Futures.immediateVoidFuture();
               }, executor);
             });
@@ -141,7 +141,7 @@ public class FutureRunnerTest {
 
   @Test
   public void stressTest() throws Exception {
-    final int desiredCount = 10000;
+    final int desiredCount = 200;
     final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     try {
       ListenableFuture<?> lf = new FutureRunner() {
@@ -156,7 +156,7 @@ public class FutureRunnerTest {
             } else {
               run(() -> {
                 return Futures.submit(() -> {
-                  Thread.sleep(2);
+                  Thread.sleep(5);
                   return Futures.immediateVoidFuture();
                 }, executor);
               }, ()->{
