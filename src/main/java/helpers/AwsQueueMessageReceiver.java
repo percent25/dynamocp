@@ -67,7 +67,7 @@ public class AwsQueueMessageReceiver {
     // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
     if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
       // yes
-      String queueName = queueArnOrUrl.substring(queueArnOrUrl.lastIndexOf(':') + 1);
+      String queueName = queueArnOrUrl.split(":")[5];
       return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).get().queueUrl();
     }
     return queueArnOrUrl;
