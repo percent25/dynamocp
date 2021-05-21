@@ -1,5 +1,6 @@
 package awscat.plugins;
 
+import java.util.*;
 import java.util.function.Function;
 
 import com.google.common.base.*;
@@ -34,11 +35,12 @@ class AwsQueueInputPlugin implements InputPlugin {
                     //###TODO THIS IS WRONG
                     //###TODO THIS IS WRONG
                     //###TODO THIS IS WRONG
-                    ++count;
+                    List<JsonElement> list = Lists.newArrayList(new JsonStreamParser(message));
+                    count += list.size();
                     //###TODO THIS IS WRONG
                     //###TODO THIS IS WRONG
                     //###TODO THIS IS WRONG
-                    return listener.apply(Lists.newArrayList(new JsonStreamParser(message)));
+                    return listener.apply(list);
                 }, ()->{
                     if (count > limit) {
                         messageReceiver.close();
