@@ -27,7 +27,7 @@ import helpers.*;
 @SpringBootApplication
 public class Main implements ApplicationRunner {
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String... args) {
     // System.err.println("main"+Arrays.asList(args));
     // args = new String[]{"dynamo:MyTable"};
     // args= new String[]{"dynamo:MyTableOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
