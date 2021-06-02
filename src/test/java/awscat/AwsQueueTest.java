@@ -49,7 +49,7 @@ public class AwsQueueTest {
   }
 
   @Test
-  public void receiveTest() {
+  public void receiveTest() throws Exception {
 
         // send
         String messageBody = "asdf1 asdf2";
