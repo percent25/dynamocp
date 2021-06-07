@@ -53,7 +53,7 @@ OPEN
 
 
 dynamo reader/writer
- - if preAcquire < consumedCapacityUnits then acquire the difference!!
+ - if preAcquire < consumedCapacityUnits then post-acquire the difference!!
 
 
 
