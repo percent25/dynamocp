@@ -31,6 +31,10 @@ objects: spel {:} is immutable!! wtf?
 OPEN
 ======================================================================
 
+ - uuid source.. i.e, stream of uuid json strings
+ 
+ 
+ 
  - dynamo input plugin: limit is not what is intuitively limit.. it is scan limit, not overall limit
 
 
