@@ -31,7 +31,7 @@ class ConcatenatedJsonWriterOutputPlugin implements OutputPlugin {
 
     @Override
     public ListenableFuture<?> flush() {
-        debug("flush");
+        trace("flush");
         return writer.flush();
     }    
 
