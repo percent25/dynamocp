@@ -15,11 +15,11 @@ import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.*;
 import com.google.gson.*;
 
-import awscat.contrib.*;
-
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.beans.factory.config.*;
 import org.springframework.boot.*;
 import org.springframework.boot.autoconfigure.*;
+import org.springframework.context.annotation.*;
 
 import helpers.*;
 
@@ -27,14 +27,34 @@ import helpers.*;
 @SpringBootApplication
 public class Main implements ApplicationRunner {
 
-  public static void main(String... args) {
+  static {
+    System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
+  }
+
+  public static void main(String... args) throws Exception {
+    List<InputPluginProvider> inputPluginProviders = Lists.newArrayList();
+    List<OutputPluginProvider> outputPluginProviders = Lists.newArrayList();
+    ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(true);
+    for (BeanDefinition component : provider.findCandidateComponents(Main.class.getPackageName())) {
+       Class<?> plugin = Class.forName(component.getBeanClassName());
+      if (InputPluginProvider.class.isAssignableFrom(plugin)) {
+        inputPluginProviders.add(InputPluginProvider.class.cast(plugin.getDeclaredConstructor().newInstance()));
+      }
+      if (OutputPluginProvider.class.isAssignableFrom(plugin)) {
+        outputPluginProviders.add(OutputPluginProvider.class.cast(plugin.getDeclaredConstructor().newInstance()));
+      }
+    }
+    new Main("???", inputPluginProviders, outputPluginProviders).run(new DefaultApplicationArguments(args));
+  }
+
+  public static void mainzzz(String... args) throws Exception {
     // System.err.println("main"+Arrays.asList(args));
     // args = new String[]{"dynamo:MyTable"};
     // args= new String[]{"dynamo:MyTableOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
     System.exit(SpringApplication.exit(SpringApplication.run(Main.class, args)));
     // System.exit(SpringApplication.exit(SpringApplication.run(Main.class, "arn:aws:sqs:us-east-1:000000000000:MyQueue,endpoint=http://localhost:4566,limit=1")));
   }
-  
+
   private final List<InputPluginProvider> inputPluginProviders = new ArrayList<>();
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
@@ -84,14 +104,14 @@ public class Main implements ApplicationRunner {
     }
   });
 
-  @Value("${project-version}")
-  private String projectVersion;
+  private final String projectVersion;
 
   /**
    * ctor
    */
-  public Main(List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders) {
+  public Main(@Value("${project-version}") String projectVersion, List<InputPluginProvider> inputPluginProviders, List<OutputPluginProvider> outputPluginProviders) {
     debug("ctor");
+    this.projectVersion = projectVersion;
     this.inputPluginProviders.addAll(inputPluginProviders);
     this.inputPluginProviders.add(new SystemInPluginProvider()); // ensure last
     this.outputPluginProviders.addAll(outputPluginProviders);
