@@ -33,7 +33,7 @@ public class AwsQueueIT {
     client = SqsClient.builder() //
         .endpointOverride(URI.create(endpointUrl)) //
         .region(Region.US_EAST_1) //
-        .credentialsProvider(AnonymousCredentialsProvider.create()) //
+        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
         .build();
 
     CreateQueueResponse createQueueResponse = client.createQueue(CreateQueueRequest.builder().queueName(queueName).build());
