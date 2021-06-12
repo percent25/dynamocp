@@ -8,6 +8,7 @@ import org.springframework.util.*;
 
 import software.amazon.awssdk.auth.credentials.*;
 import software.amazon.awssdk.awscore.client.builder.*;
+import software.amazon.awssdk.http.crt.*;
 import software.amazon.awssdk.regions.*;
 
 class AwsOptions {
@@ -24,14 +25,14 @@ public class AwsHelper {
    * <p>
    * configure aws endpoint and aws profile
    * 
-   * @param <BuilderT>
-   * @param <ClientT>
+   * @param <B>
+   * @param <C>
    * @param builder
    * @param options
    * @return
    */
-  public static <BuilderT extends AwsClientBuilder<BuilderT, ClientT>, ClientT> //
-  AwsClientBuilder<BuilderT, ClientT> configClient(AwsClientBuilder<BuilderT, ClientT> builder, Object options) {
+  public static <B extends AwsClientBuilder<B, C> & AwsAsyncClientBuilder<B, C>, C> B configClient(B builder, Object options) {
+    builder = builder.httpClient(AwsCrtAsyncHttpClient.create());
     AwsOptions awsOptions = new Gson().fromJson(new Gson().toJson(options), AwsOptions.class);
     if (StringUtils.hasText(awsOptions.endpoint)) {
       builder = builder.endpointOverride(URI.create(awsOptions.endpoint));

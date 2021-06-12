@@ -92,11 +92,15 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
     tableName = Args.base(arg).split(":")[1];
     options = Args.options(arg, Options.class);
 
-    DynamoDbClient client = AwsHelper.configClient(DynamoDbClient.builder(), options).build();
+    DynamoDbAsyncClient client = AwsHelper.configClient(DynamoDbAsyncClient.builder(), options).build();
     DynamoDbAsyncClient asyncClient = AwsHelper.configClient(DynamoDbAsyncClient.builder(), options).build();
 
     Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
-      return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build());
+      try {
+        return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }, 25, TimeUnit.SECONDS);
 
     Iterable<String> keySchema = Lists.transform(describeTable.get().table().keySchema(), e->e.attributeName());      
