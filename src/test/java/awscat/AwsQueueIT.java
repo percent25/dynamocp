@@ -20,24 +20,27 @@ import software.amazon.awssdk.services.sqs.model.*;
 // @SpringBootTest(args={"arn:aws:sqs:us-east-1:000000000000:MyQueue,endpoint=http://localhost:4566,limit=1"})
 public class AwsQueueIT {
 
+  static SqsClient client;
   static String endpointUrl = "http://localhost:4566";
 
-  static SqsClient client;
-
-  static String queueName = UUID.randomUUID().toString();
-  static String queueArn = String.format("arn:aws:sqs:us-east-1:000000000000:%s", queueName);
-  static String queueUrl = String.format("http://localhost:4566/000000000000/%s", queueName);
+  private String queueName = UUID.randomUUID().toString();
+  private String queueArn = String.format("arn:aws:sqs:us-east-1:000000000000:%s", queueName);
+  private String queueUrl = String.format("http://localhost:4566/000000000000/%s", queueName);
 
   @BeforeAll
-  public static void beforeAll() {
+  public static void newClient() {
     client = SqsClient.builder() //
         .endpointOverride(URI.create(endpointUrl)) //
         .region(Region.US_EAST_1) //
         .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
         .build();
+  }
 
-    CreateQueueResponse createQueueResponse = client.createQueue(CreateQueueRequest.builder().queueName(queueName).build());
-    log(createQueueResponse);
+  @BeforeEach
+  public void newQueue() {
+    CreateQueueRequest createQueueRequest = CreateQueueRequest.builder().queueName(queueName).build();
+    CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest);
+    log("newQueue", createQueueRequest, createQueueResponse);
   }
 
   @Test
