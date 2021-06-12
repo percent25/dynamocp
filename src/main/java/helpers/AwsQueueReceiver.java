@@ -29,7 +29,7 @@ import software.amazon.awssdk.services.sqs.model.*;
     }
 
 // At-most-once aws sqs message receiver
-public class AwsQueueMessageReceiver {
+public class AwsQueueReceiver {
 
   private final SqsAsyncClient sqsClient;
   private final String queueArnOrUrl;
@@ -55,7 +55,7 @@ public class AwsQueueMessageReceiver {
    * 
    * @param queueArnOrUrl
    */
-  public AwsQueueMessageReceiver(SqsAsyncClient sqsClient, String queueArnOrUrl, int concurrency) throws Exception {
+  public AwsQueueReceiver(SqsAsyncClient sqsClient, String queueArnOrUrl, int concurrency) throws Exception {
     debug("ctor", queueArnOrUrl, concurrency);
     this.sqsClient = sqsClient;
     this.queueArnOrUrl = queueArnOrUrl;

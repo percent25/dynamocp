@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.sqs.*;
 
 class AwsQueueInputPlugin implements InputPlugin {
 
-    private final AwsQueueMessageReceiver messageReceiver;
+    private final AwsQueueReceiver receiver;
     private int count;
     private final int limit;
 
@@ -25,11 +25,11 @@ class AwsQueueInputPlugin implements InputPlugin {
 
     private final VoidFuture lf = new VoidFuture();
 
-    public AwsQueueInputPlugin(AwsQueueMessageReceiver messageReceiver, int limit) {
+    public AwsQueueInputPlugin(AwsQueueReceiver receiver, int limit) {
         debug("ctor");
-        this.messageReceiver = messageReceiver;
+        this.receiver = receiver;
         this.limit = limit;
-        messageReceiver.setListener(message->{
+        receiver.setListener(message->{
             return new FutureRunner(){{
                 run(()->{
                     //###TODO THIS IS WRONG
@@ -43,7 +43,7 @@ class AwsQueueInputPlugin implements InputPlugin {
                     return listener.apply(list);
                 }, ()->{
                     if (count > limit) {
-                        messageReceiver.close();
+                        receiver.close();
                         lf.setVoid();
                     }
                 });
@@ -52,12 +52,12 @@ class AwsQueueInputPlugin implements InputPlugin {
     }
 
     public String toString() {
-        return MoreObjects.toStringHelper(this).add("messageReceiver", messageReceiver).toString();
+        return MoreObjects.toStringHelper(this).add("receiver", receiver).toString();
     }
 
     @Override
     public ListenableFuture<?> read(int mtu) throws Exception {
-        messageReceiver.start();
+        receiver.start();
         return lf;
     }
 
@@ -114,7 +114,7 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
     public InputPlugin activate(String arg) throws Exception {
         int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
         SqsAsyncClient sqsClient = AwsHelper.options(SqsAsyncClient.builder(), options).build();
-        return new AwsQueueInputPlugin(new AwsQueueMessageReceiver(sqsClient, queueArnOrUrl, c), options.limit);
+        return new AwsQueueInputPlugin(new AwsQueueReceiver(sqsClient, queueArnOrUrl, c), options.limit);
     }
 
 }
