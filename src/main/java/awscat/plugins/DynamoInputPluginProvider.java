@@ -234,8 +234,8 @@ public class DynamoInputPluginProvider implements InputPluginProvider {
 
   @Override
   public InputPlugin activate(String arg) throws Exception {
-    DynamoDbClient client = AwsHelper.options(DynamoDbClient.builder(), options).build();
-    DynamoDbAsyncClient asyncClient = AwsHelper.options(DynamoDbAsyncClient.builder(), options).build();
+    DynamoDbClient client = AwsHelper.configClient(DynamoDbClient.builder(), options).build();
+    DynamoDbAsyncClient asyncClient = AwsHelper.configClient(DynamoDbAsyncClient.builder(), options).build();
 
     Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
       return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build());

@@ -113,7 +113,7 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
     @Override
     public InputPlugin activate(String arg) throws Exception {
         int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
-        SqsAsyncClient sqsClient = AwsHelper.options(SqsAsyncClient.builder(), options).build();
+        SqsAsyncClient sqsClient = AwsHelper.configClient(SqsAsyncClient.builder(), options).build();
         return new AwsQueueInputPlugin(new AwsQueueReceiver(sqsClient, queueArnOrUrl, c), options.limit);
     }
 
