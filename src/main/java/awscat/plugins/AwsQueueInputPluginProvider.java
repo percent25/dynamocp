@@ -1,6 +1,7 @@
 package awscat.plugins;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 import java.util.function.Function;
 
 import com.google.common.base.*;
@@ -18,36 +19,39 @@ import software.amazon.awssdk.services.sqs.*;
 class AwsQueueInputPlugin implements InputPlugin {
 
     private final AwsQueueReceiver receiver;
-    private int count;
     private final int limit;
 
     private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
     private final VoidFuture lf = new VoidFuture();
+    private final AtomicInteger count = new AtomicInteger();
 
     public AwsQueueInputPlugin(AwsQueueReceiver receiver, int limit) {
         debug("ctor");
         this.receiver = receiver;
         this.limit = limit;
-        receiver.setListener(message->{
-            return new FutureRunner(){{
-                run(()->{
-                    //###TODO THIS IS WRONG
-                    //###TODO THIS IS WRONG
-                    //###TODO THIS IS WRONG
-                    List<JsonElement> list = Lists.newArrayList(new JsonStreamParser(message));
-                    count += list.size();
-                    //###TODO THIS IS WRONG
-                    //###TODO THIS IS WRONG
-                    //###TODO THIS IS WRONG
-                    return listener.apply(list);
-                }, ()->{
-                    if (count > limit) {
-                        receiver.close();
-                        lf.setVoid();
-                    }
-                });
-            }}.get();
+        receiver.setListener(message -> {
+            return new FutureRunner() {
+                List<JsonElement> list;
+                {
+                    run(() -> {
+                        count.updateAndGet(count -> {
+                            list = Lists.newArrayList(Iterators.limit(new JsonStreamParser(message), limit - count));
+                            return count + list.size();
+                        });
+
+                        return listener.apply(list);
+                    }, () -> {
+                        if (count.get() == limit) {
+                            try {
+                                receiver.close();
+                            } finally {
+                                lf.setVoid();
+                            }
+                        }
+                    });
+                }
+            }.get();
         });
     }
 
