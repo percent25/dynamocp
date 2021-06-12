@@ -79,6 +79,18 @@ public class AwsQueueIT {
     // ### TODO here is where we would verify that awscat consumed
   }
 
+  @Test
+  public void stressTest() throws Exception {
+    final int limit = 100;
+
+    // send
+    for (int i = 0; i < limit; ++i)
+      log(i, client.sendMessage(SendMessageRequest.builder().queueUrl(queueUrl).messageBody("{}").build()));
+
+    // receive
+    Main.main(String.format("%s,endpoint=%s,limit=%s", queueArn, endpointUrl, limit));
+  }
+
   static void log(Object... args) {
     System.out.println(Lists.newArrayList(args));
   }
