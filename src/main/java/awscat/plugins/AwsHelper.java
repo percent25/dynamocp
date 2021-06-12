@@ -38,8 +38,9 @@ public class AwsHelper {
       //###TODO ugly
       //###TODO ugly
       //###TODO ugly
+      // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
       builder = builder.region(Region.US_EAST_1); // ### TODO for localstack
-      builder = builder.credentialsProvider(AnonymousCredentialsProvider.create()); // ### TODO for localstack
+      builder = builder.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))); // ### TODO for localstack
       //###TODO ugly
       //###TODO ugly
       //###TODO ugly
