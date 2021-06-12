@@ -75,7 +75,7 @@ class AwsQueueInputPlugin implements InputPlugin {
 @Service
 public class AwsQueueInputPluginProvider implements InputPluginProvider {
 
-    class Options extends BaseOptions {
+    class Options extends AwsOptions {
         public int c;
         public int limit;
 
