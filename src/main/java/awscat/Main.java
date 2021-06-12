@@ -35,7 +35,7 @@ public class Main implements ApplicationRunner {
     List<InputPluginProvider> inputPluginProviders = Lists.newArrayList();
     List<OutputPluginProvider> outputPluginProviders = Lists.newArrayList();
     ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(true);
-    for (BeanDefinition component : provider.findCandidateComponents(Main.class.getPackageName())) {
+    for (BeanDefinition component : provider.findCandidateComponents("awscat")) {
        Class<?> plugin = Class.forName(component.getBeanClassName());
       if (InputPluginProvider.class.isAssignableFrom(plugin)) {
         inputPluginProviders.add(InputPluginProvider.class.cast(plugin.getDeclaredConstructor().newInstance()));
