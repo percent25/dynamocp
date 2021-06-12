@@ -2,7 +2,7 @@
 
 REVISION=${1?}
 
-./mvnw -B -Drevision=${REVISION?} package
+./mvnw -B -Drevision=${REVISION?} verify
 ln -fs target/awscat-${REVISION?}.jar awscat.jar
 
 cat > setup.py << EOF
