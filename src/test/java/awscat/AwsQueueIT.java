@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.sqs.model.*;
 
 // @SpringBootTest
 // @SpringBootTest(args={"arn:aws:sqs:us-east-1:000000000000:MyQueue,endpoint=http://localhost:4566,limit=1"})
-public class AwsQueueTest {
+public class AwsQueueIT {
 
   static String endpointUrl = "http://localhost:4566";
 
