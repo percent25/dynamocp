@@ -61,9 +61,8 @@
 			<artifactId>sqs</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>netty-nio-client</artifactId>
-			<!-- <scope>runtime</scope> -->
+			<groupId>io.netty</groupId>
+			<artifactId>netty-common</artifactId> <!-- HashedWheelTimer -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
