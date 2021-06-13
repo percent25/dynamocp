@@ -105,16 +105,16 @@ public class ExpressionsJs {
         @Override
         public boolean remove(long index) {
             checkIndex(index);
-            values.remove((int) index);
-            return true;
+            return values.remove((int) index) != null;
+        }
+        @Override
+        public long getSize() {
+          return values.size();
         }
         private void checkIndex(long index) {
             if (index < 0 || index > Integer.MAX_VALUE) {
                 throw new ArrayIndexOutOfBoundsException();
             }
-        }
-        public long getSize() {
-            return values.size();
         }
       };
     }
@@ -123,47 +123,49 @@ public class ExpressionsJs {
       JsonObject values = jsonElement.getAsJsonObject();
       return new ProxyObject() {
 
-        public void putMember(String key, Value value) {
-            values.add(key, new Gson().toJsonTree(value.as(Object.class)));
+        @Override
+        public Object getMember(String key) {
+          return fromJsonElement(values.get(key));
         }
 
-        public boolean hasMember(String key) {
-            return values.has(key);
-        }
-
+        @Override
         public Object getMemberKeys() {
             return new ProxyArray() {
                 private final Object[] keys = values.keySet().toArray();
 
-                public void set(long index, Value value) {
-                    throw new UnsupportedOperationException();
-                }
-
-                public long getSize() {
-                    return keys.length;
-                }
-
+                @Override
                 public Object get(long index) {
                     if (index < 0 || index > Integer.MAX_VALUE) {
                         throw new ArrayIndexOutOfBoundsException();
                     }
                     return keys[(int) index];
                 }
+
+                @Override
+                public void set(long index, Value value) {
+                    throw new UnsupportedOperationException("set");
+                }
+
+                @Override
+                public long getSize() {
+                    return keys.length;
+                }
             };
         }
 
-        public Object getMember(String key) {
-          return fromJsonElement(values.get(key));
+        @Override
+        public boolean hasMember(String key) {
+            return values.has(key);
+        }
+
+        @Override
+        public void putMember(String key, Value value) {
+            values.add(key, new Gson().toJsonTree(value.as(Object.class)));
         }
 
         @Override
         public boolean removeMember(String key) {
-            if (values.has(key)) {
-                values.remove(key);
-                return true;
-            } else {
-                return false;
-            }
+          return values.remove(key) != null;
         }
       };
     }

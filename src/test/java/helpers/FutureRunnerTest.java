@@ -11,6 +11,10 @@ import static org.assertj.core.api.Assertions.*;
 
 public class FutureRunnerTest {
 
+  private final int desiredCount = 111;
+  private final AtomicInteger reportedCount = new AtomicInteger();
+  private final AtomicInteger landedCount = new AtomicInteger();
+
   @Test
   public void randomOneLandingTest() throws Exception {
     final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -20,7 +24,7 @@ public class FutureRunnerTest {
         int landedCount;
         {
           run(() -> {
-            for (int i = 0; i < 8; ++i) {
+            for (int i = 0; i < 111; ++i) {
               ++count;
               System.out.println("count:" + count);
               // run(() -> {
@@ -33,6 +37,7 @@ public class FutureRunnerTest {
               } else {
                 run(() -> {
                   return Futures.submit(() -> {
+                    Thread.sleep(5);
                     return Futures.immediateVoidFuture();
                   }, executor);
                 });
@@ -44,7 +49,7 @@ public class FutureRunnerTest {
         @Override
         protected void onLanded() {
           ++landedCount;
-          System.out.println("onLanded:" + landedCount);
+          System.out.println("[onLanded] landedCount:" + landedCount);
           assertThat(landedCount).isEqualTo(1);
         }
       }.get().get();
@@ -58,13 +63,11 @@ public class FutureRunnerTest {
   public void randomManyLandingsTest() throws Exception {
     final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     try {
-      new FutureRunner() {
-        int count;
-        int landedCount;
+      ListenableFuture<?> lf = new FutureRunner() {
         {
-          for (int i = 0; i < 8; ++i) {
-            ++count;
-            System.out.println("count:" + count);
+          for (int i = 0; i < desiredCount; ++i) {
+            reportedCount.incrementAndGet();
+            System.out.println("count:" + reportedCount);
             // run(() -> {
             // return Futures.immediateVoidFuture();
             // });
@@ -83,100 +86,94 @@ public class FutureRunnerTest {
         }
         @Override
         protected void onLanded() {
-          ++landedCount;
-          System.out.println("onLanded:" + landedCount);
+          landedCount.incrementAndGet();
+          System.out.println("[onLanded] landedCount:" + landedCount);
         }
-      }.get().get();
+      }.get();
+      lf.addListener(()->{
+        System.out.println("[listener] reportedCount:" + reportedCount);
+        System.out.println("[listener] landedCount:" + landedCount);
+      }, MoreExecutors.directExecutor());
+      lf.get();
+      assertThat(reportedCount.get()).isBetween(0, desiredCount);
     } finally {
       executor.shutdown();
     }
     System.out.println("done");
   }
-
-  private int landedCount;
 
   @Test
   public void manyLandingsTest() throws Exception {
     final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     try {
       ListenableFuture<?> lf = new FutureRunner() {
-        int count;
         {
-          for (int i = 0; i < 8; ++i) {
-            ++count;
-            System.out.println("count:" + count);
-
+          for (int i = 0; i < desiredCount; ++i) {
+            reportedCount.incrementAndGet();
+            System.out.println("count:" + reportedCount);
             run(() -> {
-            return Futures.immediateVoidFuture();
+              return Futures.immediateVoidFuture();
             });
-
-            run(() -> {
-              return Futures.submit(() -> {
-                Thread.sleep(50);
-                return Futures.immediateVoidFuture();
-              }, executor);
-            });
-  
           }
         }
         @Override
         protected void onLanded() {
-          ++landedCount;
-          System.out.println("onLanded:" + landedCount);
+          landedCount.incrementAndGet();
+          System.out.println("[onLanded] landedCount:" + landedCount);
         }
       }.get();
-      lf.addListener(() -> {
-        System.out.println("listener: landedCount=" + landedCount);
-        assertThat(landedCount).isEqualTo(2);
-      }, MoreExecutors.directExecutor());
       lf.get();
-      // Thread.sleep(3000);
+      assertThat(reportedCount.get()).isEqualTo(desiredCount);
+      assertThat(landedCount.get()).isEqualTo(desiredCount);
+    // Thread.sleep(3000);
     } finally {
       executor.shutdown();
     }
     System.out.println("done");
   }
 
-  private final AtomicInteger count = new AtomicInteger();
-
   @Test
   public void stressTest() throws Exception {
-    final int desiredCount = 200;
     final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     try {
       ListenableFuture<?> lf = new FutureRunner() {
         {
-          for (int i = 0; i < desiredCount; ++i) {
-            if (new Random().nextInt() < Integer.MAX_VALUE / 2) {
-              run(() -> {
-                return Futures.immediateVoidFuture();
-              }, ()->{
-                count.incrementAndGet();
-              });
-            } else {
-              run(() -> {
-                return Futures.submit(() -> {
-                  Thread.sleep(5);
+          run(() -> {
+            for (int i = 0; i < desiredCount; ++i) {
+              if (new Random().nextInt() < Integer.MAX_VALUE / 2) {
+                run(() -> {
                   return Futures.immediateVoidFuture();
-                }, executor);
-              }, ()->{
-                count.incrementAndGet();
-              });
+                }, () -> {
+                  reportedCount.incrementAndGet();
+                });
+              } else {
+                run(() -> {
+                  return Futures.submit(() -> {
+                    Thread.sleep(5);
+                    return Futures.immediateVoidFuture();
+                  }, executor);
+                }, () -> {
+                  reportedCount.incrementAndGet();
+                });
+              }
             }
-  
-          }
+            return Futures.immediateVoidFuture();
+          });
         }
+
         @Override
         protected void onLanded() {
-          ++landedCount;
+          landedCount.incrementAndGet();
+          System.out.println("[onLanded] landedCount:" + landedCount);
         }
       }.get();
       lf.addListener(() -> {
-        System.out.println("listener: landedCount=" + landedCount);
+        System.out.println("[listener] landedCount:" + landedCount);
       }, MoreExecutors.directExecutor());
       lf.get();
       // Thread.sleep(3000);
-      assertThat(count.get()).isEqualTo(desiredCount);
+      assertThat(reportedCount.get()).isEqualTo(desiredCount);
+      assertThat(landedCount.get()).isEqualTo(1);
     } finally {
       executor.shutdown();
     }

@@ -10,7 +10,7 @@ import com.spotify.futures.*;
 /**
  * Opinionated robust facade/runner for listenablefuture(s).
  */
-public class FutureRunner {
+public class FutureRunner { //###TODO extend AbstractFuture<Void> so that app has access to isCancelled()?
 
   private class VoidFuture extends AbstractFuture<Void> {
     public boolean setVoid() {
@@ -21,16 +21,14 @@ public class FutureRunner {
     }
   }
 
-  // resolved when "inFlight" transitions to zero
-  private final AtomicReference<VoidFuture> facade = new AtomicReference<>();
+  // resolved the first time "inFlight" transitions to zero
+  private final VoidFuture facade = new VoidFuture();
 
   private final AtomicInteger inFlight = new AtomicInteger();
   private final AtomicReference<Exception> firstException = new AtomicReference<>();
 
   public ListenableFuture<?> get() {
-    facade.compareAndSet(null, new VoidFuture());
-    doFacade();
-    return facade.get();
+    return facade;
   }
 
   /**
@@ -152,18 +150,10 @@ public class FutureRunner {
       } catch (Exception e) {
         doCatch(e);
       } finally {
-        doFacade();
-      }
-    }
-  }
-
-  private void doFacade() {
-    if (inFlight.get() == 0) {
-      if (facade.get() != null) {
         if (firstException.get() == null)
-          facade.get().setVoid();
+          facade.setVoid();
         else
-          facade.get().setException(firstException.get());
+          facade.setException(firstException.get());
       }
     }
   }
