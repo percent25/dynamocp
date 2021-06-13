@@ -78,13 +78,13 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
     return 25;
   }
 
+  public String toString() {
+    return new Gson().toJson(this);
+  }
+
   @Override
   public boolean canActivate(String arg) {
     return ImmutableSet.of("dynamo", "dynamodb").contains(arg.split(":")[0]);
-  }
-
-  public String toString() {
-    return new Gson().toJson(this);
   }
 
   @Override

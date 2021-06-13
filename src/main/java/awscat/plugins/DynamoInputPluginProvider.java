@@ -29,7 +29,13 @@ class DynamoInputPlugin implements InputPlugin {
   private final AbstractThrottle readLimiter;
   private final int limit;
 
+  //### TODO THIS DOES NOT NEED TO BE A MEMBER VARIABLE
+  //### TODO THIS DOES NOT NEED TO BE A MEMBER VARIABLE
+  //### TODO THIS DOES NOT NEED TO BE A MEMBER VARIABLE
   private final List<Map<String, AttributeValue>> exclusiveStartKeys = Lists.newArrayList();
+  //### TODO THIS DOES NOT NEED TO BE A MEMBER VARIABLE
+  //### TODO THIS DOES NOT NEED TO BE A MEMBER VARIABLE
+  //### TODO THIS DOES NOT NEED TO BE A MEMBER VARIABLE
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
@@ -128,7 +134,7 @@ class DynamoInputPlugin implements InputPlugin {
           return lf(client.scan(scanRequest));
         }, scanResponse -> {
 
-          debug("doSegment", segment, scanResponse.items().size());
+          debug("doSegment", segment, scanResponse.count());
 
           exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
 
@@ -149,8 +155,8 @@ class DynamoInputPlugin implements InputPlugin {
           }
 
           run(()->{
-            return Futures.successfulAsList(futures);
-          }, ()->{ // finally
+            return Futures.allAsList(futures);
+          }, result->{ // if success then continue
             if (!exclusiveStartKeys.get(segment).isEmpty()) //###TODO check for null here?
               doSegment(segment);
           });
@@ -220,20 +226,21 @@ public class DynamoInputPluginProvider implements InputPluginProvider {
       return "dynamo:<tableName>[,c,rcu,endpoint,profile,limit]";
   }
 
-  @Override
-  public boolean canActivate(String arg) {
-    tableName = Args.base(arg).split(":")[1];  
-    options = Args.options(arg, Options.class);  
-    return ImmutableSet.of("dynamo", "dynamodb").contains(Args.base(arg).split(":")[0]);
-  }
-
   public String toString() {
     // return new Gson().toJson(this);
     return MoreObjects.toStringHelper(this).add("tableName", tableName).add("options", options).toString();
   }
 
   @Override
+  public boolean canActivate(String arg) {
+    return ImmutableSet.of("dynamo", "dynamodb").contains(Args.base(arg).split(":")[0]);
+  }
+
+  @Override
   public InputPlugin activate(String arg) throws Exception {
+    tableName = Args.base(arg).split(":")[1];  
+    options = Args.options(arg, Options.class);  
+
     DynamoDbAsyncClient client = AwsHelper.configClient(DynamoDbAsyncClient.builder(), options).build();
     DynamoDbAsyncClient asyncClient = AwsHelper.configClient(DynamoDbAsyncClient.builder(), options).build();
 
