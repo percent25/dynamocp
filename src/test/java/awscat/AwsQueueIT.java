@@ -22,12 +22,14 @@ import software.amazon.awssdk.services.sqs.model.*;
 // @SpringBootTest(args={"arn:aws:sqs:us-east-1:000000000000:MyQueue,endpoint=http://localhost:4566,limit=1"})
 public class AwsQueueIT {
 
+  // beforeAll
+  static String endpointUrl;
   static SqsAsyncClient client;
-  static String endpointUrl = "http://localhost:4566";
 
+  // beforeEach
   private String queueName = UUID.randomUUID().toString();
   private String queueArn = String.format("arn:aws:sqs:us-east-1:000000000000:%s", queueName);
-  private String queueUrl = String.format("http://localhost:4566/000000000000/%s", queueName);
+  private String queueUrl = String.format("%s/000000000000/%s", endpointUrl, queueName);
 
   public AwsQueueIT() {
     log("ctor");
@@ -35,6 +37,9 @@ public class AwsQueueIT {
 
   @BeforeAll
   public static void newClient() {
+
+    endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
+
     client = SqsAsyncClient.builder() //
         .httpClient(AwsCrtAsyncHttpClient.create()) //
         .endpointOverride(URI.create(endpointUrl)) //
@@ -115,7 +120,8 @@ public class AwsQueueIT {
     }
 
     // receive
-    Main.main(String.format("%s,endpoint=%s,limit=%s", queueArn, endpointUrl, limit));
+    String sourceArg = String.format("%s,endpoint=%s,limit=%s", queueArn, endpointUrl, limit);
+    Main.main(sourceArg);
   }
 
   static void log(Object... args) {

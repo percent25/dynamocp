@@ -122,6 +122,11 @@
 									</goals>
 							</execution>
 					</executions>
+        <configuration>
+          <systemPropertyVariables>
+            <edge.port>${edge.port}</edge.port>
+          </systemPropertyVariables>
+        </configuration>
 			</plugin>
 			<plugin>
 					<groupId>io.fabric8</groupId>
@@ -140,7 +145,7 @@
 															<!-- <alias>cassandra</alias> -->
 															<run>
 																	<ports>
-																			<port>4566:4566</port>
+																			<port>${edge.port}:4566</port>
 																	</ports>
 																	<wait>
 																		<!-- <tcp>
