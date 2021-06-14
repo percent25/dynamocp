@@ -12,7 +12,6 @@ import org.springframework.boot.test.context.*;
 import awscat.*;
 import software.amazon.awssdk.auth.credentials.*;
 import software.amazon.awssdk.http.async.*;
-import software.amazon.awssdk.http.crt.*;
 import software.amazon.awssdk.regions.*;
 import software.amazon.awssdk.services.sqs.*;
 import software.amazon.awssdk.services.sqs.model.*;
@@ -41,7 +40,7 @@ public class AwsQueueIT {
     endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
 
     client = SqsAsyncClient.builder() //
-        .httpClient(AwsCrtAsyncHttpClient.create()) //
+        // .httpClient(AwsCrtAsyncHttpClient.create()) //
         .endpointOverride(URI.create(endpointUrl)) //
         .region(Region.US_EAST_1) //
         .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
