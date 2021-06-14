@@ -72,16 +72,16 @@ public class Main implements ApplicationRunner {
     // private final Number request;
     private final Number out;
     private final Number err;
-    String rate;
-    public String toString() {
-      return getClass().getSimpleName()+new Gson().toJson(this);
-    }
-    Working(Number in, Number success, Number failure) {
+    private String rate;
+    private Working(Number in, Number success, Number failure) {
       this.in = in;
       // this.out = out;
       // this.request = request;
       this.out = success;
       this.err = failure;
+    }
+    public String toString() {
+      return getClass().getSimpleName()+new Gson().toJson(this);
     }
   }
 
@@ -195,8 +195,8 @@ public class Main implements ApplicationRunner {
         Working work = new Working(in, success, failure);
         {
           run(()->{
-            OutputPlugin outputPlugin = outputPluginSupplier.get();
-            ExpressionsJs expressions = new ExpressionsJs();
+            OutputPlugin outputPlugin = outputPluginSupplier.get(); // throws
+            ExpressionsJs expressions = new ExpressionsJs(); // throws
             for (JsonElement jsonElement : jsonElements) {
               run(() -> {
                 in.incrementAndGet();
