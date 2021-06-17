@@ -31,32 +31,9 @@ objects: spel {:} is immutable!! wtf?
 OPEN
 ======================================================================
 
- - https://github.com/oracle/graaljs/issues/125
+ - sqs output plugin
 
- - THIS BROKE GRAALVM...
-
-                         <groupId>com.google.code.gson</groupId>
-                        <artifactId>gson</artifactId>
-                </dependency>
-+               <dependency>
-+                       <groupId>software.amazon.awssdk</groupId>
-+                       <artifactId>aws-crt-client</artifactId>
-+                       <version>2.16.13-PREVIEW</version>
-+               </dependency>
-                <dependency>
-                        <groupId>software.amazon.awssdk</groupId>
-                        <artifactId>dynamodb</artifactId>
-
-
-
- - NEED TO DO THIS ANYWHERE ELSE??
-
-          run(()->{
-            return Futures.allAsList(futures);
-          }, result->{
-            if (!exclusiveStartKeys.get(segment).isEmpty()) //###TODO check for null here?
-              doSegment(segment);
-          });
+ - kinesis plugins
 
  - uuid source.. i.e, stream of uuid json strings
  
@@ -392,4 +369,31 @@ can't cat empty dynamo table ??
 independent aws profiles for source and target
 
 
+
+ - https://github.com/oracle/graaljs/issues/125
+
+ - THIS BROKE GRAALVM...
+
+                         <groupId>com.google.code.gson</groupId>
+                        <artifactId>gson</artifactId>
+                </dependency>
++               <dependency>
++                       <groupId>software.amazon.awssdk</groupId>
++                       <artifactId>aws-crt-client</artifactId>
++                       <version>2.16.13-PREVIEW</version>
++               </dependency>
+                <dependency>
+                        <groupId>software.amazon.awssdk</groupId>
+                        <artifactId>dynamodb</artifactId>
+
+
+
+ - NEED TO DO THIS ANYWHERE ELSE??
+
+          run(()->{
+            return Futures.allAsList(futures);
+          }, result->{
+            if (!exclusiveStartKeys.get(segment).isEmpty()) //###TODO check for null here?
+              doSegment(segment);
+          });
 
