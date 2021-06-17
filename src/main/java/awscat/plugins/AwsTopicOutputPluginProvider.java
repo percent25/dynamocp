@@ -3,6 +3,7 @@ package awscat.plugins;
 import java.util.function.Supplier;
 
 import com.google.common.base.MoreObjects;
+import com.google.gson.Gson;
 
 import awscat.Args;
 import awscat.OutputPlugin;
@@ -17,7 +18,14 @@ import software.amazon.awssdk.services.sns.SnsAsyncClient;
 @Service
 public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
 
+    class Options extends AwsOptions {
+        public String toString() {
+            return new Gson().toJson(this);
+        }
+    }
+
     private String topicArn;
+    private Options options;
 
     public String toString() {
         return MoreObjects.toStringHelper(this).add("topicArn", topicArn).toString();
@@ -31,12 +39,13 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
     @Override
     public boolean canActivate(String arg) {
         topicArn = Args.base(arg);
+        options = Args.options(arg, Options.class);
         return topicArn.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)");
     }
 
     @Override
     public Supplier<OutputPlugin> activate(String arg) throws Exception {
-        SnsAsyncClient snsClient = SnsAsyncClient.create();
+        SnsAsyncClient snsClient = AwsHelper.configClient(SnsAsyncClient.builder(), options).build();
         // sns transport is thread-safe
         ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(snsClient, topicArn);
         // ConcatenatedJsonWriter is not thread-safe
