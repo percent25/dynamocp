@@ -93,9 +93,10 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
 
     @Override
     public String help() {
-        return "<queue-url>[,c]";
+        return "<queue-arn|queue-url>[,c]";
     }
 
+    @Override
     public String toString() {
         // return new Gson().toJson(this);
         return MoreObjects.toStringHelper(this).add("queueArnOrUrl", queueArnOrUrl).add("options", options).toString();

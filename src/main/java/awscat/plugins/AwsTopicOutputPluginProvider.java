@@ -36,9 +36,9 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
 
     @Override
     public Supplier<OutputPlugin> activate(String arg) throws Exception {
-        SnsAsyncClient client = SnsAsyncClient.create();
+        SnsAsyncClient snsClient = SnsAsyncClient.create();
         // sns transport is thread-safe
-        ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(client, topicArn);
+        ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(snsClient, topicArn);
         // ConcatenatedJsonWriter is not thread-safe
         // which makes ConcatenatedJsonWriterOutputPlugin not thread-safe
         return ()->new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
