@@ -205,13 +205,11 @@ class DynamoInputPlugin implements InputPlugin {
 }
 
 @Service
-public class DynamoInputPluginProvider implements InputPluginProvider {
+public class DynamoInputPluginProvider extends AbstractInputPluginProvider {
 
-  class Options {
+  class Options extends AwsOptions{
     public int c; // concurrency, aka totalSegments
     public int rcu;
-    public String endpoint;
-    public String profile;
     public int limit; // scan request limit
     public String toString() {
       return new Gson().toJson(this);
@@ -221,9 +219,8 @@ public class DynamoInputPluginProvider implements InputPluginProvider {
   private String tableName;
   private Options options;
 
-  @Override
-  public String help() {
-      return "dynamo:<tableName>[,c,rcu,endpoint,profile,limit]";
+  public DynamoInputPluginProvider() {
+    super("dynamo:<tableName>", Options.class);
   }
 
   public String toString() {

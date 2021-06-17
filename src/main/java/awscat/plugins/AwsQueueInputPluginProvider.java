@@ -76,24 +76,23 @@ class AwsQueueInputPlugin implements InputPlugin {
 
 }
 
-@Service
-public class AwsQueueInputPluginProvider implements InputPluginProvider {
+class AwsQueueInputPluginOptions extends AwsOptions {
+    public int c;
+    public int limit;
 
-    class Options extends AwsOptions {
-        public int c;
-        public int limit;
-
-        public String toString() {
-            return new Gson().toJson(this);
-        }
+    public String toString() {
+        return new Gson().toJson(this);
     }
+}
+
+@Service
+public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
 
     private String queueArnOrUrl;
-    private Options options;
+    private AwsQueueInputPluginOptions options;
 
-    @Override
-    public String help() {
-        return "<queue-arn|queue-url>[,c]";
+    public AwsQueueInputPluginProvider() {
+        super("<queue-arn|queue-url>", AwsQueueInputPluginOptions.class);
     }
 
     @Override
@@ -105,7 +104,7 @@ public class AwsQueueInputPluginProvider implements InputPluginProvider {
     @Override
     public boolean canActivate(String arg) {
         queueArnOrUrl = Args.base(arg);
-        options = Args.options(arg, Options.class);
+        options = Args.options(arg, AwsQueueInputPluginOptions.class);
         if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
             return true;
         if (queueArnOrUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)"))

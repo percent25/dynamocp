@@ -102,18 +102,17 @@ class SystemInPlugin implements InputPlugin {
 }
 
 // @Service
-public class SystemInPluginProvider implements InputPluginProvider {
+public class SystemInPluginProvider extends AbstractInputPluginProvider {
 
   // in.txt,c=1
   class SystemInOptions {
-    int c;
-    boolean cycle;
-    int limit;
+    public int c;
+    public boolean cycle;
+    public int limit;
   }
 
-  @Override
-  public String help() {
-      return "<filename>[,c,cycle,limit]";
+  public SystemInPluginProvider() {
+      super("<filename>", SystemInOptions.class);
   }
 
   @Override
