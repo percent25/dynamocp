@@ -31,7 +31,7 @@ public class ConcatenatedJsonWriter {
          * send message
          * 
          * <p>
-         * ConcatenatedJsonWriter shall not ask Transport to send a message more than mtu
+         * ConcatenatedJsonWriter shall not ask Transport to send a message bigger than mtu
          */
         ListenableFuture<?> send(String message);
     }
@@ -49,10 +49,10 @@ public class ConcatenatedJsonWriter {
     // abstract write transport
     private final Transport transport;
 
-    // the current batch
+    // current partition
     private ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-    // batch -> futures
+    // partition -> futures
     private final Multimap<ByteArrayOutputStream, VoidFuture> partitions = LinkedListMultimap.create();
     
     private final List<ListenableFuture<?>> flushFutures = Lists.newArrayList();
