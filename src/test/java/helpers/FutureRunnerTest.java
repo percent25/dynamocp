@@ -52,7 +52,7 @@ public class FutureRunnerTest {
           System.out.println("[onLanded] landedCount:" + landedCount);
           assertThat(landedCount).isEqualTo(1);
         }
-      }.get().get();
+      }.get();
     } finally {
       executor.shutdown();
     }
@@ -89,7 +89,7 @@ public class FutureRunnerTest {
           landedCount.incrementAndGet();
           System.out.println("[onLanded] landedCount:" + landedCount);
         }
-      }.get();
+      };
       lf.addListener(()->{
         System.out.println("[listener] reportedCount:" + reportedCount);
         System.out.println("[listener] landedCount:" + landedCount);
@@ -121,7 +121,7 @@ public class FutureRunnerTest {
           landedCount.incrementAndGet();
           System.out.println("[onLanded] landedCount:" + landedCount);
         }
-      }.get();
+      };
       lf.get();
       assertThat(reportedCount.get()).isEqualTo(desiredCount);
       assertThat(landedCount.get()).isEqualTo(desiredCount);
@@ -166,7 +166,7 @@ public class FutureRunnerTest {
           landedCount.incrementAndGet();
           System.out.println("[onLanded] landedCount:" + landedCount);
         }
-      }.get();
+      };
       lf.addListener(() -> {
         System.out.println("[listener] landedCount:" + landedCount);
       }, MoreExecutors.directExecutor());

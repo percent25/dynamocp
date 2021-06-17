@@ -177,7 +177,7 @@ public class AwsQueueReceiver {
               });
             }
           });
-        }}.get();
+        }};
 
       // futures.add(lf);
       lf.addListener(()->{

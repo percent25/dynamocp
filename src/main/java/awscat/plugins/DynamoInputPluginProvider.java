@@ -168,7 +168,7 @@ class DynamoInputPlugin implements InputPlugin {
         });
 
       }
-    }.get();
+    };
   }
 
   private final ObjectMapper objectMapper = new ObjectMapper();

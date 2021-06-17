@@ -51,7 +51,7 @@ class AwsQueueInputPlugin implements InputPlugin {
                         }
                     });
                 }
-            }.get();
+            };
         });
     }
 

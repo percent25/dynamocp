@@ -100,7 +100,7 @@ public class DynamoWriter {
           return lf;
         });
       }
-    }.get();
+    };
   }
 
   public ListenableFuture<?> flush() {
@@ -112,7 +112,7 @@ public class DynamoWriter {
           return Futures.successfulAsList(batchWriteItemFutures);
         });
       }
-    }.get();
+    };
   }
 
   class DoBatchWriteItemWork {
@@ -257,7 +257,7 @@ public class DynamoWriter {
       protected void onLanded() {
         debug(work);
       }
-    }.get();
+    };
     batchWriteItemFutures.add(lf);
     return ArrayListMultimap.create();
   }

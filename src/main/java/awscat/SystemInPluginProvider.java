@@ -93,7 +93,7 @@ class SystemInPlugin implements InputPlugin {
             break;
         } while (cycle);
       }
-    }.get();
+    };
   }
 
   private void debug(Object... args) {

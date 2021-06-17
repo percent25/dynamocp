@@ -4,32 +4,17 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.function.*;
 
+import com.google.common.base.*;
 import com.google.common.util.concurrent.*;
 import com.spotify.futures.*;
 
 /**
  * Opinionated robust facade/runner for listenablefuture(s).
  */
-public class FutureRunner { //###TODO extend AbstractFuture<Void> so that app has access to isCancelled()?
-
-  private class VoidFuture extends AbstractFuture<Void> {
-    public boolean setVoid() {
-      return super.set(null);
-    }
-    public boolean setException(Throwable throwable) {
-      return super.setException(throwable);
-    }
-  }
-
-  // resolved the first time "inFlight" transitions to zero
-  private final VoidFuture facade = new VoidFuture();
+public class FutureRunner extends AbstractFuture<Void> {
 
   private final AtomicInteger inFlight = new AtomicInteger();
   private final AtomicReference<Exception> firstException = new AtomicReference<>();
-
-  public ListenableFuture<?> get() {
-    return facade;
-  }
 
   /**
    * run
@@ -151,9 +136,9 @@ public class FutureRunner { //###TODO extend AbstractFuture<Void> so that app ha
         doCatch(e);
       } finally {
         if (firstException.get() == null)
-          facade.setVoid();
+          set(Defaults.defaultValue(Void.class));
         else
-          facade.setException(firstException.get());
+          setException(firstException.get());
       }
     }
   }
