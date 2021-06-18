@@ -211,7 +211,6 @@ public class AwsKinesisReceiver {
 
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
-    System.out.println(Lists.newArrayList(args));
   }
 
   public static void main(String... args) throws Exception {
