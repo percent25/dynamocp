@@ -29,16 +29,17 @@ public class MatrixIT {
   @Test
   public void matrixTest() throws Exception {
 
+    final JsonElement jsonElement = json("{foo:1,bar:2}");
+
     Set<Supplier<SourceArg>> sources = Sets.newHashSet();
     sources.add(new AwsQueueSourceSupplier());
 
     Set<Supplier<TargetArg>> targets = Sets.newHashSet();
     targets.add(new AwsQueueTargetSupplier());
+    targets.add(new AwsS3TargetSupplier());
 
     for (Supplier<SourceArg> eachSourceProvider : sources) {
       for (Supplier<TargetArg> eachTargetProvider : targets) {
-
-        final JsonElement jsonElement = json("{foo:1,bar:2}");
 
         SourceArg eachSource = eachSourceProvider.get();
         TargetArg eachTarget = eachTargetProvider.get();
