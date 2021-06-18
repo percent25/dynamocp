@@ -16,6 +16,10 @@ public class FutureRunner extends AbstractFuture<Void> {
   private final AtomicInteger inFlight = new AtomicInteger();
   private final AtomicReference<Exception> firstException = new AtomicReference<>();
 
+  public boolean isRunning() {
+    return !isDone();
+  }
+
   /**
    * run
    *
