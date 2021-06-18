@@ -60,6 +60,7 @@ public class AwsQueueReceiver {
   private final String queueUrl;
   private final int concurrency;
 
+  private boolean running;
   private Function<String, ListenableFuture<?>> listener;
 
   //###TODO USE HashedWheelTimer
@@ -98,15 +99,16 @@ public class AwsQueueReceiver {
   /**
    * start
    */
-  public ListenableFuture<?> start() {
+  public void start() {
     debug("start", queueUrl, concurrency);
-    return new FutureRunner() {
+    running = true;
+    new FutureRunner() {
       {
         for (int i = 0; i < concurrency; ++i)
           doReceiveMessage(i);
       }
       void doReceiveMessage(int i) {
-        if (isRunning()) {
+        if (running) {
           ReceiveMessageWork receiveMessageWork = new ReceiveMessageWork(queueUrl);
           run(()->{
             return new FutureRunner() {
@@ -148,25 +150,23 @@ public class AwsQueueReceiver {
                         //   debug(record);
                         });
                       }, e -> { // deleteMessage
-                        debug(e);
+                        receiveMessageWork.failureMessage = "deleteMessage:" + e;
                       });
                     }
                   }
                 }, e -> { // receiveMessage
-                  receiveMessageWork.failureMessage = ""+e;
-                  if (isRunning()) {
-                    run(() -> {
-                      // backoff/retry
-                      // ###TODO USE HashedWheelTimer
-                      // ###TODO USE HashedWheelTimer
-                      // ###TODO USE HashedWheelTimer
-                      return Futures.scheduleAsync(() -> Futures.immediateVoidFuture(), Duration.ofSeconds(25),
-                          executorService);
-                      // ###TODO USE HashedWheelTimer
-                      // ###TODO USE HashedWheelTimer
-                      // ###TODO USE HashedWheelTimer
-                    });
-                  }
+                  receiveMessageWork.failureMessage = "receiveMessage:" + e;
+                  run(() -> {
+                    // backoff/retry
+                    // ###TODO USE HashedWheelTimer
+                    // ###TODO USE HashedWheelTimer
+                    // ###TODO USE HashedWheelTimer
+                    return Futures.scheduleAsync(() -> Futures.immediateVoidFuture(), Duration.ofSeconds(25),
+                        executorService);
+                    // ###TODO USE HashedWheelTimer
+                    // ###TODO USE HashedWheelTimer
+                    // ###TODO USE HashedWheelTimer
+                  });
                 });
               }
             };
@@ -178,7 +178,13 @@ public class AwsQueueReceiver {
         } // isRunning
       }
     };
+  }
 
+  /**
+   * close
+   */
+  public void close() {
+    running = false;
   }
 
   private void debug(Object... args) {
@@ -195,14 +201,15 @@ public class AwsQueueReceiver {
         .build();
 
     AwsQueueReceiver receiver = new AwsQueueReceiver(client, "http://localhost:4566/000000000000/MyQueue", 1);
+
     receiver.setListener(s -> {
       System.out.println(s);
       return Futures.immediateVoidFuture();
     });
-    ListenableFuture<?> lf = receiver.start();
-    // Thread.sleep(20000);
-    // lf.cancel(true); // stop receiver
-    lf.get(); // wait for receiver
+
+    receiver.start();
+    Thread.sleep(20000);
+    receiver.close(); // stop receiver
 
   }
 

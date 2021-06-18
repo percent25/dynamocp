@@ -109,7 +109,7 @@ public class AwsQueueIT {
 
   @Test
   public void stressTest() throws Exception {
-    final int limit = 100;
+    final int limit = 20;
 
     // send
     for (int i = 0; i < limit; ++i) {
