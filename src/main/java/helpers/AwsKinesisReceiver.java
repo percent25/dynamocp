@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import com.google.common.base.*;
@@ -26,6 +27,34 @@ import software.amazon.awssdk.services.kinesis.model.Record;
 import software.amazon.awssdk.services.kinesis.model.Shard;
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
 
+class ListShardsWork {
+  public final String streamName;
+  public boolean success;
+  public String failureMessage;
+  public ListShardsWork(String streamName) {
+    this.streamName = streamName;
+  }
+  public String toString() {
+    return getClass().getSimpleName()+new Gson().toJson(this);
+  }
+}
+
+class GetRecordsWork {
+  public final String streamName;
+  public boolean success;
+  public String failureMessage;
+  public final AtomicInteger in = new AtomicInteger(); // aka request
+  public final AtomicInteger out = new AtomicInteger(); // aka success
+  public final AtomicInteger err = new AtomicInteger(); // aka failure
+  public GetRecordsWork(String streamName) {
+    this.streamName = streamName;
+  }
+  public String toString() {
+    return getClass().getSimpleName()+new Gson().toJson(this);
+  }
+}
+
+// at-most-once aws kinesis receiver
 public class AwsKinesisReceiver {
 
   private final KinesisAsyncClient client;
@@ -56,45 +85,67 @@ public class AwsKinesisReceiver {
   public String toString() {
     return MoreObjects.toStringHelper(this).add("streamName", streamName).toString();
   }
-
-  // https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html
+  
+  /**
+   * start
+   * 
+   * @see https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html
+   * 
+   * @return
+   * @throws Exception
+   */
   public ListenableFuture<?> start() throws Exception {
     debug("start", streamName);
     return new FutureRunner() {
+
       {
-        run(() -> {
-          return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
-        }, listShardsResponse -> {
-          for (Shard shard : listShardsResponse.shards()) {
-            run(() -> {
-              GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
-                  .streamName(streamName) //
-                  .shardId(shard.shardId()) //
-                  .shardIteratorType(ShardIteratorType.LATEST) //
-                  .build();
-              return lf(client.getShardIterator(getShardIteratorRequest));
-            }, getShardIteratorResponse -> {
-              doGetRecords(getShardIteratorResponse.shardIterator());
-            });
-          }
-        });
+        doListShards();
       }
 
-      class GetRecordsWork {
-        public boolean success;
-        public String failureMessage;
-        public final String streamName;
-        public int in;
-        public int out;
-        public int err;
-        public GetRecordsWork(String streamName) {
-          this.streamName = streamName;
-        }
-        public String toString() {
-          return new Gson().toJson(this);
+      /**
+       * doListShards
+       */
+      void doListShards() {
+        if (isRunning()) {
+          ListShardsWork listShardsWork = new ListShardsWork(streamName);
+          run(() -> {
+            return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
+          }, listShardsResponse -> {
+            listShardsWork.success = true;
+            if (listShardsResponse.hasShards()) {
+              for (Shard shard : listShardsResponse.shards()) {
+                run(() -> {
+                  GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
+                      .streamName(streamName) //
+                      .shardId(shard.shardId()) //
+                      .shardIteratorType(ShardIteratorType.LATEST) //
+                      .build();
+                  return lf(client.getShardIterator(getShardIteratorRequest));
+                }, getShardIteratorResponse -> {
+                  doGetRecords(getShardIteratorResponse.shardIterator());
+                });
+              }
+            }
+          }, e->{
+            listShardsWork.failureMessage = ""+e;
+            // backoff/retry
+            try {
+              Thread.sleep(1000);
+            } catch (InterruptedException ie) {
+              ie.printStackTrace();
+            }
+            doListShards();
+          }, ()->{
+            debug(listShardsWork);
+          });
         }
       }
-      
+
+      /**
+       * doGetRecords
+       * 
+       * @param shardIterator
+       */
       void doGetRecords(String shardIterator) {
         if (isRunning()) {
           GetRecordsWork getRecordsWork = new GetRecordsWork(streamName);
@@ -105,14 +156,14 @@ public class AwsKinesisReceiver {
             if (getRecordsResponse.hasRecords()) {
               for (Record record : getRecordsResponse.records()) {
                 run(() -> {
-                  ++getRecordsWork.in;
+                  getRecordsWork.in.incrementAndGet();
                   ListenableFuture<?> lf = listener.apply(record.data());
                   futures.add(lf);
                   return lf;
                 }, lf->{
-                  ++getRecordsWork.out;
+                  getRecordsWork.out.incrementAndGet();
                 }, e->{
-                  ++getRecordsWork.err;
+                  getRecordsWork.err.incrementAndGet();
                   getRecordsWork.failureMessage = ""+e;
                 });
               }
@@ -125,8 +176,8 @@ public class AwsKinesisReceiver {
               if (nextShardIterator != null) {
                 try {
                   Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                  e.printStackTrace();
+                } catch (InterruptedException ie) {
+                  ie.printStackTrace();
                 }
                 doGetRecords(nextShardIterator);
               }
@@ -143,7 +194,7 @@ public class AwsKinesisReceiver {
 
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
-    // System.out.println(Lists.newArrayList(args));
+    System.out.println(Lists.newArrayList(args));
   }
 
   public static void main(String... args) throws Exception {
@@ -161,7 +212,7 @@ public class AwsKinesisReceiver {
       return Futures.immediateVoidFuture();
     });
     ListenableFuture<?> lf = receiver.start();
-    Thread.sleep(20000);
+    Thread.sleep(10000);
     lf.cancel(true); // stop receiver
     lf.get(); // wait for receiver
 
