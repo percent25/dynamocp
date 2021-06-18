@@ -117,6 +117,7 @@ public class FutureRunner extends AbstractFuture<Void> {
 
   // convenience
   // called when "running" transitions to zero
+  @Deprecated
   protected void onLanded() {
     // do nothing
   }
