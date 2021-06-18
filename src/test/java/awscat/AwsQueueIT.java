@@ -1,21 +1,33 @@
 package awscat;
 
-import java.net.*;
-import java.util.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.net.URI;
+import java.util.UUID;
 
-import org.junit.jupiter.api.*;
-import org.springframework.boot.*;
-import org.springframework.boot.test.context.*;
+import com.google.common.collect.Lists;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonStreamParser;
 
-import awscat.*;
-import software.amazon.awssdk.auth.credentials.*;
-import software.amazon.awssdk.http.async.*;
-import software.amazon.awssdk.regions.*;
-import software.amazon.awssdk.services.sqs.*;
-import software.amazon.awssdk.services.sqs.model.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+import helpers.LogHelper;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
+import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
+import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
+import software.amazon.awssdk.services.sqs.model.DeleteQueueResponse;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 // @SpringBootTest
 // @SpringBootTest(args={"arn:aws:sqs:us-east-1:000000000000:MyQueue,endpoint=http://localhost:4566,limit=1"})
@@ -31,7 +43,7 @@ public class AwsQueueIT {
   private String queueUrl = String.format("%s/000000000000/%s", endpointUrl, queueName);
 
   public AwsQueueIT() {
-    log("ctor");
+    debug("ctor");
   }
 
   @BeforeAll
@@ -45,22 +57,23 @@ public class AwsQueueIT {
         .region(Region.US_EAST_1) //
         .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
         .build();
+
   }
 
   @BeforeEach
   public void createQueue() throws Exception {
     CreateQueueRequest createQueueRequest = CreateQueueRequest.builder().queueName(queueName).build();
-    log(createQueueRequest);
+    debug(createQueueRequest);
     CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest).get();
-    log(createQueueResponse);
+    debug(createQueueResponse);
   }
 
   @AfterEach
   public void deleteQueue() throws Exception {
     DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder().queueUrl(queueUrl).build();
-    log(deleteQueueRequest);
+    debug(deleteQueueRequest);
     DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest).get();
-    log(deleteQueueResponse);
+    debug(deleteQueueResponse);
   }
 
   /**
@@ -87,24 +100,33 @@ public class AwsQueueIT {
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
-        String messageBody = "{}";
+        JsonElement json = json("{foo:1}");
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
-        SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(queueUrl).messageBody(messageBody).build();
-        log(sendMessageRequest);
-        SendMessageResponse sendMessageResponse = client.sendMessage(sendMessageRequest).get();
-        log(sendMessageResponse);
+              // SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(queueUrl).messageBody(messageBody).build();
+              // log(sendMessageRequest);
+              // SendMessageResponse sendMessageResponse = client.sendMessage(sendMessageRequest).get();
+              // log(sendMessageResponse);
+
+        Systems.stdin = new ByteArrayInputStream(json.toString().getBytes());
+        Main.main("-", String.format("%s,endpoint=%s", queueArn, endpointUrl));
+
     
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Systems.stdout = new PrintStream(baos);
         Main.main(String.format("%s,endpoint=%s,limit=1", queueArn, endpointUrl));
+
+        assertThat(json(baos.toString())).isEqualTo(json);
+
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
 
-    // ### TODO here is where we would verify that awscat consumed
   }
 
   @Test
@@ -115,7 +137,7 @@ public class AwsQueueIT {
     for (int i = 0; i < limit; ++i) {
       SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(queueUrl).messageBody("{}").build();
       SendMessageResponse sendMessageResponse = client.sendMessage(sendMessageRequest).get();
-      log("stressTest", i, sendMessageRequest, sendMessageResponse);
+      debug("stressTest", i, sendMessageRequest, sendMessageResponse);
     }
 
     // receive
@@ -123,8 +145,13 @@ public class AwsQueueIT {
     Main.main(sourceArg);
   }
 
-  static void log(Object... args) {
-    System.out.println(Lists.newArrayList(args));
+  private JsonElement json(String json) {
+    return new JsonStreamParser(json).next();
+  }
+
+  private void debug(Object... args) {
+    new LogHelper(this).debug(args);
+    // System.out.println(Lists.newArrayList(args));
   }
 
 }

@@ -67,7 +67,7 @@ class SystemInPlugin implements InputPlugin {
       List<JsonElement> partition = new ArrayList<>();
       {
         do {
-          final BufferedReader br = new BufferedReader(new InputStreamReader("-".equals(file) ? System.in : new FileInputStream(file)));
+          final BufferedReader br = new BufferedReader(new InputStreamReader("-".equals(file) ? Systems.stdin : new FileInputStream(file)));
           try {
             JsonStreamParser parser = new JsonStreamParser(br);
             while (parser.hasNext()) {
