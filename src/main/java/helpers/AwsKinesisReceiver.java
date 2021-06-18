@@ -150,6 +150,21 @@ public class AwsKinesisReceiver {
         if (isRunning()) {
           GetRecordsWork getRecordsWork = new GetRecordsWork(streamName);
           run(() -> {
+
+            // * Each data record can be up to 1 MiB in size, and each shard can read up to 2 MiB per second. You can ensure that
+            // * your calls don't exceed the maximum supported size or throughput by using the <code>Limit</code> parameter to
+            // * specify the maximum number of records that <a>GetRecords</a> can return. Consider your average record size when
+            // * determining this limit. The maximum number of records that can be returned per call is 10,000.
+            // * </p>
+            // * <p>
+            // * The size of the data returned by <a>GetRecords</a> varies depending on the utilization of the shard. The maximum
+            // * size of data that <a>GetRecords</a> can return is 10 MiB. If a call returns this amount of data, subsequent calls
+            // * made within the next 5 seconds throw <code>ProvisionedThroughputExceededException</code>. If there is
+            // * insufficient provisioned throughput on the stream, subsequent calls made within the next 1 second throw
+            // * <code>ProvisionedThroughputExceededException</code>. <a>GetRecords</a> doesn't return any data when it throws an
+            // * exception. For this reason, we recommend that you wait 1 second between calls to <a>GetRecords</a>. However, it's
+            // * possible that the application will get exceptions for longer than 1 second.
+       
             return lf(client.getRecords(GetRecordsRequest.builder().shardIterator(shardIterator).build()));
           }, getRecordsResponse -> {
             List<ListenableFuture<?>> futures = new ArrayList<>();
@@ -164,7 +179,7 @@ public class AwsKinesisReceiver {
                   getRecordsWork.out.incrementAndGet();
                 }, e->{
                   getRecordsWork.err.incrementAndGet();
-                  getRecordsWork.failureMessage = ""+e;
+                  getRecordsWork.failureMessage = "" + e; // this is futile
                 });
               }
             }
@@ -172,6 +187,12 @@ public class AwsKinesisReceiver {
               return Futures.allAsList(futures);
             }, all -> {
               getRecordsWork.success = true;
+            }, e->{
+              getRecordsWork.failureMessage = "" + e;
+            }, ()->{
+              // STEP 1 log work
+              debug(getRecordsWork);
+              // STEP 2 find work to do
               String nextShardIterator = getRecordsResponse.nextShardIterator();
               if (nextShardIterator != null) {
                 try {
@@ -181,10 +202,6 @@ public class AwsKinesisReceiver {
                 }
                 doGetRecords(nextShardIterator);
               }
-            }, e->{
-              getRecordsWork.failureMessage = "" + e;
-            }, ()->{
-              debug(getRecordsWork);
             });
           });
         }
