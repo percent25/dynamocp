@@ -212,7 +212,7 @@ public class ExpressionsTest {
     Exception e = assertThrows(Exception.class, ()->{
       output(json("{}"), "e.version = e.version?:0 + 1"); // spel syntax error
     });
-    stdout(e);
+    System.out.println(e);
     assertThat(output(json("{}"), "e.version = (e.version?:0) + 1")).isEqualTo(json("{version:1}"));
     assertThat(output(json("{version:1}"), "e.version = e.version + 1")).isEqualTo(json("{version:2}"));
 
@@ -238,10 +238,6 @@ public class ExpressionsTest {
 
   private JsonElement json(String json) {
     return new JsonStreamParser(json).next();
-  }
-
-  private void stdout(Object... args) {
-    System.out.println(new LogHelper(this).str(args));
   }
   
 }
