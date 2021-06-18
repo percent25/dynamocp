@@ -15,21 +15,22 @@ import org.springframework.stereotype.Service;
 
 import helpers.*;
 import software.amazon.awssdk.services.sqs.*;
+import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 
 class AwsQueueInputPlugin implements InputPlugin {
 
   private final AwsQueueReceiver receiver;
-  private final int limit;
+  // private final int limit;
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  private final VoidFuture lf = new VoidFuture();
+  private ListenableFuture<?> lf;
   private final AtomicInteger count = new AtomicInteger();
 
   public AwsQueueInputPlugin(AwsQueueReceiver receiver, int limit) {
     debug("ctor");
     this.receiver = receiver;
-    this.limit = limit;
+    // this.limit = limit;
     receiver.setListener(message -> {
       return new FutureRunner() {
         List<JsonElement> list;
@@ -39,16 +40,10 @@ class AwsQueueInputPlugin implements InputPlugin {
               list = Lists.newArrayList(Iterators.limit(new JsonStreamParser(message), limit - count));
               return count + list.size();
             });
-
             return listener.apply(list);
           }, () -> {
-            if (count.get() == limit) {
-              try {
-                receiver.close();
-              } finally {
-                lf.setVoid();
-              }
-            }
+            if (count.get() == limit)
+              lf.cancel(true);
           });
         }
       };
@@ -60,14 +55,13 @@ class AwsQueueInputPlugin implements InputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> read(int mtu) throws Exception {
-    receiver.start();
-    return lf;
+  public void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener) {
+    this.listener = listener;
   }
 
   @Override
-  public void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener) {
-    this.listener = listener;
+  public ListenableFuture<?> read(int mtu) throws Exception {
+    return lf = receiver.start();
   }
 
   private void debug(Object... args) {
@@ -108,9 +102,9 @@ public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
     options = Args.options(arg, AwsQueueInputPluginOptions.class);
     if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
       return true;
-    if (queueArnOrUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)"))
+    if (queueArnOrUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) //###TODO fips
       return true;
-    if (queueArnOrUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)"))
+    if (queueArnOrUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)")) // legacy
       return true;
     return false;
   }
@@ -119,7 +113,16 @@ public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
   public InputPlugin activate(String arg) throws Exception {
     int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
     SqsAsyncClient sqsClient = AwsHelper.configClient(SqsAsyncClient.builder(), options).build();
-    return new AwsQueueInputPlugin(new AwsQueueReceiver(sqsClient, queueArnOrUrl, c), options.limit);
+
+    String queueUrl = queueArnOrUrl;
+    // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
+    if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
+        // yes
+        String queueName = queueArnOrUrl.split(":")[5];
+        queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).get().queueUrl();
+    }
+
+    return new AwsQueueInputPlugin(new AwsQueueReceiver(sqsClient, queueUrl, c), options.limit);
   }
 
 }

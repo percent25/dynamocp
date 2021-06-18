@@ -1,44 +1,66 @@
 package helpers;
 
+import java.net.URI;
 import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import com.google.common.base.*;
-import com.google.common.util.concurrent.*;
+import com.google.common.base.MoreObjects;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 
-import software.amazon.awssdk.services.sqs.*;
-import software.amazon.awssdk.services.sqs.model.*;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
-    class AwsNotification {
-    	public String Type;
-    	public String MessageId;
-    	public String TopicArn;
-    	public String Message;
-    	public String Timestamp;
+class AwsNotification {
+  public String Type;
+  public String MessageId;
+  public String TopicArn;
+  public String Message;
+  public String Timestamp;
 
-      public boolean isNotificationType() {
-        return "Notification".equals(Type);
-      }
+  public boolean isNotificationType() {
+    return "Notification".equals(Type);
+  }
 
-    	public String toString() {
-    		return new Gson().toJson(this);
-    	}
-    }
+  public String toString() {
+    return new Gson().toJson(this);
+  }
+}
+
+class ReceiveMessageWork {
+  public final String queueUrl;
+  public boolean success;
+  public String failureMessage;
+  public AtomicInteger in = new AtomicInteger();
+  public AtomicInteger out = new AtomicInteger();
+  public AtomicInteger err = new AtomicInteger();
+  public ReceiveMessageWork(String queueUrl) {
+    this.queueUrl = queueUrl;
+  }
+  public String toString() {
+    return getClass().getSimpleName()+new Gson().toJson(this);
+  }
+}
 
 // At-most-once aws sqs message receiver
 public class AwsQueueReceiver {
 
   private final SqsAsyncClient sqsClient;
-  private final String queueArnOrUrl;
+  private final String queueUrl;
   private final int concurrency;
 
-  private boolean running;
   private Function<String, ListenableFuture<?>> listener;
-
-  // private final List<ListenableFuture<?>> futures = Collections.synchronizedList(new ArrayList<>());
 
   //###TODO USE HashedWheelTimer
   //###TODO USE HashedWheelTimer
@@ -48,29 +70,16 @@ public class AwsQueueReceiver {
   //###TODO USE HashedWheelTimer
   //###TODO USE HashedWheelTimer
 
-  private final String queueUrl;
-
   /**
    * ctor
    * 
-   * @param queueArnOrUrl
+   * @param queueUrl
    */
-  public AwsQueueReceiver(SqsAsyncClient sqsClient, String queueArnOrUrl, int concurrency) throws Exception {
-    debug("ctor", queueArnOrUrl, concurrency);
+  public AwsQueueReceiver(SqsAsyncClient sqsClient, String queueUrl, int concurrency) throws Exception {
+    debug("ctor", queueUrl, concurrency);
     this.sqsClient = sqsClient;
-    this.queueArnOrUrl = queueArnOrUrl;
+    this.queueUrl = queueUrl;
     this.concurrency = concurrency;
-    this.queueUrl = getQueueUrl(queueArnOrUrl);
-  }
-
-  private String getQueueUrl(String queueArnOrUrl) throws Exception {
-    // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
-    if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
-      // yes
-      String queueName = queueArnOrUrl.split(":")[5];
-      return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).get().queueUrl();
-    }
-    return queueArnOrUrl;
   }
 
   /**
@@ -83,112 +92,118 @@ public class AwsQueueReceiver {
   }
 
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("queueArnOrUrl", queueArnOrUrl).add("c", concurrency).toString();
+    return MoreObjects.toStringHelper(this).add("queueUrl", queueUrl).add("c", concurrency).toString();
   }
 
   /**
    * start
    */
-  public void start() {
-    debug("start", queueArnOrUrl, concurrency);
-    running = true;
-    for (int i = 0; i < concurrency; ++i)
-      doReceiveMessage(i);
-  }
-
-  /**
-   * close
-   */
-  public void close() {
-    debug("close", queueArnOrUrl, concurrency);
-    running = false;
-    // executorService.shutdownNow();
-    // futures.forEach(f->f.cancel(true));
-  }
-
-  class MessageConsumedRecord {
-    public boolean success;
-    public String failureMessage;
-    public final String queueArnOrUrl;
-    public MessageConsumedRecord(String queueArnOrUrl) {
-      this.queueArnOrUrl = queueArnOrUrl;
-    }
-    public String toString() {
-      return new Gson().toJson(this);
-    }
-  }
-
-  private void doReceiveMessage(int i) {
-    if (running) {
-      ListenableFuture<?> lf = new FutureRunner(){{
-        run(() -> {
-          ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder()
-              //
-              .queueUrl(queueUrl)
-              //
-              .waitTimeSeconds(20)
-              //
-              .build();
-          return lf(sqsClient.receiveMessage(receiveMessageRequest));
-        }, receiveMessageResponse->{
-          if (receiveMessageResponse.hasMessages()) {
-            for (Message message : receiveMessageResponse.messages()) {
-              run(() -> {
-                DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder()
-                    //
-                    .queueUrl(queueUrl).receiptHandle(message.receiptHandle()).build();
-                return lf(sqsClient.deleteMessage(deleteMessageRequest));
-              }, deleteMessageResponse -> {
-                MessageConsumedRecord record = new MessageConsumedRecord(queueArnOrUrl);
-                run(()->{
-                  String body = message.body();
-                  try {
-                    AwsNotification notification = new Gson().fromJson(body, AwsNotification.class);
-                    if (notification.isNotificationType())
-                      body = notification.Message;
-                  } catch (Exception e) {
-                    // do nothing
+  public ListenableFuture<?> start() {
+    debug("start", queueUrl, concurrency);
+    return new FutureRunner() {
+      {
+        for (int i = 0; i < concurrency; ++i)
+          doReceiveMessage(i);
+      }
+      void doReceiveMessage(int i) {
+        if (isRunning()) {
+          ReceiveMessageWork receiveMessageWork = new ReceiveMessageWork(queueUrl);
+          run(()->{
+            return new FutureRunner() {
+              {
+                run(() -> {
+                  ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder() //
+                      .queueUrl(queueUrl) //
+                      .waitTimeSeconds(20) //
+                      .build();
+                  return lf(sqsClient.receiveMessage(receiveMessageRequest));
+                }, receiveMessageResponse -> {
+                  receiveMessageWork.success = true;
+                  if (receiveMessageResponse.hasMessages()) {
+                    for (Message message : receiveMessageResponse.messages()) {
+                      run(() -> {
+                        DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder() //
+                            .queueUrl(queueUrl) //
+                            .receiptHandle(message.receiptHandle()) //
+                            .build();
+                        return lf(sqsClient.deleteMessage(deleteMessageRequest));
+                      }, deleteMessageResponse -> {
+                        run(() -> {
+                          receiveMessageWork.in.incrementAndGet();
+                          String body = message.body();
+                          try {
+                            AwsNotification notification = new Gson().fromJson(body, AwsNotification.class);
+                            if (notification.isNotificationType())
+                              body = notification.Message;
+                          } catch (Exception e) {
+                            // do nothing
+                          }
+                          return listener.apply(body);
+                        }, result -> {
+                          receiveMessageWork.out.incrementAndGet();
+                        }, e -> { // listener
+                          receiveMessageWork.err.incrementAndGet();
+                          receiveMessageWork.failureMessage = "" + e;
+                        }, () -> {
+                        //   debug(record);
+                        });
+                      }, e -> { // deleteMessage
+                        debug(e);
+                      });
+                    }
                   }
-                  return listener.apply(body);
-                }, result->{
-                  record.success=true;
-                }, e->{ // listener
-                  record.failureMessage = ""+e;
-                }, ()->{
-                  debug(record);
+                }, e -> { // receiveMessage
+                  receiveMessageWork.failureMessage = ""+e;
+                  if (isRunning()) {
+                    run(() -> {
+                      // backoff/retry
+                      // ###TODO USE HashedWheelTimer
+                      // ###TODO USE HashedWheelTimer
+                      // ###TODO USE HashedWheelTimer
+                      return Futures.scheduleAsync(() -> Futures.immediateVoidFuture(), Duration.ofSeconds(25),
+                          executorService);
+                      // ###TODO USE HashedWheelTimer
+                      // ###TODO USE HashedWheelTimer
+                      // ###TODO USE HashedWheelTimer
+                    });
+                  }
                 });
-              }, e->{ // deleteMessage
-                debug(e);
-              });
-            }
-          }
-        }, e->{ // receiveMessage
-            debug(e);
-            if (running) {
-              run(()->{
-                // backoff
-                // ###TODO USE HashedWheelTimer
-                // ###TODO USE HashedWheelTimer
-                // ###TODO USE HashedWheelTimer
-                return Futures.scheduleAsync(()->Futures.immediateVoidFuture(), Duration.ofSeconds(25), executorService);
-                // ###TODO USE HashedWheelTimer
-                // ###TODO USE HashedWheelTimer
-                // ###TODO USE HashedWheelTimer
-              });
-            }
+              }
+            };
+          }, ()->{ // finally
+            // if (receiveMessageWork.in.get()>0)
+              debug(receiveMessageWork);
+            doReceiveMessage(i);
           });
-        }};
+        } // isRunning
+      }
+    };
 
-      // futures.add(lf);
-      lf.addListener(()->{
-        // futures.remove(lf);
-        doReceiveMessage(i);
-      }, MoreExecutors.directExecutor());
-    }
   }
 
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
+  }
+
+  public static void main(String... args) throws Exception {
+
+    SqsAsyncClient client = SqsAsyncClient.builder() //
+        // .httpClient(AwsCrtAsyncHttpClient.create()) //
+        .endpointOverride(URI.create("http://localhost:4566")) //
+        .region(Region.US_EAST_1) //
+        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
+        .build();
+
+    AwsQueueReceiver receiver = new AwsQueueReceiver(client, "http://localhost:4566/000000000000/MyQueue", 1);
+    receiver.setListener(s -> {
+      System.out.println(s);
+      return Futures.immediateVoidFuture();
+    });
+    ListenableFuture<?> lf = receiver.start();
+    // Thread.sleep(20000);
+    // lf.cancel(true); // stop receiver
+    lf.get(); // wait for receiver
+
   }
 
 }
