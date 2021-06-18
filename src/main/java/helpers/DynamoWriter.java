@@ -249,14 +249,11 @@ public class DynamoWriter {
           }, () -> { // finally
             sem.release();
             work.wcuMeter = wcuMeter.toString();
+            debug(work); //###TODO NEED A CLOSER LOOK HERE
           });
         });
       }
 
-      @Override
-      protected void onLanded() {
-        debug(work);
-      }
     };
     batchWriteItemFutures.add(lf);
     return ArrayListMultimap.create();
