@@ -116,13 +116,6 @@ public class FutureRunner extends AbstractFuture<Void> {
   }
 
   // convenience
-  // called when "running" transitions to zero
-  @Deprecated
-  protected void onLanded() {
-    // do nothing
-  }
-
-  // convenience
   protected <T> ListenableFuture<T> lf(CompletableFuture<T> cf) {
     return CompletableFuturesExtra.toListenableFuture(cf);
   }
@@ -135,16 +128,10 @@ public class FutureRunner extends AbstractFuture<Void> {
 
   private void doFinally() {
     if (inFlight.decrementAndGet() == 0) {
-      try {
-        onLanded();
-      } catch (Exception e) {
-        doCatch(e);
-      } finally {
-        if (firstException.get() == null)
-          set(Defaults.defaultValue(Void.class));
-        else
-          setException(firstException.get());
-      }
+      if (firstException.get() == null)
+        set(Defaults.defaultValue(Void.class));
+      else
+        setException(firstException.get());
     }
   }
 
