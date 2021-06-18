@@ -141,24 +141,24 @@ public class Main implements ApplicationRunner {
 
     if (help) {
 
-      final String indent = "  ";
+      final String indentString = "  ";
 
       stderr("Usage:");
-      stderr(indent, "awscat.jar [options] <source> [<target>]");
+      stderr(indentString, "awscat.jar [options] <source> [<target>]");
       
       stderr("options:");
-      stderr(indent, "--help");
-      stderr(indent, "--version");
-      stderr(indent, "--js");
-      stderr(indent, "--debug"); // this is spring boot's debug
+      stderr(indentString, "--help");
+      stderr(indentString, "--version");
+      stderr(indentString, "--js");
+      stderr(indentString, "--debug"); // this is spring boot's debug
 
       stderr("source:");
       for (InputPluginProvider pluginProvider : inputPluginProviders) {
-        stderr(indent, pluginProvider.help());
+        stderr(indentString, pluginProvider.help());
       }
       stderr("target:");
       for (OutputPluginProvider pluginProvider : outputPluginProviders) {
-        stderr(indent, pluginProvider.help());
+        stderr(indentString, pluginProvider.help());
       }
 
       return;
@@ -212,7 +212,7 @@ public class Main implements ApplicationRunner {
                     success.incrementAndGet();
                   }, e -> {
                     stderr(e);
-                    // e.printStackTrace();
+                    e.printStackTrace();
                     failure.incrementAndGet();
                     failures.get().println(jsonElement); // pre-transform
                   }, () -> {
@@ -307,12 +307,16 @@ public class Main implements ApplicationRunner {
   // }
 
   private void stderr(Object... args) {
-    System.err.println(new LogHelper(this).str(args));
+    List<String> parts = Lists.newArrayList();
+    for (Object arg : args)
+      parts.add("" + arg);
+    System.err.println(String.join(" ", parts));
   }
 
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
   }
+
   private void trace(Object... args) {
     new LogHelper(this).trace(args);
   }
