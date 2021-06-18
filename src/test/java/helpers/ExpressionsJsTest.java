@@ -226,9 +226,5 @@ public class ExpressionsJsTest {
   private JsonElement json(String json) {
     return new JsonStreamParser(json).next();
   }
-
-  private void stdout(Object... args) {
-    System.out.println(new LogHelper(this).str(args));
-  }
   
 }
