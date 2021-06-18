@@ -13,7 +13,6 @@ public class FutureRunnerTest {
 
   private final int desiredCount = 111;
   private final AtomicInteger reportedCount = new AtomicInteger();
-  private final AtomicInteger landedCount = new AtomicInteger();
 
   @Test
   public void randomOneLandingTest() throws Exception {
@@ -21,7 +20,6 @@ public class FutureRunnerTest {
     try {
       new FutureRunner() {
         int count;
-        int landedCount;
         {
           run(() -> {
             for (int i = 0; i < 111; ++i) {
@@ -45,12 +43,6 @@ public class FutureRunnerTest {
             }
             return Futures.immediateVoidFuture();
           });
-        }
-        @Override
-        protected void onLanded() {
-          ++landedCount;
-          System.out.println("[onLanded] landedCount:" + landedCount);
-          assertThat(landedCount).isEqualTo(1);
         }
       }.get();
     } finally {
@@ -84,15 +76,9 @@ public class FutureRunnerTest {
             }
           }
         }
-        @Override
-        protected void onLanded() {
-          landedCount.incrementAndGet();
-          System.out.println("[onLanded] landedCount:" + landedCount);
-        }
       };
       lf.addListener(()->{
         System.out.println("[listener] reportedCount:" + reportedCount);
-        System.out.println("[listener] landedCount:" + landedCount);
       }, MoreExecutors.directExecutor());
       lf.get();
       assertThat(reportedCount.get()).isBetween(0, desiredCount);
@@ -116,15 +102,9 @@ public class FutureRunnerTest {
             });
           }
         }
-        @Override
-        protected void onLanded() {
-          landedCount.incrementAndGet();
-          System.out.println("[onLanded] landedCount:" + landedCount);
-        }
       };
       lf.get();
       assertThat(reportedCount.get()).isEqualTo(desiredCount);
-      assertThat(landedCount.get()).isEqualTo(desiredCount);
     // Thread.sleep(3000);
     } finally {
       executor.shutdown();
@@ -160,20 +140,10 @@ public class FutureRunnerTest {
             return Futures.immediateVoidFuture();
           });
         }
-
-        @Override
-        protected void onLanded() {
-          landedCount.incrementAndGet();
-          System.out.println("[onLanded] landedCount:" + landedCount);
-        }
       };
-      lf.addListener(() -> {
-        System.out.println("[listener] landedCount:" + landedCount);
-      }, MoreExecutors.directExecutor());
       lf.get();
       // Thread.sleep(3000);
       assertThat(reportedCount.get()).isEqualTo(desiredCount);
-      assertThat(landedCount.get()).isEqualTo(1);
     } finally {
       executor.shutdown();
     }
