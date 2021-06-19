@@ -51,18 +51,20 @@ public class ConcatenatedJsonWriterTransportAwsS3Export implements ConcatenatedJ
         return CompletableFuturesExtra.toListenableFuture(client.putObject(putObjectRequest, requestBody));
     }
 
-    // export-prefix/AWSDynamoDB/ExportId/data/bafybeiczss3yxay3o4abnabbb.json.gz
+    // e.g., 20210619-c250b63
     static String exportId() {
-        String now = CharMatcher.anyOf("1234567890").retainFrom(Instant.now().toString().substring(0, 10));
+        // from aws docs: export-prefix/AWSDynamoDB/ExportId/data/bafybeiczss3yxay3o4abnabbb.json.gz
+        String ymd = CharMatcher.anyOf("1234567890").retainFrom(Instant.now().toString().substring(0, 10));
         String randomString = Hashing.sha256().hashInt(new SecureRandom().nextInt()).toString().substring(0, 7);
-        return String.format("%s-%s", now, randomString);
+        return String.format("%s-%s", ymd, randomString);
     }
 
-    // export-prefix/AWSDynamoDB/ExportId/data/bafybeiczss3yxay3o4abnabbb.json.gz
+    // e.g., 20210619113500-e3bcadf.json
     static String dataObject() {
-        String now = CharMatcher.anyOf("1234567890").retainFrom(Instant.now().toString().substring(0, 20));
+        // from aws docs: export-prefix/AWSDynamoDB/ExportId/data/bafybeiczss3yxay3o4abnabbb.json.gz
+        String ymdhms = CharMatcher.anyOf("1234567890").retainFrom(Instant.now().toString().substring(0, 20));
         String randomString = Hashing.sha256().hashInt(new SecureRandom().nextInt()).toString().substring(0, 7);
-        return String.format("%s-%s.json", now, randomString);
+        return String.format("%s-%s.json", ymdhms, randomString);
     }
 
     private void debug(Object... args) {
