@@ -32,9 +32,10 @@ public class MatrixIT {
   @Test
   public void matrixTest() throws Exception {
 
-    final JsonElement sourceJsonElement = jsonElement("{foo:1,bar:2}");
+    final JsonElement sourceJsonElement = jsonElement("{id:{s:abc123}}");
 
     Set<Supplier<SourceArg>> sources = Sets.newHashSet();
+    sources.add(new AwsDynamoSourceSupplier());
     sources.add(new AwsQueueSourceSupplier());
     sources.add(new SystemInSourceSupplier());
 

@@ -45,10 +45,10 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
         queueArn = String.format("arn:aws:sqs:us-east-1:000000000000:%s", queueName);
         queueUrl = String.format("%s/000000000000/%s", endpointUrl, queueName);
 
-        CreateQueueRequest createQueueRequest = CreateQueueRequest.builder().queueName(queueName).build();
-        log(createQueueRequest);
-        CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest);
-        log(createQueueResponse);
+        CreateQueueRequest createRequest = CreateQueueRequest.builder().queueName(queueName).build();
+        log(createRequest);
+        CreateQueueResponse createResponse = client.createQueue(createRequest);
+        log(createResponse);
       }
 
       @Override
@@ -69,12 +69,12 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
 
       @Override
       public void tearDown() {
-        DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder() //
+        DeleteQueueRequest deleteRequest = DeleteQueueRequest.builder() //
             .queueUrl(queueUrl) //
             .build();
-        log(deleteQueueRequest);
-        DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest);
-        log(deleteQueueResponse);
+        log(deleteRequest);
+        DeleteQueueResponse deleteResponse = client.deleteQueue(deleteRequest);
+        log(deleteResponse);
       }
 
       private void log(Object arg) {

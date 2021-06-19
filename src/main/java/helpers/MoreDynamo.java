@@ -1,11 +1,32 @@
 package helpers;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonElement;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public class MoreDynamo {
+
+  private static ObjectMapper objectMapper = new ObjectMapper();
+
+  public static Map<String, AttributeValue> render(JsonElement jsonElement) {
+    try {
+      Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
+      for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet()) {
+        String key = entry.getKey();
+        JsonElement value = entry.getValue();
+        AttributeValue attributeValue = objectMapper.readValue(value.toString(), AttributeValue.serializableBuilderClass()).build();
+        item.put(key, attributeValue);
+      }
+      return item;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
   public static int itemSize(Map<String, AttributeValue> item) {

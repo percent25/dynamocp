@@ -1,6 +1,8 @@
 package helpers;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,8 +30,13 @@ public class ObjectHelper {
     }
     Object object = new Gson().fromJson(jsonElement, Object.class);
     if (jsonElement.isJsonPrimitive()) {
-      if (jsonElement.getAsJsonPrimitive().isNumber())
-        object = new BigDecimal(jsonElement.getAsString()); //###TODO use NumberFormat.parse here??
+      if (jsonElement.getAsJsonPrimitive().isNumber()) {
+        try {
+          object = NumberFormat.getInstance().parse(jsonElement.getAsString());
+        } catch (ParseException e) {
+          throw new RuntimeException(e);
+        }
+      }
     }
     return object;
   }
