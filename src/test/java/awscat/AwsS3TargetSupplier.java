@@ -56,6 +56,7 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
         CreateBucketResponse response = client.createBucket(request);
         log(response);
 
+        client.waiter().waitUntilBucketExists(s->s.bucket(bucket));
       }
 
       @Override
