@@ -23,17 +23,14 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
   public SourceArg get() {
     return new SourceArg() {
 
-      // beforeAll
       String endpointUrl;
       SqsAsyncClient client;
 
-      // beforeEach
       String queueArn;
       String queueUrl;
 
       @Override
-      public void setUpAndLoad(JsonElement jsonElement) throws Exception {
-
+      public void setUp() throws Exception {
         endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
 
         client = SqsAsyncClient.builder() //
@@ -42,8 +39,6 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
             .region(Region.US_EAST_1) //
             .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
             .build();
-
-        // STEP 1 setup
 
         String queueName = UUID.randomUUID().toString();
 
@@ -54,15 +49,17 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
         log(createQueueRequest);
         CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest).get();
         log(createQueueResponse);
+      }
 
-        // STEP 2 load
-        
-        SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(queueUrl).messageBody(jsonElement.toString())
+      @Override
+      public void load(JsonElement jsonElement) throws Exception {
+        SendMessageRequest sendMessageRequest = SendMessageRequest.builder() //
+            .queueUrl(queueUrl) //
+            .messageBody(jsonElement.toString()) //
             .build();
         log(sendMessageRequest);
         SendMessageResponse sendMessageResponse = client.sendMessage(sendMessageRequest).get();
         log(sendMessageResponse);
-
       }
 
       @Override
@@ -72,7 +69,9 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
 
       @Override
       public void tearDown() throws Exception {
-        DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder().queueUrl(queueUrl).build();
+        DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder() //
+            .queueUrl(queueUrl) //
+            .build();
         log(deleteQueueRequest);
         DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest).get();
         log(deleteQueueResponse);

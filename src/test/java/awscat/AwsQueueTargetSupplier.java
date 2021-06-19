@@ -24,13 +24,11 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
   public TargetArg get() {
     return new TargetArg() {
 
-      // beforeAll
-      String endpointUrl;
-      SqsAsyncClient client;
+      private String endpointUrl;
+      private SqsAsyncClient client;
 
-      // beforeEach
-      String queueArn;
-      String queueUrl;
+      private String queueArn;
+      private String queueUrl;
 
       @Override
       public void setUp() throws Exception {
@@ -43,8 +41,6 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
             .region(Region.US_EAST_1) //
             .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
             .build();
-
-        // STEP 1 setup
 
         String queueName = UUID.randomUUID().toString();
 
@@ -64,31 +60,25 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
       }
 
       @Override
-      public JsonElement verifyAndTearDown() throws Exception {
+      public JsonElement verify() throws Exception {
+        ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder() //
+            .queueUrl(queueUrl) //
+            .waitTimeSeconds(20) //
+            .build();
+        log(receiveMessageRequest);
+        ReceiveMessageResponse receiveMessageResponse = client.receiveMessage(receiveMessageRequest).get();
+        log(receiveMessageResponse);
 
-        try {
+        return json(receiveMessageResponse.messages().iterator().next().body());
+      }
 
-          // STEP 1 verify
+      @Override
+      public void tearDown() throws Exception {
 
-          ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder() //
-              .queueUrl(queueUrl) //
-              .waitTimeSeconds(20) //
-              .build();
-          ReceiveMessageResponse receiveMessageResponse = client.receiveMessage(receiveMessageRequest).get();
-
-          // assertThat(receiveMessageResponse.hasMessages()).isTrue();
-          return json(receiveMessageResponse.messages().iterator().next().body());
-
-        } finally {
-          
-          // STEP 2 teardown
-
-          DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder().queueUrl(queueUrl).build();
-          log(deleteQueueRequest);
-          DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest).get();
-          log(deleteQueueResponse);
-
-        }
+        DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder().queueUrl(queueUrl).build();
+        log(deleteQueueRequest);
+        DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest).get();
+        log(deleteQueueResponse);
 
       }
 

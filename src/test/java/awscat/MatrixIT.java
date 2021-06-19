@@ -13,7 +13,8 @@ import com.google.gson.JsonStreamParser;
 import org.junit.jupiter.api.Test;
 
 interface SourceArg {
-  void setUpAndLoad(JsonElement jsonElement) throws Exception;
+  void setUp() throws Exception;
+  void load(JsonElement jsonElement) throws Exception;
   String sourceArg();
   void tearDown() throws Exception;
 }
@@ -21,7 +22,8 @@ interface SourceArg {
 interface TargetArg {
   void setUp() throws Exception;
   String targetArg();
-  JsonElement verifyAndTearDown() throws Exception;
+  JsonElement verify() throws Exception;
+  void tearDown() throws Exception;
 }
 
 public class MatrixIT {
@@ -44,13 +46,18 @@ public class MatrixIT {
         SourceArg eachSource = eachSourceProvider.get();
         TargetArg eachTarget = eachTargetProvider.get();
 
-        eachSource.setUpAndLoad(jsonElement);
+        eachSource.setUp();
         try {
           eachTarget.setUp();
           try {
+            // STEP 1 load the source with the jsonElement
+            eachSource.load(jsonElement);
+            // STEP 2 invoke
             Main.main(eachSource.sourceArg(), eachTarget.targetArg());
+            // STEP 3 verify the target with the jsonElement
+            assertThat(eachTarget.verify()).isEqualTo(jsonElement);
           } finally {
-            assertThat(eachTarget.verifyAndTearDown()).isEqualTo(jsonElement);
+            eachTarget.tearDown();
           }
         } finally {
           eachSource.tearDown();
