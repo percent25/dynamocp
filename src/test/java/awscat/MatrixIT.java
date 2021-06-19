@@ -36,11 +36,12 @@ public class MatrixIT {
 
     Set<Supplier<SourceArg>> sources = Sets.newHashSet();
     sources.add(new AwsQueueSourceSupplier());
+    sources.add(new SystemInSourceSupplier());
 
     Set<Supplier<TargetArg>> targets = Sets.newHashSet();
     targets.add(new AwsKinesisTargetSupplier());
     targets.add(new AwsQueueTargetSupplier());
-    targets.add(new AwsS3TargetSupplier());
+    // targets.add(new AwsS3TargetSupplier());
 
     SoftAssertions.assertSoftly(softly -> {
       for (Supplier<SourceArg> eachSourceProvider : sources) {
@@ -64,7 +65,7 @@ public class MatrixIT {
                 // STEP 2 invoke
                 softly.assertThatCode(() -> {
                   Main.main(eachSource.sourceArg(), eachTarget.targetArg());
-                }).doesNotThrowAnyException();
+                }).as("%s %s", eachSource, eachTarget).doesNotThrowAnyException();
 
                 // STEP 3 verify the target with the jsonElement
                 targetJsonElement[0] = eachTarget.verify();
@@ -73,7 +74,10 @@ public class MatrixIT {
                 e.printStackTrace();
               }
 
-              softly.assertThat(targetJsonElement[0]).isEqualTo(sourceJsonElement);
+              softly //
+                  .assertThat(targetJsonElement[0]) //
+                  .as("%s %s", eachSource, eachTarget) //
+                  .isEqualTo(sourceJsonElement);
 
             } finally {
               eachTarget.tearDown();

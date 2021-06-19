@@ -43,6 +43,7 @@ public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
         CreateStreamResponse createResponse = client.createStream(createRequest);
         log(createResponse);
 
+        client.waiter().waitUntilStreamExists(a->a.streamName(streamName));
       }
 
       @Override
