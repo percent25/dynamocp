@@ -21,7 +21,7 @@ public class LogHelper {
   }
 
   public void debug(Object... args) {
-    // System.out.println(Lists.newArrayList(args));
+    // System.out.println(self.getClass().getSimpleName()+Lists.newArrayList(args));
     LoggerFactory.getLogger(self.getClass()).debug(Strings.repeat("{} ", args.length), args);
   }
 
