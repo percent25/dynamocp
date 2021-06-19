@@ -32,7 +32,12 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
 
         URI uri = URI.create(Args.base(arg));
         String bucket = uri.getHost();
-        String exportPrefix = uri.getPath().substring(1);
+        String exportPrefix = uri.getPath();
+        // s3://mybucket -> ""
+        // s3://mybucket/ -> ""
+        // s3://mybucket/a -> "/a"
+        if (exportPrefix.startsWith("/"))
+            exportPrefix = exportPrefix.substring(1);
 
         Options options = Args.options(arg, Options.class);
 

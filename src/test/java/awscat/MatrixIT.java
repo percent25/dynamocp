@@ -41,7 +41,7 @@ public class MatrixIT {
     Set<Supplier<TargetArg>> targets = Sets.newHashSet();
     targets.add(new AwsKinesisTargetSupplier());
     targets.add(new AwsQueueTargetSupplier());
-    // targets.add(new AwsS3TargetSupplier());
+    targets.add(new AwsS3TargetSupplier());
     targets.add(new SystemOutTargetSupplier());
 
     SoftAssertions.assertSoftly(softly -> {
