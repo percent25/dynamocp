@@ -32,7 +32,7 @@ public class MatrixIT {
   @Test
   public void matrixTest() throws Exception {
 
-    final JsonElement sourceJsonElement = json("{foo:1,bar:2}");
+    final JsonElement sourceJsonElement = jsonElement("{foo:1,bar:2}");
 
     Set<Supplier<SourceArg>> sources = Sets.newHashSet();
     sources.add(new AwsQueueSourceSupplier());
@@ -53,19 +53,24 @@ public class MatrixIT {
             eachTarget.setUp();
             try {
 
-              // STEP 2 invoke
-              // Main.main(eachSource.sourceArg(), eachTarget.targetArg());
-
               JsonElement[] targetJsonElement = new JsonElement[1];
 
-              softly.assertThatCode(() -> {
+              try {
+
                 // STEP 1 load the source with the jsonElement
                 eachSource.load(sourceJsonElement);
+
                 // STEP 2 invoke
-                Main.main(eachSource.sourceArg(), eachTarget.targetArg());
+                softly.assertThatCode(() -> {
+                  Main.main(eachSource.sourceArg(), eachTarget.targetArg());
+                }).doesNotThrowAnyException();
+
                 // STEP 3 verify the target with the jsonElement
                 targetJsonElement[0] = eachTarget.verify();
-              }).doesNotThrowAnyException();
+
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
 
               softly.assertThat(targetJsonElement[0]).isEqualTo(sourceJsonElement);
 
@@ -81,7 +86,7 @@ public class MatrixIT {
     });
   }
 
-  private JsonElement json(String json) {
+  private JsonElement jsonElement(String json) {
     return new JsonStreamParser(json).next();
   }
 
