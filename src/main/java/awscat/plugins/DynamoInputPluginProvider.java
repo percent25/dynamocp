@@ -266,7 +266,7 @@ public class DynamoInputPluginProvider extends AbstractInputPluginProvider {
       Number provisionedRcu = describeTable.get().table().provisionedThroughput().readCapacityUnits();
       if (provisionedRcu.longValue() > 0)
         return provisionedRcu;
-      return Double.MAX_VALUE;
+      return Double.MAX_VALUE; // on-demand/pay-per-request
     });
 
     return new DynamoInputPlugin(asyncClient, tableName, keySchema, c, readLimiter, options.limit);

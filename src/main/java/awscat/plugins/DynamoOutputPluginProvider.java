@@ -115,7 +115,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
       Number provisionedWcu = describeTable.get().table().provisionedThroughput().writeCapacityUnits();
       if (provisionedWcu.longValue() > 0)
         return provisionedWcu;
-      return Double.MAX_VALUE;
+      return Double.MAX_VALUE; // on-demand/pay-per-request
     });
 
     return ()->{
