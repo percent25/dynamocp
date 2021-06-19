@@ -38,9 +38,6 @@ public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
 
         streamName = UUID.randomUUID().toString();
 
-        // queueArn = String.format("arn:aws:sqs:us-east-1:000000000000:%s", queueName);
-        // queueUrl = String.format("%s/000000000000/%s", endpointUrl, queueName);
-
         CreateStreamRequest createRequest = CreateStreamRequest.builder().streamName(streamName).shardCount(1).build();
         log(createRequest);
         CreateStreamResponse createResponse = client.createStream(createRequest);
@@ -80,7 +77,13 @@ public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
         GetRecordsResponse getRecordsResponse = client.getRecords(getRecordsRequest);
         log(getRecordsResponse);
 
+        //###TODO may need to iterator over nextShardIterator here
+        //###TODO may need to iterator over nextShardIterator here
+        //###TODO may need to iterator over nextShardIterator here
         return json(getRecordsResponse.records().iterator().next().data().asUtf8String());
+        //###TODO may need to iterator over nextShardIterator here
+        //###TODO may need to iterator over nextShardIterator here
+        //###TODO may need to iterator over nextShardIterator here
       }
 
       @Override
@@ -91,12 +94,12 @@ public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
         log(deleteResponse);
       }
 
-      JsonElement json(String json) {
+      private JsonElement json(String json) {
         return new JsonStreamParser(json).next();
       }
 
-      void log(Object arg) {
-        System.out.println(arg);
+      private void log(Object arg) {
+        System.out.println(getClass().getSimpleName() + arg);
       }
     };
   }

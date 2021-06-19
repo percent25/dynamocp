@@ -78,7 +78,7 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
       }
 
       void log(Object arg) {
-        System.out.println(arg);
+        System.out.println(getClass().getSimpleName() + arg);
       }
     };
   }

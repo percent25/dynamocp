@@ -82,12 +82,12 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
 
       }
 
-      JsonElement json(String json) {
+      private JsonElement json(String json) {
         return new JsonStreamParser(json).next();
       }
 
-      void log(Object arg) {
-        System.out.println(arg);
+      private void log(Object arg) {
+        System.out.println(getClass().getSimpleName() + arg);
       }
     };
   }
