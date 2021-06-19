@@ -21,7 +21,7 @@ import helpers.LogHelper;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
@@ -35,7 +35,7 @@ public class AwsQueueIT {
 
   // beforeAll
   static String endpointUrl;
-  static SqsAsyncClient client;
+  static SqsClient client;
 
   // beforeEach
   private String queueName = UUID.randomUUID().toString();
@@ -51,7 +51,7 @@ public class AwsQueueIT {
 
     endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
 
-    client = SqsAsyncClient.builder() //
+    client = SqsClient.builder() //
         // .httpClient(AwsCrtAsyncHttpClient.create()) //
         .endpointOverride(URI.create(endpointUrl)) //
         .region(Region.US_EAST_1) //
@@ -64,7 +64,7 @@ public class AwsQueueIT {
   public void createQueue() throws Exception {
     CreateQueueRequest createQueueRequest = CreateQueueRequest.builder().queueName(queueName).build();
     debug(createQueueRequest);
-    CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest).get();
+    CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest);
     debug(createQueueResponse);
   }
 
@@ -72,7 +72,7 @@ public class AwsQueueIT {
   public void deleteQueue() throws Exception {
     DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder().queueUrl(queueUrl).build();
     debug(deleteQueueRequest);
-    DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest).get();
+    DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest);
     debug(deleteQueueResponse);
   }
 
@@ -136,7 +136,7 @@ public class AwsQueueIT {
     // send
     for (int i = 0; i < limit; ++i) {
       SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(queueUrl).messageBody("{}").build();
-      SendMessageResponse sendMessageResponse = client.sendMessage(sendMessageRequest).get();
+      SendMessageResponse sendMessageResponse = client.sendMessage(sendMessageRequest);
       debug("stressTest", i, sendMessageRequest, sendMessageResponse);
     }
 
