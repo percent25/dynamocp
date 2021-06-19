@@ -1,7 +1,5 @@
 package awscat;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -12,9 +10,8 @@ import com.google.gson.JsonStreamParser;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
-import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.CreateBucketResponse;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
@@ -35,17 +32,17 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
 
       // beforeAll
       String endpointUrl;
-      S3AsyncClient client;
+      S3Client client;
 
       // beforeEach
       String bucket;
 
       @Override
-      public void setUp() throws Exception {
+      public void setUp() {
 
         endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
 
-        client = S3AsyncClient.builder() //
+        client = S3Client.builder() //
             // .httpClient(AwsCrtAsyncHttpClient.create()) //
             .endpointOverride(URI.create(endpointUrl)) //
             .region(Region.US_EAST_1) //
@@ -56,49 +53,48 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
 
         CreateBucketRequest request = CreateBucketRequest.builder().bucket(bucket).build();
         log(request);
-        CreateBucketResponse response = client.createBucket(request).get();
+        CreateBucketResponse response = client.createBucket(request);
         log(response);
 
       }
 
       @Override
       public String targetArg() {
-        return String.format("s3://%s/asdf,endpoint=%s", bucket, endpointUrl);
+        return String.format("s3://%s,endpoint=%s", bucket, endpointUrl);
       }
 
       @Override
-      public JsonElement verify() throws Exception {
+      public JsonElement verify() {
         ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucket).build();
-        ListObjectsV2Response response = client.listObjectsV2(request).get();
+        ListObjectsV2Response response = client.listObjectsV2(request);
 
         String key = response.contents().iterator().next().key();
 
         GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucket).key(key).build();
-        ResponseBytes<GetObjectResponse> getObjectResponse = client.getObject(getObjectRequest, AsyncResponseTransformer.toBytes()).get();
-
-        return json(getObjectResponse.asInputStream());
+        ResponseBytes<GetObjectResponse> getObjectResponse = client.getObjectAsBytes(getObjectRequest);
+        return json(getObjectResponse.asUtf8String());
       }
 
       @Override
-      public void tearDown() throws Exception {
+      public void tearDown() {
         ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucket).build();
-        ListObjectsV2Response response = client.listObjectsV2(request).get();
+        ListObjectsV2Response response = client.listObjectsV2(request);
 
         for (S3Object s3object : response.contents()) {
           DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucket).key(s3object.key()).build();
           log(deleteObjectRequest);
-          DeleteObjectResponse deleteObjectResponse = client.deleteObject(deleteObjectRequest).get();
+          DeleteObjectResponse deleteObjectResponse = client.deleteObject(deleteObjectRequest);
           log(deleteObjectResponse);  
         }
 
         DeleteBucketRequest deleteBucketRequest = DeleteBucketRequest.builder().bucket(bucket).build();
         log(deleteBucketRequest);
-        DeleteBucketResponse deleteBucketResponse = client.deleteBucket(deleteBucketRequest).get();
+        DeleteBucketResponse deleteBucketResponse = client.deleteBucket(deleteBucketRequest);
         log(deleteBucketResponse);
       }
 
-      private JsonElement json(InputStream in) {
-        return new JsonStreamParser(new InputStreamReader(in)).next();
+      private JsonElement json(String json) {
+        return new JsonStreamParser(json).next();
       }
 
       private void log(Object arg) {

@@ -10,7 +10,7 @@ import com.google.gson.JsonStreamParser;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
@@ -25,17 +25,17 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
     return new TargetArg() {
 
       private String endpointUrl;
-      private SqsAsyncClient client;
+      private SqsClient client;
 
       private String queueArn;
       private String queueUrl;
 
       @Override
-      public void setUp() throws Exception {
+      public void setUp() {
 
         endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
 
-        client = SqsAsyncClient.builder() //
+        client = SqsClient.builder() //
             // .httpClient(AwsCrtAsyncHttpClient.create()) //
             .endpointOverride(URI.create(endpointUrl)) //
             .region(Region.US_EAST_1) //
@@ -49,7 +49,7 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
 
         CreateQueueRequest createQueueRequest = CreateQueueRequest.builder().queueName(queueName).build();
         log(createQueueRequest);
-        CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest).get();
+        CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest);
         log(createQueueResponse);
 
       }
@@ -60,24 +60,24 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
       }
 
       @Override
-      public JsonElement verify() throws Exception {
+      public JsonElement verify() {
         ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder() //
             .queueUrl(queueUrl) //
             .waitTimeSeconds(20) //
             .build();
         log(receiveMessageRequest);
-        ReceiveMessageResponse receiveMessageResponse = client.receiveMessage(receiveMessageRequest).get();
+        ReceiveMessageResponse receiveMessageResponse = client.receiveMessage(receiveMessageRequest);
         log(receiveMessageResponse);
 
         return json(receiveMessageResponse.messages().iterator().next().body());
       }
 
       @Override
-      public void tearDown() throws Exception {
+      public void tearDown() {
 
         DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder().queueUrl(queueUrl).build();
         log(deleteQueueRequest);
-        DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest).get();
+        DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest);
         log(deleteQueueResponse);
 
       }

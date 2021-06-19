@@ -31,23 +31,27 @@ public class Main implements ApplicationRunner {
     System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
   }
 
-  public static void main(String... args) throws Exception {
-    List<InputPluginProvider> inputPluginProviders = Lists.newArrayList();
-    List<OutputPluginProvider> outputPluginProviders = Lists.newArrayList();
-    ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(true);
-    for (BeanDefinition component : provider.findCandidateComponents("awscat")) {
-       Class<?> plugin = Class.forName(component.getBeanClassName());
-      if (InputPluginProvider.class.isAssignableFrom(plugin)) {
-        inputPluginProviders.add(InputPluginProvider.class.cast(plugin.getDeclaredConstructor().newInstance()));
+  public static void main(String... args) {
+    try {
+      List<InputPluginProvider> inputPluginProviders = Lists.newArrayList();
+      List<OutputPluginProvider> outputPluginProviders = Lists.newArrayList();
+      ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(true);
+      for (BeanDefinition component : provider.findCandidateComponents("awscat")) {
+        Class<?> plugin = Class.forName(component.getBeanClassName());
+        if (InputPluginProvider.class.isAssignableFrom(plugin)) {
+          inputPluginProviders.add(InputPluginProvider.class.cast(plugin.getDeclaredConstructor().newInstance()));
+        }
+        if (OutputPluginProvider.class.isAssignableFrom(plugin)) {
+          outputPluginProviders.add(OutputPluginProvider.class.cast(plugin.getDeclaredConstructor().newInstance()));
+        }
       }
-      if (OutputPluginProvider.class.isAssignableFrom(plugin)) {
-        outputPluginProviders.add(OutputPluginProvider.class.cast(plugin.getDeclaredConstructor().newInstance()));
-      }
+      new Main("???", inputPluginProviders, outputPluginProviders).run(new DefaultApplicationArguments(args));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-    new Main("???", inputPluginProviders, outputPluginProviders).run(new DefaultApplicationArguments(args));
   }
 
-  public static void mainzzz(String... args) throws Exception {
+  public static void mainzzz(String... args) {
     // System.err.println("main"+Arrays.asList(args));
     // args = new String[]{"dynamo:MyTable"};
     // args= new String[]{"dynamo:MyTableOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};

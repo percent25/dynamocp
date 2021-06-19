@@ -10,20 +10,21 @@ import com.google.common.collect.Sets;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
 interface SourceArg {
-  void setUp() throws Exception;
-  void load(JsonElement jsonElement) throws Exception;
+  void setUp();
+  void load(JsonElement jsonElement);
   String sourceArg();
-  void tearDown() throws Exception;
+  void tearDown();
 }
 
 interface TargetArg {
-  void setUp() throws Exception;
+  void setUp();
   String targetArg();
-  JsonElement verify() throws Exception;
-  void tearDown() throws Exception;
+  JsonElement verify();
+  void tearDown();
 }
 
 public class MatrixIT {
@@ -31,7 +32,7 @@ public class MatrixIT {
   @Test
   public void matrixTest() throws Exception {
 
-    final JsonElement jsonElement = json("{foo:1,bar:2}");
+    final JsonElement sourceJsonElement = json("{foo:1,bar:2}");
 
     Set<Supplier<SourceArg>> sources = Sets.newHashSet();
     sources.add(new AwsQueueSourceSupplier());
@@ -40,32 +41,44 @@ public class MatrixIT {
     targets.add(new AwsQueueTargetSupplier());
     targets.add(new AwsS3TargetSupplier());
 
-    for (Supplier<SourceArg> eachSourceProvider : sources) {
-      for (Supplier<TargetArg> eachTargetProvider : targets) {
+    SoftAssertions.assertSoftly(softly -> {
+      for (Supplier<SourceArg> eachSourceProvider : sources) {
+        for (Supplier<TargetArg> eachTargetProvider : targets) {
 
-        SourceArg eachSource = eachSourceProvider.get();
-        TargetArg eachTarget = eachTargetProvider.get();
+          SourceArg eachSource = eachSourceProvider.get();
+          TargetArg eachTarget = eachTargetProvider.get();
 
-        eachSource.setUp();
-        try {
-          eachTarget.setUp();
+          eachSource.setUp();
           try {
-            // STEP 1 load the source with the jsonElement
-            eachSource.load(jsonElement);
-            // STEP 2 invoke
-            Main.main(eachSource.sourceArg(), eachTarget.targetArg());
-            // STEP 3 verify the target with the jsonElement
-            assertThat(eachTarget.verify()).isEqualTo(jsonElement);
+            eachTarget.setUp();
+            try {
+
+              // STEP 2 invoke
+              // Main.main(eachSource.sourceArg(), eachTarget.targetArg());
+
+              JsonElement[] targetJsonElement = new JsonElement[1];
+
+              softly.assertThatCode(() -> {
+                // STEP 1 load the source with the jsonElement
+                eachSource.load(sourceJsonElement);
+                // STEP 2 invoke
+                Main.main(eachSource.sourceArg(), eachTarget.targetArg());
+                // STEP 3 verify the target with the jsonElement
+                targetJsonElement[0] = eachTarget.verify();
+              }).doesNotThrowAnyException();
+
+              softly.assertThat(targetJsonElement[0]).isEqualTo(sourceJsonElement);
+
+            } finally {
+              eachTarget.tearDown();
+            }
           } finally {
-            eachTarget.tearDown();
+            eachSource.tearDown();
           }
-        } finally {
-          eachSource.tearDown();
+
         }
-
       }
-    }
-
+    });
   }
 
   private JsonElement json(String json) {
