@@ -63,7 +63,7 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
 
       @Override
       public String targetArg() {
-        return String.format("s3://%s,endpoint=%s", bucket, endpointUrl);
+        return String.format("s3://%s/asdf,endpoint=%s", bucket, endpointUrl);
       }
 
       @Override
