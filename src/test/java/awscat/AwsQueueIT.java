@@ -109,7 +109,7 @@ public class AwsQueueIT {
               // SendMessageResponse sendMessageResponse = client.sendMessage(sendMessageRequest).get();
               // log(sendMessageResponse);
 
-        Systems.stdin = new ByteArrayInputStream(json.toString().getBytes());
+        SystemInPlugin.stdin = new ByteArrayInputStream(json.toString().getBytes());
         Main.main("-", String.format("%s,endpoint=%s", queueArn, endpointUrl));
 
     
@@ -118,7 +118,7 @@ public class AwsQueueIT {
         //###TODO aws queue receiver "limit" is broken
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Systems.stdout = new PrintStream(baos);
+        SystemOutPluginProvider.stdout = new PrintStream(baos);
         Main.main(String.format("%s,endpoint=%s,limit=1", queueArn, endpointUrl));
 
         assertThat(json(baos.toString())).isEqualTo(json);

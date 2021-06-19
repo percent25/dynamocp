@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.function.Supplier;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -43,6 +44,9 @@ class SystemOutPlugin implements OutputPlugin {
 // @Service
 public class SystemOutPluginProvider implements OutputPluginProvider {
 
+  @VisibleForTesting
+  public static PrintStream stdout = System.out;
+
   // out.txt,append=true
   class SystemOutOptions {
     boolean append;
@@ -72,7 +76,7 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
 
   @Override
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
-    PrintStream out = "-".equals(file) ? Systems.stdout : new PrintStream(new BufferedOutputStream(new FileOutputStream(file, options.append)));
+    PrintStream out = "-".equals(file) ? stdout : new PrintStream(new BufferedOutputStream(new FileOutputStream(file, options.append)));
     return ()->new SystemOutPlugin(out);
   }
 

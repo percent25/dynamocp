@@ -106,7 +106,7 @@ public class AwsS3IT {
 
               // STEP 1 load
 
-        Systems.stdin = new ByteArrayInputStream(jsonElement.toString().getBytes());
+        SystemInPlugin.stdin = new ByteArrayInputStream(jsonElement.toString().getBytes());
         Main.main("-", String.format("s3://%s/myprefix,endpoint=%s", bucket, endpointUrl));
     
         //###TODO aws queue receiver "limit" is broken

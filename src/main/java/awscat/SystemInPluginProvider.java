@@ -2,6 +2,7 @@ package awscat;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -22,6 +24,9 @@ import helpers.LogHelper;
 import helpers.CallerBlocksPolicy;
 
 class SystemInPlugin implements InputPlugin {
+
+  @VisibleForTesting
+  public static InputStream stdin = System.in;
 
   private final String file;
   private final int concurrency;
@@ -67,7 +72,7 @@ class SystemInPlugin implements InputPlugin {
       List<JsonElement> partition = new ArrayList<>();
       {
         do {
-          final BufferedReader br = new BufferedReader(new InputStreamReader("-".equals(file) ? Systems.stdin : new FileInputStream(file)));
+          final BufferedReader br = new BufferedReader(new InputStreamReader("-".equals(file) ? stdin : new FileInputStream(file)));
           try {
             JsonStreamParser parser = new JsonStreamParser(br);
             while (parser.hasNext()) {
