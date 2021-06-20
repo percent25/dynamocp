@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -12,6 +14,17 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 public class MoreDynamo {
 
   private static ObjectMapper objectMapper = new ObjectMapper();
+
+  public static JsonElement parse(Map<String, AttributeValue> item) {
+    JsonElement jsonElement = new Gson().toJsonTree(Maps.transformValues(item, value -> {
+      try {
+        return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }));
+    return jsonElement;
+  }
 
   public static Map<String, AttributeValue> render(JsonElement jsonElement) {
     try {
