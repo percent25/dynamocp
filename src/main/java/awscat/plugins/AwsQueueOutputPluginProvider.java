@@ -53,7 +53,7 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
-    SqsAsyncClient sqsClient = AwsHelper.configClient(SqsAsyncClient.builder(), options).build();
+    SqsAsyncClient sqsClient = AwsHelper.create(SqsAsyncClient.builder(), options);
 
     String queueUrl = queueArnOrUrl;
     // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue

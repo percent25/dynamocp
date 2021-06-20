@@ -118,7 +118,7 @@ public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
   @Override
   public InputPlugin activate(String arg) throws Exception {
     int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
-    SqsAsyncClient sqsClient = AwsHelper.configClient(SqsAsyncClient.builder(), options).build();
+    SqsAsyncClient sqsClient = AwsHelper.create(SqsAsyncClient.builder(), options);
 
     String queueUrl = queueArnOrUrl;
     // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue

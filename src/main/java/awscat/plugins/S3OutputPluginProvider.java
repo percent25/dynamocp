@@ -41,7 +41,7 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
 
         Options options = Args.options(arg, Options.class);
 
-        S3AsyncClient client = AwsHelper.configClient(S3AsyncClient.builder(), options).build();
+        S3AsyncClient client = AwsHelper.create(S3AsyncClient.builder(), options);
 
         // Note- transport is thread safe
         ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsS3Export(client, bucket, exportPrefix);
