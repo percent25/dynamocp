@@ -6,7 +6,9 @@ public class SystemInOutTest {
 
   @Test
   public void testSystemInOut() {
-    new InOutRunner(new SystemInSourceSupplier().get(), new SystemOutTargetSupplier().get()).run("{foo:1}");
+    new InOutRunner( //
+        new SystemInSourceSupplier().get(), new SystemOutTargetSupplier().get() //
+    ).run();
   }
 
 }

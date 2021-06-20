@@ -16,8 +16,12 @@ public class InOutRunner {
     this.target = target;
   }
 
+  public void run() {
+    run("{id:{s:abc123}}");
+  }
+
   public void run(String json) {
-    JsonElement jsonElement = jsonElement(json);
+    JsonElement jsonElement = new JsonStreamParser(json).next();
     source.setUp();
     try {
       target.setUp();
@@ -44,10 +48,6 @@ public class InOutRunner {
     } finally {
       source.tearDown();
     }
-  }
-
-  private JsonElement jsonElement(String json) {
-    return new JsonStreamParser(json).next();
   }
 
 }
