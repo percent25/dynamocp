@@ -143,7 +143,7 @@ class DynamoInputPlugin implements InputPlugin {
 
           List<JsonElement> jsonElements = new ArrayList<>();
           for (Map<String, AttributeValue> item : scanResponse.items())
-            jsonElements.add(parse(item));
+            jsonElements.add(MoreDynamo.parse(item));
           if (jsonElements.size()>0) {
             for (List<JsonElement> partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
               run(()->{
@@ -169,33 +169,6 @@ class DynamoInputPlugin implements InputPlugin {
 
       }
     };
-  }
-
-  private final ObjectMapper objectMapper = new ObjectMapper();
-
-  private JsonElement parse(Map<String, AttributeValue> item) {
-    
-    // aesthetics
-    Map<String, AttributeValue> sortedItem = new LinkedHashMap<String, AttributeValue>();
-    for (String key : keySchema)
-      sortedItem.put(key, item.get(key));
-    // if (!options.keys)
-      sortedItem.putAll(ImmutableSortedMap.copyOf(item));
-    
-    JsonElement jsonElement = new Gson().toJsonTree(Maps.transformValues(sortedItem, value -> {
-      try {
-        return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }));
-
-        // // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DataExport.Output.html
-        // var jsonLine = new JsonObject();
-        // jsonLine.add("Item", jsonElement);
-        // return jsonLine;
-
-    return jsonElement;
   }
 
   private void debug(Object... args) {

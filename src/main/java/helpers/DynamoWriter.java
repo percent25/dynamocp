@@ -75,7 +75,7 @@ public class DynamoWriter {
         run(() -> {
           VoidFuture lf = new VoidFuture();
 
-          Map<String, AttributeValue> item = render(jsonElement);
+          Map<String, AttributeValue> item = MoreDynamo.render(jsonElement);
           Map<String, AttributeValue> key = Maps.toMap(keySchema, k -> item.get(k));
 
           // assume write request
@@ -257,19 +257,6 @@ public class DynamoWriter {
     };
     batchWriteItemFutures.add(lf);
     return ArrayListMultimap.create();
-  }
-
-  private final ObjectMapper objectMapper = new ObjectMapper();
-
-  private Map<String, AttributeValue> render(JsonElement jsonElement) throws Exception {
-    Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
-    for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet()) {
-      String key = entry.getKey();
-      JsonElement value = entry.getValue();
-      AttributeValue attributeValue = objectMapper.readValue(value.toString(), AttributeValue.serializableBuilderClass()).build();
-      item.put(key, attributeValue);
-    }
-    return item;
   }
 
   private void debug(Object... args) {

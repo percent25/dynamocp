@@ -40,6 +40,7 @@ public class MatrixIT {
     sources.add(new SystemInSourceSupplier());
 
     Set<Supplier<TargetArg>> targets = Sets.newHashSet();
+    targets.add(new AwsDynamoTargetSupplier());
     targets.add(new AwsKinesisTargetSupplier());
     targets.add(new AwsQueueTargetSupplier());
     targets.add(new AwsS3TargetSupplier());

@@ -15,7 +15,7 @@ public class AwsDynamoIT {
     JsonElement jsonElement = jsonElement("{id:{s:abc123}}");
 
     SourceArg source = new AwsDynamoSourceSupplier().get();
-    TargetArg target = new SystemOutTargetSupplier().get();
+    TargetArg target = new AwsDynamoTargetSupplier().get();
 
     source.setUp();
     try {
