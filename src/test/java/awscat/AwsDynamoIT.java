@@ -26,8 +26,10 @@ public class AwsDynamoIT {
           // load
           source.load(jsonElement);
           // invoke
+          String sourceAddress = AwsBuilder.renderAddress(source.sourceArg());
+          String targetAddress = AwsBuilder.renderAddress(target.targetArg());
           assertThatCode(()->{
-            Main.main(source.sourceArg(), target.targetArg());
+            Main.main(sourceAddress, targetAddress);
           }).doesNotThrowAnyException();
           // verify
           receivedJsonElement[0] = target.verify();
