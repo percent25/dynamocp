@@ -51,14 +51,12 @@ class DynamoOutputPlugin implements OutputPlugin {
 @Service
 public class DynamoOutputPluginProvider implements OutputPluginProvider {
 
-  class Options {
+  class Options extends AwsOptions {
     // concurrency
     public int c;
     // write capacity units
     public int wcu;
     // issue deleteItem (vs putItem)
-    public String endpoint;
-    public String profile;
     public boolean delete;
     public String toString() {
       return new Gson().toJson(this);
