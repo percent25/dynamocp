@@ -5,7 +5,7 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.4.4</version>
-		<relativePath /> <!-- lookup parent from repository -->
+		<!-- <relativePath /> lookup parent from repository -->
 	</parent>
 	<groupId>awscat</groupId>
 	<artifactId>awscat</artifactId>
@@ -129,6 +129,7 @@
         <configuration>
           <systemPropertyVariables>
             <edge.port>${edge.port}</edge.port>
+            <aws.endpoint>http://localhost:${edge.port}</aws.endpoint>
           </systemPropertyVariables>
         </configuration>
 			</plugin>
@@ -146,7 +147,6 @@
 											<images>
 													<image>
 															<name>localstack/localstack</name>
-															<!-- <alias>cassandra</alias> -->
 															<run>
 																	<ports>
 																			<port>${edge.port}:4566</port>
