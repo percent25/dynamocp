@@ -31,7 +31,6 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
     return new TargetArg() {
 
       // beforeAll
-      String endpointUrl;
       S3Client client;
 
       // beforeEach
@@ -40,14 +39,7 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
       @Override
       public void setUp() {
 
-        endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
-
-        client = S3Client.builder() //
-            // .httpClient(AwsCrtAsyncHttpClient.create()) //
-            .endpointOverride(URI.create(endpointUrl)) //
-            .region(Region.US_EAST_1) //
-            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
-            .build();
+        client = AwsBuilder.create(S3Client.builder());
 
         bucket = UUID.randomUUID().toString();
 
@@ -61,7 +53,7 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
 
       @Override
       public String targetArg() {
-        return String.format("s3://%s,endpoint=%s", bucket, endpointUrl);
+        return String.format("s3://%s", bucket);
       }
 
       @Override

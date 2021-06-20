@@ -19,7 +19,6 @@ public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
   public TargetArg get() {
     return new TargetArg() {
 
-      private String endpointUrl;
       private KinesisClient client;
 
       private String streamName;
@@ -27,14 +26,7 @@ public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
       @Override
       public void setUp() {
 
-        endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
-
-        client = KinesisClient.builder() //
-            // .httpClient(AwsCrtAsyncHttpClient.create()) //
-            .endpointOverride(URI.create(endpointUrl)) //
-            .region(Region.US_EAST_1) //
-            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
-            .build();
+        client = AwsBuilder.create(KinesisClient.builder());
 
         streamName = UUID.randomUUID().toString();
 
@@ -48,7 +40,7 @@ public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
 
       @Override
       public String targetArg() {
-        return String.format("kinesis:%s,endpoint=%s", streamName, endpointUrl);
+        return String.format("kinesis:%s", streamName);
       }
 
       @Override

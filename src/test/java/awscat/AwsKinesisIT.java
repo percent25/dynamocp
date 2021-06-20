@@ -20,7 +20,7 @@ public class AwsKinesisIT {
       JsonElement expected = jsonElement("{foo:1}");
       SystemInPlugin.stdin = new ByteArrayInputStream(expected.toString().getBytes());
       
-      Main.main("-", target.targetArg());
+      Main.main("-", AwsBuilder.renderAddress(target.targetArg()));
 
       assertThat(target.verify()).isEqualTo(expected);
     } finally {

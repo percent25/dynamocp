@@ -22,50 +22,39 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
-import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
-import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
-import software.amazon.awssdk.services.sqs.model.DeleteQueueResponse;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
+import software.amazon.awssdk.services.sqs.model.*;
 
-// @SpringBootTest
-// @SpringBootTest(args={"arn:aws:sqs:us-east-1:000000000000:MyQueue,endpoint=http://localhost:4566,limit=1"})
 public class AwsQueueIT {
 
   // beforeAll
-  static String endpointUrl;
   static SqsClient client;
-
-  // beforeEach
-  private String queueName = UUID.randomUUID().toString();
-  private String queueArn = String.format("arn:aws:sqs:us-east-1:000000000000:%s", queueName);
-  private String queueUrl = String.format("%s/000000000000/%s", endpointUrl, queueName);
-
-  public AwsQueueIT() {
-    debug("ctor");
-  }
 
   @BeforeAll
   public static void newClient() {
-
-    endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
-
-    client = SqsClient.builder() //
-        // .httpClient(AwsCrtAsyncHttpClient.create()) //
-        .endpointOverride(URI.create(endpointUrl)) //
-        .region(Region.US_EAST_1) //
-        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
-        .build();
-
+    client = AwsBuilder.create(SqsClient.builder());
   }
+
+  // beforeEach
+  private String queueArn;
+  private String queueUrl;
 
   @BeforeEach
   public void createQueue() throws Exception {
+    String queueName = UUID.randomUUID().toString();
+
     CreateQueueRequest createQueueRequest = CreateQueueRequest.builder().queueName(queueName).build();
     debug(createQueueRequest);
     CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest);
     debug(createQueueResponse);
+
+    GetQueueUrlRequest getQueueUrlRequest = GetQueueUrlRequest.builder().queueName(queueName).build();
+    GetQueueUrlResponse getQueueUrlResponse = client.getQueueUrl(getQueueUrlRequest);
+    queueUrl = getQueueUrlResponse.queueUrl();
+
+    GetQueueAttributesRequest getQueueAttributesRequest = GetQueueAttributesRequest.builder().queueUrl(queueUrl).build();
+    GetQueueAttributesResponse getQueueAttributesResponse = client.getQueueAttributes(getQueueAttributesRequest);
+    queueArn = getQueueAttributesResponse.attributes().get(QueueAttributeName.QUEUE_ARN);
+
   }
 
   @AfterEach
@@ -96,7 +85,8 @@ public class AwsQueueIT {
   @Test
   public void basicReceiveTest() throws Exception {
 
-        // send
+        // STEP 1 send
+
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
@@ -110,16 +100,20 @@ public class AwsQueueIT {
               // log(sendMessageResponse);
 
         SystemInPlugin.stdin = new ByteArrayInputStream(json.toString().getBytes());
-        Main.main("-", String.format("%s,endpoint=%s", queueArn, endpointUrl));
+        String targetAddress = AwsBuilder.renderAddress(queueArn);
+        Main.main("-", targetAddress);
 
-    
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
         //###TODO aws queue receiver "limit" is broken
+
+        // STEP 2 receive
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         SystemOutPluginProvider.stdout = new PrintStream(baos);
-        Main.main(String.format("%s,endpoint=%s,limit=1", queueArn, endpointUrl));
+        
+        String sourceAddress = AwsBuilder.renderAddress(String.format("%s,limit=1", queueArn));
+        Main.main(sourceAddress, "-");
 
         assertThat(json(baos.toString())).isEqualTo(json);
 
@@ -141,7 +135,7 @@ public class AwsQueueIT {
     }
 
     // receive
-    String sourceArg = String.format("%s,endpoint=%s,limit=%s", queueArn, endpointUrl, limit);
+    String sourceArg = AwsBuilder.renderAddress(String.format("%s,limit=%s", queueArn, limit));
     Main.main(sourceArg);
   }
 

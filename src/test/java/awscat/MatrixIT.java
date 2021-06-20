@@ -65,9 +65,11 @@ public class MatrixIT {
                 eachSource.load(sourceJsonElement);
 
                 // STEP 2 invoke
+                String sourceAddress = AwsBuilder.renderAddress(eachSource.sourceArg());
+                String targetAddress = AwsBuilder.renderAddress(eachTarget.targetArg());
                 softly.assertThatCode(() -> {
-                  Main.main(eachSource.sourceArg(), eachTarget.targetArg());
-                }).as("%s %s", eachSource, eachTarget).doesNotThrowAnyException();
+                  Main.main(sourceAddress, targetAddress);
+                }).as("%s %s", sourceAddress, targetAddress).doesNotThrowAnyException();
 
                 // STEP 3 verify the target with the jsonElement
                 targetJsonElement[0] = eachTarget.verify();

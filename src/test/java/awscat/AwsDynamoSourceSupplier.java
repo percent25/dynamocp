@@ -5,8 +5,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonStreamParser;
 
 import helpers.MoreDynamo;
 import software.amazon.awssdk.auth.credentials.*;
@@ -20,21 +22,12 @@ public class AwsDynamoSourceSupplier implements Supplier<SourceArg> {
   public SourceArg get() {
     return new SourceArg() {
 
-      private String endpointUrl;
       private DynamoDbClient client;
-
       private final String tableName = UUID.randomUUID().toString();
 
       @Override
       public void setUp() {
-        endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
-
-        client = DynamoDbClient.builder() //
-            // .httpClient(AwsCrtAsyncHttpClient.create()) //
-            .endpointOverride(URI.create(endpointUrl)) //
-            .region(Region.US_EAST_1) //
-            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
-            .build();
+        client = AwsBuilder.create(DynamoDbClient.builder());
 
         KeySchemaElement keySchemaElement = KeySchemaElement.builder() //
             .keyType(KeyType.HASH) //
@@ -73,7 +66,7 @@ public class AwsDynamoSourceSupplier implements Supplier<SourceArg> {
 
       @Override
       public String sourceArg() {
-        return String.format("dynamo:%s,endpoint=%s,limit=1", tableName, endpointUrl);
+        return String.format("dynamo:%s,limit=1", tableName);
       }
 
       @Override
@@ -95,7 +88,16 @@ public class AwsDynamoSourceSupplier implements Supplier<SourceArg> {
   public static void main(String... args) throws Exception {
     SourceArg source = new AwsDynamoSourceSupplier().get();
     source.setUp();
-    source.load(new JsonObject());
+    try {
+      source.load(jsonElement("{id:{s:abc123}}"));
+      System.out.println(source.sourceArg());
+    } finally {
+      source.tearDown();
+    }
+  }
+
+  static JsonElement jsonElement(String json) {
+    return new JsonStreamParser(json).next();
   }
 
 }

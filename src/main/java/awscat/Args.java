@@ -1,5 +1,6 @@
 package awscat;
 
+import java.lang.reflect.Type;
 import java.util.*;
 
 import com.google.common.base.*;
@@ -8,14 +9,14 @@ import com.google.gson.*;
 import org.springframework.boot.*;
 
 // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
-public class Args {
+public class Args { //###TODO RENAME TO Addresses
     /**
      * parseArg
      * 
      * @param arg e.g., "dynamo:MyTable,c=1,delete=true,wcu=5"
      * @return e.g., "dynamo:MyTable"
      */
-    public static String base(String arg) {
+    public static String base(String arg) { //###TODO RENAME TO ADDRESSBASE
 
         // name,foo=1,bar=2
         // ns:name,foo=1,bar=2
@@ -30,7 +31,7 @@ public class Args {
     }
 
     // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
-    public static <T> T options(String arg, Class<T> classOfT) {
+    public static <T> T options(String arg, Type typeOfT) { //###TODO RENAME TO ADDRESSOPTIONS
         Map<String, String> options = new HashMap<>();
         Iterator<String> iter = Splitter.on(",").trimResults().split(arg).iterator();
         iter.next();
@@ -42,8 +43,11 @@ public class Args {
                 value = keyValue.next();
             options.put(key, value);
         }
-        return new Gson().fromJson(new Gson().toJson(options), classOfT);
+        return new Gson().fromJson(new Gson().toJson(options), typeOfT);
     }
+    // public static <T> T options(String arg, Class<T> classOfT) { //###TODO RENAME TO ADDRESSOPTIONS
+    //     return options(arg, (Type) classOfT);
+    // }
   
     // public static String source(ApplicationArguments args) {
     //     return parseArg(args.getNonOptionArgs().get(0));

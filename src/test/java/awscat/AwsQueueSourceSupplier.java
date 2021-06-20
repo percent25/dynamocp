@@ -14,6 +14,11 @@ import software.amazon.awssdk.services.sqs.model.CreateQueueRequest;
 import software.amazon.awssdk.services.sqs.model.CreateQueueResponse;
 import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest;
 import software.amazon.awssdk.services.sqs.model.DeleteQueueResponse;
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
+import software.amazon.awssdk.services.sqs.model.GetQueueAttributesResponse;
+import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
+import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
@@ -22,8 +27,6 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
   @Override
   public SourceArg get() {
     return new SourceArg() {
-
-      String endpointUrl;
       SqsClient client;
 
       String queueArn;
@@ -31,24 +34,22 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
 
       @Override
       public void setUp() {
-        endpointUrl = String.format("http://localhost:%s", System.getProperty("edge.port", "4566"));
-
-        client = SqsClient.builder() //
-            // .httpClient(AwsCrtAsyncHttpClient.create()) //
-            .endpointOverride(URI.create(endpointUrl)) //
-            .region(Region.US_EAST_1) //
-            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
-            .build();
+        client = AwsBuilder.create(SqsClient.builder());
 
         String queueName = UUID.randomUUID().toString();
-
-        queueArn = String.format("arn:aws:sqs:us-east-1:000000000000:%s", queueName);
-        queueUrl = String.format("%s/000000000000/%s", endpointUrl, queueName);
 
         CreateQueueRequest createRequest = CreateQueueRequest.builder().queueName(queueName).build();
         log(createRequest);
         CreateQueueResponse createResponse = client.createQueue(createRequest);
         log(createResponse);
+        
+        GetQueueUrlRequest getQueueUrlRequest = GetQueueUrlRequest.builder().queueName(queueName).build();
+        GetQueueUrlResponse getQueueUrlResponse = client.getQueueUrl(getQueueUrlRequest);
+        queueUrl = getQueueUrlResponse.queueUrl();
+
+        GetQueueAttributesRequest getQueueAttributesRequest = GetQueueAttributesRequest.builder().queueUrl(queueUrl).build();
+        GetQueueAttributesResponse getQueueAttributesResponse = client.getQueueAttributes(getQueueAttributesRequest);
+        queueArn = getQueueAttributesResponse.attributes().get(QueueAttributeName.QUEUE_ARN);
       }
 
       @Override
@@ -64,7 +65,7 @@ public class AwsQueueSourceSupplier implements Supplier<SourceArg> {
 
       @Override
       public String sourceArg() {
-        return String.format("%s,endpoint=%s,limit=1", queueArn, endpointUrl);
+        return String.format("%s,limit=1", queueArn);
       }
 
       @Override
