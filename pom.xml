@@ -136,6 +136,34 @@
 	</build>
 
 	<profiles>
+
+		<!-- aws -->
+		<profile>
+			<id>aws</id>
+			<build>
+				<plugins>
+					<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-failsafe-plugin</artifactId>
+							<!-- <version>2.22.1</version> -->
+							<executions>
+									<execution>
+											<goals>
+													<goal>integration-test</goal>
+													<goal>verify</goal>
+											</goals>
+									</execution>
+							</executions>
+						<configuration>
+							<systemPropertyVariables>
+							</systemPropertyVariables>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
+		<!-- localstack -->
 		<profile>
 			<id>localstack</id>
 			<build>
@@ -196,6 +224,7 @@
 				</plugins>
 			</build>
 		</profile>
+		
 	</profiles>
 
 </project>
