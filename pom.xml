@@ -114,65 +114,6 @@
 					<embeddedLaunchScript>custom.script</embeddedLaunchScript>
 				</configuration>
 			</plugin>
-			<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-failsafe-plugin</artifactId>
-					<!-- <version>2.22.1</version> -->
-					<executions>
-							<execution>
-									<goals>
-											<goal>integration-test</goal>
-											<goal>verify</goal>
-									</goals>
-							</execution>
-					</executions>
-        <configuration>
-          <systemPropertyVariables>
-            <edge.port>${edge.port}</edge.port>
-            <aws.endpoint>http://localhost:${edge.port}</aws.endpoint>
-          </systemPropertyVariables>
-        </configuration>
-			</plugin>
-			<plugin>
-					<groupId>io.fabric8</groupId>
-					<artifactId>docker-maven-plugin</artifactId>
-					<!-- <version>0.20.1</version> -->
-					<executions>
-							<execution>
-									<id>add-localstack</id>
-									<goals>
-											<goal>start</goal>
-									</goals>
-									<configuration>
-											<images>
-													<image>
-															<name>localstack/localstack</name>
-															<run>
-																	<ports>
-																			<port>${edge.port}:4566</port>
-																	</ports>
-																	<wait>
-																		<!-- <tcp>
-																			<ports>
-																				<port>4566</port>
-																			</ports>
-																		</tcp> -->
-																		<log>Ready.</log>
-																		<time>60000</time>
-																	</wait>
-															</run>
-													</image>
-											</images>
-									</configuration>
-							</execution>
-							<execution>
-									<id>remove-localstack</id>
-									<goals>
-											<goal>stop</goal>
-									</goals>
-							</execution>
-					</executions>
-			</plugin>
 			<!-- <plugin>
 					<groupId>org.jacoco</groupId>
 					<artifactId>jacoco-maven-plugin</artifactId>
@@ -193,5 +134,68 @@
 			</plugin> -->
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>localstack</id>
+			<build>
+				<plugins>
+					<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-failsafe-plugin</artifactId>
+							<!-- <version>2.22.1</version> -->
+							<executions>
+									<execution>
+											<goals>
+													<goal>integration-test</goal>
+													<goal>verify</goal>
+											</goals>
+									</execution>
+							</executions>
+						<configuration>
+							<systemPropertyVariables>
+								<aws.endpoint>http://localhost:${edge.port}</aws.endpoint>
+							</systemPropertyVariables>
+						</configuration>
+					</plugin>
+					<plugin>
+							<groupId>io.fabric8</groupId>
+							<artifactId>docker-maven-plugin</artifactId>
+							<!-- <version>0.20.1</version> -->
+							<executions>
+									<execution>
+											<id>add-localstack</id>
+											<goals>
+													<goal>start</goal>
+											</goals>
+											<configuration>
+													<images>
+															<image>
+																	<name>localstack/localstack</name>
+																	<run>
+																			<ports>
+																					<port>${edge.port}:4566</port>
+																			</ports>
+																			<wait>
+																				<log>Ready.</log>
+																				<time>60000</time>
+																			</wait>
+																	</run>
+															</image>
+													</images>
+											</configuration>
+									</execution>
+									<execution>
+											<id>remove-localstack</id>
+											<goals>
+													<goal>stop</goal>
+											</goals>
+									</execution>
+							</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>
