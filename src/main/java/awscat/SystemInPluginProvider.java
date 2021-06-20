@@ -127,8 +127,8 @@ public class SystemInPluginProvider extends AbstractInputPluginProvider {
 
   @Override
   public InputPlugin activate(String arg) throws Exception {
-    String file = Args.base(arg);
-    SystemInOptions options = Args.options(arg, SystemInOptions.class);
+    String file = Addresses.base(arg);
+    SystemInOptions options = Addresses.options(arg, SystemInOptions.class);
     return new SystemInPlugin(file, options.c, options.cycle, options.limit);
   }
 

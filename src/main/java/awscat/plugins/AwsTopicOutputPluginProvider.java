@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 import com.google.common.base.MoreObjects;
 import com.google.gson.Gson;
 
-import awscat.Args;
+import awscat.Addresses;
 import awscat.OutputPlugin;
 import awscat.OutputPluginProvider;
 
@@ -38,8 +38,8 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
 
     @Override
     public boolean canActivate(String arg) {
-        topicArn = Args.base(arg);
-        options = Args.options(arg, Options.class);
+        topicArn = Addresses.base(arg);
+        options = Addresses.options(arg, Options.class);
         return topicArn.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)");
     }
 

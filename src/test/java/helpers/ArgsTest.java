@@ -25,7 +25,7 @@ public class ArgsTest {
   @Test
   public void argsTest() {
 
-    Options options = Args.options("basepart,foo=abc,bar1,bar2=true,bar3=false,baz1=1", Options.class);
+    Options options = Addresses.options("basepart,foo=abc,bar1,bar2=true,bar3=false,baz1=1", Options.class);
 
     log(options);
 

@@ -69,8 +69,8 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
 
   @Override
   public boolean canActivate(String arg) {
-    file = Args.base(arg);
-    options = Args.options(arg, SystemOutOptions.class);
+    file = Addresses.base(arg);
+    options = Addresses.options(arg, SystemOutOptions.class);
     return true;
   }
 

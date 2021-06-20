@@ -87,8 +87,8 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
-    tableName = Args.base(arg).split(":")[1];
-    options = Args.options(arg, Options.class);
+    tableName = Addresses.base(arg).split(":")[1];
+    options = Addresses.options(arg, Options.class);
 
     DynamoDbAsyncClient client = AwsHelper.create(DynamoDbAsyncClient.builder(), options);
     DynamoDbAsyncClient asyncClient = AwsHelper.create(DynamoDbAsyncClient.builder(), options);

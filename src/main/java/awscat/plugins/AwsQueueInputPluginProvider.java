@@ -104,8 +104,8 @@ public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
   // https://docs.aws.amazon.com/general/latest/gr/sqs-service.html
   @Override
   public boolean canActivate(String arg) {
-    queueArnOrUrl = Args.base(arg);
-    options = Args.options(arg, AwsQueueInputPluginOptions.class);
+    queueArnOrUrl = Addresses.base(arg);
+    options = Addresses.options(arg, AwsQueueInputPluginOptions.class);
     if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
       return true;
     if (queueArnOrUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) //###TODO fips

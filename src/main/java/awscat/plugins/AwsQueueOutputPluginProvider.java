@@ -7,7 +7,7 @@ import com.google.gson.Gson;
 
 import org.springframework.stereotype.Service;
 
-import awscat.Args;
+import awscat.Addresses;
 import awscat.OutputPlugin;
 import awscat.OutputPluginProvider;
 import helpers.ConcatenatedJsonWriter;
@@ -40,8 +40,8 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
   // https://docs.aws.amazon.com/general/latest/gr/sqs-service.html
   @Override
   public boolean canActivate(String arg) {
-    queueArnOrUrl = Args.base(arg);
-    options = Args.options(arg, Options.class);
+    queueArnOrUrl = Addresses.base(arg);
+    options = Addresses.options(arg, Options.class);
     if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
       return true;
     if (queueArnOrUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) //###TODO fips

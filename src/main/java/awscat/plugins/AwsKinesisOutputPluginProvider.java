@@ -6,7 +6,7 @@ import com.google.gson.Gson;
 
 import org.springframework.stereotype.Service;
 
-import awscat.Args;
+import awscat.Addresses;
 import awscat.OutputPlugin;
 import awscat.OutputPluginProvider;
 import helpers.ConcatenatedJsonWriter;
@@ -38,9 +38,9 @@ public class AwsKinesisOutputPluginProvider implements OutputPluginProvider {
     @Override
     public boolean canActivate(String arg) {
         // streamArn = Args.base(arg);
-        options = Args.options(arg, Options.class);
+        options = Addresses.options(arg, Options.class);
 
-        return Args.base(arg).startsWith("kinesis:");
+        return Addresses.base(arg).startsWith("kinesis:");
 
         // "StreamARN": "arn:aws:kinesis:us-east-1:000000000000:stream/MyStream",
         // return streamArn.matches("arn:(.+):kinesis:(.+):(\\d{12}):stream/(.+)");
@@ -50,7 +50,7 @@ public class AwsKinesisOutputPluginProvider implements OutputPluginProvider {
     public Supplier<OutputPlugin> activate(String arg) throws Exception {
         KinesisAsyncClient client = AwsHelper.create(KinesisAsyncClient.builder(), options);
 
-        String streamName = Args.base(arg).split(":")[1];
+        String streamName = Addresses.base(arg).split(":")[1];
 
         // sqs transport is thread-safe
         ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsKinesis(client, streamName);

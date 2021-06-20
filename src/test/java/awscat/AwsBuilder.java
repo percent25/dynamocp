@@ -42,8 +42,8 @@ public class AwsBuilder {
    * @return
    */
   public static String renderAddress(String address) {
-    String base = Args.base(address);
-    Map<String, String> options = Args.options(address, new TypeToken<Map<String, String>>(){}.getType());
+    String base = Addresses.base(address);
+    Map<String, String> options = Addresses.options(address, new TypeToken<Map<String, String>>(){}.getType());
 
     Environment env = new StandardEnvironment();
     String awsEndpoint = env.getProperty("aws.endpoint");

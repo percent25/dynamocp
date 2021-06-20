@@ -7,7 +7,7 @@ import com.google.gson.Gson;
 
 import org.springframework.stereotype.Service;
 
-import awscat.Args;
+import awscat.Addresses;
 import awscat.OutputPlugin;
 import awscat.OutputPluginProvider;
 import helpers.ConcatenatedJsonWriter;
@@ -37,7 +37,7 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
   @Override
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
 
-    URI uri = URI.create(Args.base(arg));
+    URI uri = URI.create(Addresses.base(arg));
     String bucket = uri.getHost();
     String exportPrefix = uri.getPath();
     // s3://mybucket -> ""
@@ -46,7 +46,7 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
     if (exportPrefix.startsWith("/"))
       exportPrefix = exportPrefix.substring(1);
 
-    Options options = Args.options(arg, Options.class);
+    Options options = Addresses.options(arg, Options.class);
 
     S3AsyncClient client = AwsHelper.create(S3AsyncClient.builder(), options);
 

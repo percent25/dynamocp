@@ -230,13 +230,13 @@ public class DynamoInputPluginProvider extends AbstractInputPluginProvider {
 
   @Override
   public boolean canActivate(String arg) {
-    return ImmutableSet.of("dynamo", "dynamodb").contains(Args.base(arg).split(":")[0]);
+    return ImmutableSet.of("dynamo", "dynamodb").contains(Addresses.base(arg).split(":")[0]);
   }
 
   @Override
   public InputPlugin activate(String arg) throws Exception {
-    tableName = Args.base(arg).split(":")[1];  
-    options = Args.options(arg, Options.class);  
+    tableName = Addresses.base(arg).split(":")[1];  
+    options = Addresses.options(arg, Options.class);  
 
     DynamoDbAsyncClient client = AwsHelper.create(DynamoDbAsyncClient.builder(), options);
     DynamoDbAsyncClient asyncClient = AwsHelper.create(DynamoDbAsyncClient.builder(), options);
