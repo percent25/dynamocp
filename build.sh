@@ -2,7 +2,8 @@
 
 REVISION=${1?}
 
-./mvnw -B -Drevision=${REVISION?} verify
+./mvnw verify -B -Drevision=${REVISION?} -Plocalstack
+
 ln -fs target/awscat-${REVISION?}.jar awscat.jar
 
 cat > setup.py << EOF
