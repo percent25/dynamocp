@@ -127,7 +127,7 @@ public class Main implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
-    CatOptions options = Args.parseOptions(args, CatOptions.class);
+    CatOptions options = parseOptions(args, CatOptions.class);
 
     stderr("awscat.jar", projectVersion, options);
 
@@ -255,6 +255,25 @@ public class Main implements ApplicationRunner {
         stderr(" ########## " + failuresFileName + " ########## ");
       }
     }
+  }
+
+  private <T> T parseOptions(ApplicationArguments args, Class<T> classOfT) throws Exception {
+    JsonObject options = new Gson().toJsonTree(classOfT.getConstructor().newInstance()).getAsJsonObject();
+    for (String name : args.getOptionNames()) {
+        String lowerCamel = CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_CAMEL, name);
+        if (args.getOptionValues(name).size()==0) {
+            options.addProperty(lowerCamel, true);
+        } else {
+            for (String value : args.getOptionValues(name)) {
+                JsonElement jsonElement = options.get(lowerCamel);
+                if (jsonElement == null || !jsonElement.isJsonArray())
+                    options.addProperty(lowerCamel, value);
+                else
+                    jsonElement.getAsJsonArray().add(value);
+            }    
+        }
+    }
+    return new Gson().fromJson(options, classOfT);
   }
 
   private InputPluginProvider resolveInputPlugin(String source) {
