@@ -40,7 +40,10 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
         GetQueueUrlResponse getQueueUrlResponse = client.getQueueUrl(getQueueUrlRequest);
         queueUrl = getQueueUrlResponse.queueUrl();
 
-        GetQueueAttributesRequest getQueueAttributesRequest = GetQueueAttributesRequest.builder().queueUrl(queueUrl).build();
+        GetQueueAttributesRequest getQueueAttributesRequest = GetQueueAttributesRequest.builder() //
+            .queueUrl(queueUrl) //
+            .attributeNames(QueueAttributeName.ALL) //
+            .build();
         GetQueueAttributesResponse getQueueAttributesResponse = client.getQueueAttributes(getQueueAttributesRequest);
         queueArn = getQueueAttributesResponse.attributes().get(QueueAttributeName.QUEUE_ARN);
       }
