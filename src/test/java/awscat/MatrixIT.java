@@ -58,6 +58,8 @@ public class MatrixIT {
             try {
 
               JsonElement[] targetJsonElement = new JsonElement[1];
+              String sourceAddress = AwsBuilder.renderAddress(eachSource.sourceArg());
+              String targetAddress = AwsBuilder.renderAddress(eachTarget.targetArg());
 
               try {
 
@@ -65,11 +67,9 @@ public class MatrixIT {
                 eachSource.load(sourceJsonElement);
 
                 // STEP 2 invoke
-                String sourceAddress = AwsBuilder.renderAddress(eachSource.sourceArg());
-                String targetAddress = AwsBuilder.renderAddress(eachTarget.targetArg());
                 softly.assertThatCode(() -> {
                   Main.main(sourceAddress, targetAddress);
-                }).as("%s %s", sourceAddress, targetAddress).doesNotThrowAnyException();
+                }).as("a=%s b=%s c=%s d=%s", eachSource, sourceAddress, eachTarget, targetAddress).doesNotThrowAnyException();
 
                 // STEP 3 verify the target with the jsonElement
                 targetJsonElement[0] = eachTarget.verify();
@@ -80,7 +80,7 @@ public class MatrixIT {
 
               softly //
                   .assertThat(targetJsonElement[0]) //
-                  .as("%s %s", eachSource, eachTarget) //
+                  .as("a=%s b=%s c=%s d=%s", eachSource, sourceAddress, eachTarget, targetAddress) //
                   .isEqualTo(sourceJsonElement);
 
             } finally {
