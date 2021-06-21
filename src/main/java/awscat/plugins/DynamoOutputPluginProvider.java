@@ -68,7 +68,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public String help() {
-      return "dynamo:<tableName>[,c,wcu,endpoint,profile,delete]";
+      return "dynamodb:<tableName>[,c,wcu,endpoint,profile,delete]";
   }
 
   @Override

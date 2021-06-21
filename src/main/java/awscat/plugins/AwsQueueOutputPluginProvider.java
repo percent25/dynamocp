@@ -14,6 +14,7 @@ import helpers.ConcatenatedJsonWriter;
 import helpers.ConcatenatedJsonWriterTransportAwsQueue;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
+import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
 
 @Service
 public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
@@ -24,7 +25,7 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
     }
   }
 
-  private String queueArnOrUrl;
+  private String queueUrl;
   private Options options;
 
   @Override
@@ -34,19 +35,21 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("queueArnOrUrl", queueArnOrUrl).toString();
+    return MoreObjects.toStringHelper(this).add("queueUrl", queueUrl).toString();
   }
 
   // https://docs.aws.amazon.com/general/latest/gr/sqs-service.html
   @Override
   public boolean canActivate(String arg) {
-    queueArnOrUrl = Addresses.base(arg);
+    queueUrl = Addresses.base(arg);
     options = Addresses.options(arg, Options.class);
-    if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
+    if ("sqs".equals(queueUrl.split(":")[0]))
       return true;
-    if (queueArnOrUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) //###TODO fips
+    if (queueUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
       return true;
-    if (queueArnOrUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)")) // legacy
+    if (queueUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) //###TODO fips
+      return true;
+    if (queueUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)")) // legacy
       return true;
     return false;
   }
@@ -55,15 +58,20 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
     SqsAsyncClient sqsClient = AwsHelper.create(SqsAsyncClient.builder(), options);
 
-    String queueUrl = queueArnOrUrl;
     // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
-    if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
+    if (queueUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
       // yes
-      String queueName = queueArnOrUrl.split(":")[5];
-      queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).get().queueUrl();
+      queueUrl = String.format("sqs:%s", queueUrl.split(":")[5]);
     }
 
-    // sqs transport is thread-safe
+    if ("sqs".equals(queueUrl.split(":")[0])) {
+      String queueName = queueUrl.split(":")[1];
+      GetQueueUrlRequest getQueueUrlRequest = GetQueueUrlRequest.builder().queueName(queueName).build();
+      GetQueueUrlResponse getQueueUrlResponse = sqsClient.getQueueUrl(getQueueUrlRequest).get();
+      queueUrl = getQueueUrlResponse.queueUrl();
+    }
+
+    // sqs transport is thread-safe therefore the supplier can re-use it
     ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsQueue(sqsClient, queueUrl);
 
     // ConcatenatedJsonWriter is not thread-safe

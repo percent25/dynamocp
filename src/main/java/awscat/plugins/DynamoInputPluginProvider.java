@@ -193,7 +193,7 @@ public class DynamoInputPluginProvider extends AbstractInputPluginProvider {
   private Options options;
 
   public DynamoInputPluginProvider() {
-    super("dynamo:<tableName>", Options.class);
+    super("dynamodb:<tableName>", Options.class);
   }
 
   public String toString() {

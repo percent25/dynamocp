@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import helpers.*;
 import software.amazon.awssdk.services.sqs.*;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
+import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
 
 class AwsQueueInputPlugin implements InputPlugin {
 
@@ -88,7 +89,7 @@ class AwsQueueInputPluginOptions extends AwsOptions {
 @Service
 public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
 
-  private String queueArnOrUrl;
+  private String queueUrl;
   private AwsQueueInputPluginOptions options;
 
   public AwsQueueInputPluginProvider() {
@@ -98,19 +99,21 @@ public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
   @Override
   public String toString() {
     // return new Gson().toJson(this);
-    return MoreObjects.toStringHelper(this).add("queueArnOrUrl", queueArnOrUrl).add("options", options).toString();
+    return MoreObjects.toStringHelper(this).add("queueUrl", queueUrl).add("options", options).toString();
   }
 
   // https://docs.aws.amazon.com/general/latest/gr/sqs-service.html
   @Override
   public boolean canActivate(String arg) {
-    queueArnOrUrl = Addresses.base(arg);
+    queueUrl = Addresses.base(arg);
     options = Addresses.options(arg, AwsQueueInputPluginOptions.class);
-    if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
+    if ("sqs".equals(queueUrl.split(":")[0]))
       return true;
-    if (queueArnOrUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) //###TODO fips
+    if (queueUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
       return true;
-    if (queueArnOrUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)")) // legacy
+    if (queueUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) //###TODO fips
+      return true;
+    if (queueUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)")) // legacy
       return true;
     return false;
   }
@@ -120,12 +123,17 @@ public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
     int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
     SqsAsyncClient sqsClient = AwsHelper.create(SqsAsyncClient.builder(), options);
 
-    String queueUrl = queueArnOrUrl;
     // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
-    if (queueArnOrUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
-        // yes
-        String queueName = queueArnOrUrl.split(":")[5];
-        queueUrl = sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()).get().queueUrl();
+    if (queueUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
+      // yes
+      queueUrl = String.format("sqs:%s", queueUrl.split(":")[5]);
+    }
+
+    if ("sqs".equals(queueUrl.split(":")[0])) {
+      String queueName = queueUrl.split(":")[1];
+      GetQueueUrlRequest getQueueUrlRequest = GetQueueUrlRequest.builder().queueName(queueName).build();
+      GetQueueUrlResponse getQueueUrlResponse = sqsClient.getQueueUrl(getQueueUrlRequest).get();
+      queueUrl = getQueueUrlResponse.queueUrl();
     }
 
     return new AwsQueueInputPlugin(new AwsQueueReceiver(sqsClient, queueUrl, c), options.limit);
