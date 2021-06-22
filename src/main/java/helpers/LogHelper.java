@@ -20,12 +20,15 @@ public class LogHelper {
     this.self = self;
   }
 
+  // ctlplane
   public void debug(Object... args) {
     // System.out.println(self.getClass().getSimpleName()+Lists.newArrayList(args));
     LoggerFactory.getLogger(self.getClass()).debug(Strings.repeat("{} ", args.length), args);
   }
 
+  // dataplane
   public void trace(Object... args) {
+    // System.out.println(self.getClass().getSimpleName()+Lists.newArrayList(args));
     LoggerFactory.getLogger(self.getClass()).trace(Strings.repeat("{} ", args.length), args);
   }
 
