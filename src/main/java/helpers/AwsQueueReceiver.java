@@ -171,7 +171,7 @@ public class AwsQueueReceiver {
               }
             };
           }, ()->{ // finally
-            // if (receiveMessageWork.in.get()>0)
+            // if (!receiveMessageWork.success || receiveMessageWork.in.get()>0)
               debug(receiveMessageWork);
             doReceiveMessage(i);
           });
