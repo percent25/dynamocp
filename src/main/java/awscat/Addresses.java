@@ -11,10 +11,10 @@ public class Addresses { //###TODO RENAME TO Addresses
     /**
      * parseArg
      * 
-     * @param arg e.g., "dynamo:MyTable,c=1,delete=true,wcu=5"
+     * @param address e.g., "dynamo:MyTable,c=1,delete=true,wcu=5"
      * @return e.g., "dynamo:MyTable"
      */
-    public static String base(String arg) { //###TODO RENAME TO ADDRESSBASE
+    public static String base(String address) {
 
         // name,foo=1,bar=2
         // ns:name,foo=1,bar=2
@@ -22,16 +22,16 @@ public class Addresses { //###TODO RENAME TO Addresses
         // dynamo:MyTable,c=1,delete=true,wcu=5
         // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
 
-        int index = arg.indexOf(",");
+        int index = address.indexOf(",");
         if (index != -1)
-            arg = arg.substring(0, index);
-        return arg;
+            address = address.substring(0, index);
+        return address;
     }
 
     // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
-    public static <T> T options(String arg, Type typeOfT) { //###TODO RENAME TO ADDRESSOPTIONS
+    public static <T> T options(String address, Type typeOfT) {
         Map<String, String> options = new HashMap<>();
-        Iterator<String> iter = Splitter.on(",").trimResults().split(arg).iterator();
+        Iterator<String> iter = Splitter.on(",").trimResults().split(address).iterator();
         iter.next();
         while (iter.hasNext()) {
             Iterator<String> keyValue = Splitter.on("=").trimResults().split(iter.next()).iterator();
