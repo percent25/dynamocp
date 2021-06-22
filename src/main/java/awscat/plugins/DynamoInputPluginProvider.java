@@ -85,7 +85,7 @@ class DynamoInputPlugin implements InputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> read(int mtu) throws Exception {
+  public ListenableFuture<?> run(int mtu) throws Exception {
     debug("read", "mtu", mtu);
 
     return new FutureRunner() {
