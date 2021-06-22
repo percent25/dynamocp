@@ -12,7 +12,7 @@ public interface OutputPluginProvider {
   default int mtu() {
     return -1;
   }
-  boolean canActivate(String arg);
-  Supplier<OutputPlugin> activate(String arg) throws Exception;
+  boolean canActivate(String address);
+  Supplier<OutputPlugin> activate(String address) throws Exception;
   // void deactivate();
 }

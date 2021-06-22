@@ -26,18 +26,18 @@ public interface InputPluginProvider {
   /**
    * canActivate
    * 
-   * @param arg e.g., "dynamo:MyTable,limit=1000"
+   * @param address e.g., "dynamo:MyTable,limit=1000"
    * @return
    */
-  boolean canActivate(String arg);
+  boolean canActivate(String address);
 
   /**
    * activate
    * 
-   * @param arg e.g., "dynamo:MyTable,limit=1000"
+   * @param address e.g., "dynamo:MyTable,limit=1000"
    * @return
    * @throws Exception
    */
-  InputPlugin activate(String arg) throws Exception;
+  InputPlugin activate(String address) throws Exception;
 
 }
