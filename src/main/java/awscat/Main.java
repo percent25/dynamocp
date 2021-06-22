@@ -127,7 +127,7 @@ public class Main implements ApplicationRunner {
    */
   @Override
   public void run(ApplicationArguments args) throws Exception {
-    CatOptions options = parseOptions(args, CatOptions.class);
+    CommandOptions options = parseOptions(args, CommandOptions.class);
 
     stderr("awscat.jar", projectVersion, options);
 

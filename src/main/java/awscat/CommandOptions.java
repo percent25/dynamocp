@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.google.gson.Gson;
 
-public class CatOptions {
+public class CommandOptions {
   public boolean help;
   public boolean version;
   
