@@ -9,7 +9,7 @@ public class CatOptions {
   public boolean help;
   public boolean version;
   
-  // the javascript actions to evaluate
+  // javascript filters and transforms
   public final List<String> js = new ArrayList<>();
   
   public String toString() {
