@@ -75,7 +75,7 @@ public class DynamoWriter {
         run(() -> {
           VoidFuture lf = new VoidFuture();
 
-          Map<String, AttributeValue> item = MoreDynamo.render(jsonElement);
+          Map<String, AttributeValue> item = DynamoHelper.render(jsonElement);
           Map<String, AttributeValue> key = Maps.toMap(keySchema, k -> item.get(k));
 
           // assume write request
@@ -177,7 +177,7 @@ public class DynamoWriter {
           // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
           int[] permits = new int[1];
           for (Map<String, AttributeValue> item : items.values()) {
-            int size = MoreDynamo.itemSize(item);
+            int size = DynamoHelper.itemSize(item);
             permits[0] += (size + 1023) / 1024;
           }
           // System.out.println("permits="+permits[0]);

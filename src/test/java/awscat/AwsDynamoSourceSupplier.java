@@ -10,7 +10,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonStreamParser;
 
-import helpers.MoreDynamo;
+import helpers.DynamoHelper;
 import software.amazon.awssdk.auth.credentials.*;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.*;
@@ -54,7 +54,7 @@ public class AwsDynamoSourceSupplier implements Supplier<SourceArg> {
 
       @Override
       public void load(JsonElement jsonElement) {
-        Map<String, AttributeValue> item = MoreDynamo.render(jsonElement);
+        Map<String, AttributeValue> item = DynamoHelper.render(jsonElement);
         PutItemRequest putItemRequest = PutItemRequest.builder() //
             .tableName(tableName) //
             .item(item) //

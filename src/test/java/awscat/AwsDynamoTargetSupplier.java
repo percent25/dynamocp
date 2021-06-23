@@ -10,7 +10,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonStreamParser;
 
-import helpers.MoreDynamo;
+import helpers.DynamoHelper;
 import software.amazon.awssdk.auth.credentials.*;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.*;
@@ -61,7 +61,7 @@ public class AwsDynamoTargetSupplier implements Supplier<TargetArg> {
       public JsonElement verify() {
         ScanRequest scanRequest = ScanRequest.builder().tableName(tableName).build();
         ScanResponse scanResponse = client.scan(scanRequest);
-        return MoreDynamo.parse(scanResponse.items().iterator().next());
+        return DynamoHelper.parse(scanResponse.items().iterator().next());
       }
 
       @Override

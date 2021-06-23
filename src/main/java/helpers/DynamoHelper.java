@@ -11,7 +11,7 @@ import com.google.gson.JsonElement;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-public class MoreDynamo {
+public class DynamoHelper {
 
   private static ObjectMapper objectMapper = new ObjectMapper();
 

@@ -143,7 +143,7 @@ class DynamoInputPlugin implements InputPlugin {
 
           List<JsonElement> jsonElements = new ArrayList<>();
           for (Map<String, AttributeValue> item : scanResponse.items())
-            jsonElements.add(MoreDynamo.parse(item));
+            jsonElements.add(DynamoHelper.parse(item));
           if (jsonElements.size()>0) {
             for (List<JsonElement> partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
               run(()->{
