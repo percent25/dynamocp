@@ -2,6 +2,7 @@ package helpers;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,9 +43,10 @@ class ReceiveMessageWork {
   public final String queueUrl;
   public boolean success;
   public String failureMessage;
-  public AtomicInteger in = new AtomicInteger();
-  public AtomicInteger out = new AtomicInteger();
-  public AtomicInteger err = new AtomicInteger();
+  public final AtomicInteger in = new AtomicInteger();
+  public final AtomicInteger inErr = new AtomicInteger();
+  public final AtomicInteger out = new AtomicInteger();
+  public final AtomicInteger outErr = new AtomicInteger();
   public ReceiveMessageWork(String queueUrl) {
     this.queueUrl = queueUrl;
   }
@@ -116,44 +118,51 @@ public class AwsQueueReceiver {
                 run(() -> {
                   ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder() //
                       .queueUrl(queueUrl) //
+                      .maxNumberOfMessages(10) //
                       .waitTimeSeconds(20) //
                       .build();
                   return lf(sqsClient.receiveMessage(receiveMessageRequest));
                 }, receiveMessageResponse -> {
-                  receiveMessageWork.success = true;
-                  if (receiveMessageResponse.hasMessages()) {
-                    for (Message message : receiveMessageResponse.messages()) {
-                      run(() -> {
-                        DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder() //
-                            .queueUrl(queueUrl) //
-                            .receiptHandle(message.receiptHandle()) //
-                            .build();
-                        return lf(sqsClient.deleteMessage(deleteMessageRequest));
-                      }, deleteMessageResponse -> {
+                  run(()->{
+                    List<ListenableFuture<?>> futures = Lists.newArrayList();
+                    if (receiveMessageResponse.hasMessages()) {
+                      for (Message message : receiveMessageResponse.messages()) {
                         run(() -> {
+                          DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder() //
+                              .queueUrl(queueUrl) //
+                              .receiptHandle(message.receiptHandle()) //
+                              .build();
+                          return lf(sqsClient.deleteMessage(deleteMessageRequest));
+                        }, deleteMessageResponse -> {
                           receiveMessageWork.in.incrementAndGet();
-                          String body = message.body();
-                          try {
-                            AwsNotification notification = new Gson().fromJson(body, AwsNotification.class);
-                            if (notification.isNotificationType())
-                              body = notification.Message;
-                          } catch (Exception e) {
-                            // do nothing
-                          }
-                          return listener.apply(body);
-                        }, result -> {
-                          receiveMessageWork.out.incrementAndGet();
-                        }, e -> { // listener
-                          receiveMessageWork.err.incrementAndGet();
-                          receiveMessageWork.failureMessage = "" + e;
-                        }, () -> {
-                        //   debug(record);
+                          run(() -> {
+                            String body = message.body();
+                            try {
+                              AwsNotification notification = new Gson().fromJson(body, AwsNotification.class);
+                              if (notification.isNotificationType())
+                                body = notification.Message;
+                            } catch (Exception e) {
+                              // do nothing
+                            }
+                            return listener.apply(body);
+                          }, result -> {
+                            receiveMessageWork.out.incrementAndGet();
+                          }, e -> { // listener
+                            receiveMessageWork.outErr.incrementAndGet();
+                            receiveMessageWork.failureMessage = "" + e;
+                          });
+                        }, e -> { // deleteMessage
+                          receiveMessageWork.inErr.incrementAndGet();
+                          receiveMessageWork.failureMessage = "deleteMessage:" + e;
                         });
-                      }, e -> { // deleteMessage
-                        receiveMessageWork.failureMessage = "deleteMessage:" + e;
-                      });
+                      }
                     }
-                  }
+                    return Futures.allAsList(futures);
+                  }, asdf->{
+                    receiveMessageWork.success = true;
+                  }, e->{
+                    receiveMessageWork.failureMessage = "" + e;
+                  });
                 }, e -> { // receiveMessage
                   receiveMessageWork.failureMessage = "receiveMessage:" + e;
                   run(() -> {
