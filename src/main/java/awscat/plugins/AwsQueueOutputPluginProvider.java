@@ -47,9 +47,9 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
       return true;
     if (queueUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
       return true;
-    if (queueUrl.matches("https://sqs.(.+).amazonaws.(.*)/(\\d{12})/(.+)")) //###TODO fips
+    if (queueUrl.matches("https://sqs.(.+).amazonaws.(.+)/(\\d{12})/(.+)")) //###TODO fips
       return true;
-    if (queueUrl.matches("https://queue.amazonaws.(.*)/(\\d{12})/(.+)")) // legacy
+    if (queueUrl.matches("https://queue.amazonaws.(.+)/(\\d{12})/(.+)")) // legacy
       return true;
     return false;
   }
@@ -60,11 +60,13 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
 
     // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue
     if (queueUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)")) {
-      // yes
+      // yes- get queueName
       queueUrl = String.format("sqs:%s", queueUrl.split(":")[5]);
     }
 
+    // is it a queueName?
     if ("sqs".equals(queueUrl.split(":")[0])) {
+      // yes - get queueUrl
       String queueName = queueUrl.split(":")[1];
       GetQueueUrlRequest getQueueUrlRequest = GetQueueUrlRequest.builder().queueName(queueName).build();
       GetQueueUrlResponse getQueueUrlResponse = sqsClient.getQueueUrl(getQueueUrlRequest).get();
