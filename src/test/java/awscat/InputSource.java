@@ -2,7 +2,7 @@ package awscat;
 
 import com.google.gson.JsonElement;
 
-interface InputSourceArg {
+interface InputSource {
     void setUp();
 
     void load(JsonElement jsonElement);

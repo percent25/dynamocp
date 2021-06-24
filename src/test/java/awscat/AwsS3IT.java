@@ -14,8 +14,8 @@ public class AwsS3IT {
   public void basicTargetTest() throws Exception {
     JsonElement jsonElement = jsonElement("{foo:1}");
 
-    InputSourceArg source = new SystemInSourceSupplier().get();
-    OutputTargetArg target = new AwsS3TargetSupplier().get();
+    InputSource source = new SystemInSourceSupplier().get();
+    OutputTarget target = new AwsS3TargetSupplier().get();
 
     source.setUp();
     try {

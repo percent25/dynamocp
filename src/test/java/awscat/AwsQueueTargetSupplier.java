@@ -13,11 +13,11 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
-public class AwsQueueTargetSupplier implements Supplier<OutputTargetArg> {
+public class AwsQueueTargetSupplier implements Supplier<OutputTarget> {
 
   @Override
-  public OutputTargetArg get() {
-    return new OutputTargetArg() {
+  public OutputTarget get() {
+    return new OutputTarget() {
 
       private SqsClient client;
 

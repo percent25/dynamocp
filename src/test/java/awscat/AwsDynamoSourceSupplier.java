@@ -16,11 +16,11 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.*;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
-public class AwsDynamoSourceSupplier implements Supplier<InputSourceArg> {
+public class AwsDynamoSourceSupplier implements Supplier<InputSource> {
 
   @Override
-  public InputSourceArg get() {
-    return new InputSourceArg() {
+  public InputSource get() {
+    return new InputSource() {
 
       private DynamoDbClient client;
       private final String tableName = UUID.randomUUID().toString();
@@ -86,7 +86,7 @@ public class AwsDynamoSourceSupplier implements Supplier<InputSourceArg> {
   }
 
   public static void main(String... args) throws Exception {
-    InputSourceArg source = new AwsDynamoSourceSupplier().get();
+    InputSource source = new AwsDynamoSourceSupplier().get();
     source.setUp();
     try {
       source.load(jsonElement("{id:{s:abc123}}"));

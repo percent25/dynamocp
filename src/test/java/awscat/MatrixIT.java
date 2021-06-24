@@ -20,12 +20,12 @@ public class MatrixIT {
 
     final JsonElement sourceJsonElement = jsonElement("{id:{s:abc123}}");
 
-    Set<Supplier<InputSourceArg>> sources = Sets.newHashSet();
+    Set<Supplier<InputSource>> sources = Sets.newHashSet();
     sources.add(new AwsDynamoSourceSupplier());
     sources.add(new AwsQueueSourceSupplier());
     sources.add(new SystemInSourceSupplier());
 
-    Set<Supplier<OutputTargetArg>> targets = Sets.newHashSet();
+    Set<Supplier<OutputTarget>> targets = Sets.newHashSet();
     targets.add(new AwsDynamoTargetSupplier());
     targets.add(new AwsKinesisTargetSupplier());
     targets.add(new AwsQueueTargetSupplier());
@@ -33,11 +33,11 @@ public class MatrixIT {
     targets.add(new SystemOutTargetSupplier());
 
     SoftAssertions.assertSoftly(softly -> {
-      for (Supplier<InputSourceArg> eachSourceProvider : sources) {
-        for (Supplier<OutputTargetArg> eachTargetProvider : targets) {
+      for (Supplier<InputSource> eachSourceProvider : sources) {
+        for (Supplier<OutputTarget> eachTargetProvider : targets) {
 
-          InputSourceArg eachSource = eachSourceProvider.get();
-          OutputTargetArg eachTarget = eachTargetProvider.get();
+          InputSource eachSource = eachSourceProvider.get();
+          OutputTarget eachTarget = eachTargetProvider.get();
 
           eachSource.setUp();
           try {

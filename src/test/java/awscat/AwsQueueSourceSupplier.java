@@ -22,11 +22,11 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-public class AwsQueueSourceSupplier implements Supplier<InputSourceArg> {
+public class AwsQueueSourceSupplier implements Supplier<InputSource> {
 
   @Override
-  public InputSourceArg get() {
-    return new InputSourceArg() {
+  public InputSource get() {
+    return new InputSource() {
       SqsClient client;
 
       String queueArn;

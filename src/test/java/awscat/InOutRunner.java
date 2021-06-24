@@ -8,10 +8,10 @@ import com.google.gson.JsonStreamParser;
 
 public class InOutRunner {
 
-  private final InputSourceArg source;
-  private final OutputTargetArg target;
+  private final InputSource source;
+  private final OutputTarget target;
 
-  public InOutRunner(InputSourceArg source, OutputTargetArg target) {
+  public InOutRunner(InputSource source, OutputTarget target) {
     this.source = source;
     this.target = target;
   }

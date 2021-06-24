@@ -2,7 +2,7 @@ package awscat;
 
 import com.google.gson.JsonElement;
 
-interface OutputTargetArg {
+interface OutputTarget {
     void setUp();
 
     String address();

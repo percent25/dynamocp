@@ -14,7 +14,7 @@ public class AwsKinesisIT {
 
   @Test
   public void basicTargetTest() throws Exception {
-    OutputTargetArg target = new AwsKinesisTargetSupplier().get();
+    OutputTarget target = new AwsKinesisTargetSupplier().get();
     target.setUp();
     try {
       JsonElement expected = jsonElement("{foo:1}");
