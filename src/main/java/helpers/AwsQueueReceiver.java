@@ -193,7 +193,13 @@ public class AwsQueueReceiver {
    * close
    */
   public void close() {
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
     running = false;
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
   }
 
   private void debug(Object... args) {
