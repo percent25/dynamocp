@@ -11,6 +11,7 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+// kinesis firehose style s3 writer
 public class ConcatenatedJsonWriterTransportAwsS3Kinesis implements ConcatenatedJsonWriter.Transport {
     private final S3AsyncClient client;
     private final String bucket;
