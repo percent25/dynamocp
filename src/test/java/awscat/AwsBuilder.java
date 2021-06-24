@@ -54,6 +54,7 @@ public class AwsBuilder {
     if (options.size()==0)
       return base;
 
-    return String.format("%s,%s", base, Joiner.on(",").withKeyValueSeparator("=").join(options));
+    String stringOptions = Joiner.on(",").withKeyValueSeparator("=").join(options);
+    return String.format("%s,%s", base, stringOptions);
   }
 }
