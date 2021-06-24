@@ -27,19 +27,19 @@ import software.amazon.awssdk.services.kinesis.model.Record;
 import software.amazon.awssdk.services.kinesis.model.Shard;
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
 
-class ListShardsWork {
-  public final String streamName;
-  public boolean success;
-  public String failureMessage;
-  public ListShardsWork(String streamName) {
-    this.streamName = streamName;
-  }
-  public String toString() {
-    return getClass().getSimpleName()+new Gson().toJson(this);
-  }
-}
+// class DoStreamWork {
+//   public final String streamName;
+//   public boolean success;
+//   public String failureMessage;
+//   public DoStreamWork(String streamName) {
+//     this.streamName = streamName;
+//   }
+//   public String toString() {
+//     return getClass().getSimpleName()+new Gson().toJson(this);
+//   }
+// }
 
-class GetRecordsWork {
+class GetRecordsWork { //###TODO RENAME TO HANDLESHARDWORK
   public final String streamName;
   public boolean success;
   public String failureMessage;
@@ -60,6 +60,7 @@ public class AwsKinesisReceiver {
   private final KinesisAsyncClient client;
   private final String streamName;
 
+  private boolean running;
   private Function<SdkBytes, ListenableFuture<?>> listener;
 
   /**
@@ -90,55 +91,30 @@ public class AwsKinesisReceiver {
    * start
    * 
    * @see https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html
-   * 
-   * @return
-   * @throws Exception
    */
-  public ListenableFuture<?> start() throws Exception {
+  public void start() throws Exception {
     debug("start", streamName);
-    return new FutureRunner() {
-
+    running = true;
+    new FutureRunner() {
       {
-        doListShards();
-      }
-
-      /**
-       * doListShards
-       */
-      void doListShards() {
-        if (isRunning()) {
-          ListShardsWork listShardsWork = new ListShardsWork(streamName);
-          run(() -> {
-            return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
-          }, listShardsResponse -> {
-            listShardsWork.success = true;
-            if (listShardsResponse.hasShards()) {
-              for (Shard shard : listShardsResponse.shards()) {
-                run(() -> {
-                  GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
-                      .streamName(streamName) //
-                      .shardId(shard.shardId()) //
-                      .shardIteratorType(ShardIteratorType.LATEST) //
-                      .build();
-                  return lf(client.getShardIterator(getShardIteratorRequest));
-                }, getShardIteratorResponse -> {
-                  doGetRecords(getShardIteratorResponse.shardIterator());
-                });
-              }
+        run(() -> {
+          return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
+        }, listShardsResponse -> {
+          if (listShardsResponse.hasShards()) {
+            for (Shard shard : listShardsResponse.shards()) {
+              run(() -> {
+                GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
+                    .streamName(streamName) //
+                    .shardId(shard.shardId()) //
+                    .shardIteratorType(ShardIteratorType.TRIM_HORIZON) //
+                    .build();
+                return lf(client.getShardIterator(getShardIteratorRequest));
+              }, getShardIteratorResponse -> {
+                doGetRecords(getShardIteratorResponse.shardIterator());
+              });
             }
-          }, e->{
-            listShardsWork.failureMessage = ""+e;
-            // backoff/retry
-            try {
-              Thread.sleep(1000);
-            } catch (InterruptedException ie) {
-              ie.printStackTrace();
-            }
-            doListShards();
-          }, ()->{
-            debug(listShardsWork);
-          });
-        }
+          }
+        });
       }
 
       /**
@@ -147,7 +123,7 @@ public class AwsKinesisReceiver {
        * @param shardIterator
        */
       void doGetRecords(String shardIterator) {
-        if (isRunning()) {
+        if (running) {
           GetRecordsWork getRecordsWork = new GetRecordsWork(streamName);
           run(() -> {
 
@@ -209,6 +185,20 @@ public class AwsKinesisReceiver {
     };
   }
 
+  /**
+   * close
+   */
+  public void close() {
+    debug("close", streamName);
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    running = false;
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+  }
+
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
   }
@@ -222,15 +212,14 @@ public class AwsKinesisReceiver {
         .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
         .build();
 
-    AwsKinesisReceiver receiver = new AwsKinesisReceiver(client, "MyStream");
+    AwsKinesisReceiver receiver = new AwsKinesisReceiver(client, "asdf");
     receiver.setListener(bytes -> {
       System.out.println(bytes);
       return Futures.immediateVoidFuture();
     });
-    ListenableFuture<?> lf = receiver.start();
+    receiver.start();
     Thread.sleep(10000);
-    lf.cancel(true); // stop receiver
-    lf.get(); // wait for receiver
+    receiver.close(); // stop receiver
 
   }
 
