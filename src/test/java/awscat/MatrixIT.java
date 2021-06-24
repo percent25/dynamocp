@@ -13,20 +13,6 @@ import com.google.gson.JsonStreamParser;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
-interface InputSourceArg {
-  void setUp();
-  void load(JsonElement jsonElement);
-  String sourceArg();
-  void tearDown();
-}
-
-interface OutputTargetArg {
-  void setUp();
-  String targetArg();
-  JsonElement verify();
-  void tearDown();
-}
-
 public class MatrixIT {
 
   @Test
