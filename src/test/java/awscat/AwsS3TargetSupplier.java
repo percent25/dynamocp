@@ -52,7 +52,7 @@ public class AwsS3TargetSupplier implements Supplier<OutputTargetArg> {
       }
 
       @Override
-      public String targetArg() {
+      public String address() {
         return String.format("s3://%s", bucket);
       }
 
@@ -99,7 +99,7 @@ public class AwsS3TargetSupplier implements Supplier<OutputTargetArg> {
   public static void main(String... args) throws Exception {
     OutputTargetArg target = new AwsS3TargetSupplier().get();
     target.setUp();
-    System.out.println(target.targetArg());
+    System.out.println(target.address());
     target.tearDown();
   }
 

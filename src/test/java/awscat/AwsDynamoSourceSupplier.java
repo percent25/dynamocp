@@ -65,7 +65,7 @@ public class AwsDynamoSourceSupplier implements Supplier<InputSourceArg> {
       }
 
       @Override
-      public String sourceArg() {
+      public String address() {
         return String.format("dynamo:%s,limit=1", tableName);
       }
 
@@ -90,7 +90,7 @@ public class AwsDynamoSourceSupplier implements Supplier<InputSourceArg> {
     source.setUp();
     try {
       source.load(jsonElement("{id:{s:abc123}}"));
-      System.out.println(source.sourceArg());
+      System.out.println(source.address());
     } finally {
       source.tearDown();
     }

@@ -31,8 +31,8 @@ public class InOutRunner {
           // load
           source.load(jsonElement);
           // invoke
-          String sourceAddress = AwsBuilder.renderAddress(source.sourceArg());
-          String targetAddress = AwsBuilder.renderAddress(target.targetArg());
+          String sourceAddress = AwsBuilder.renderAddress(source.address());
+          String targetAddress = AwsBuilder.renderAddress(target.address());
           assertThatCode(() -> {
             Main.main(sourceAddress, targetAddress);
           }).doesNotThrowAnyException();

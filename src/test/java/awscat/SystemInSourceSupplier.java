@@ -24,7 +24,7 @@ public class SystemInSourceSupplier implements Supplier<InputSourceArg> {
       }
 
       @Override
-      public String sourceArg() {
+      public String address() {
         return "-";
       }
 

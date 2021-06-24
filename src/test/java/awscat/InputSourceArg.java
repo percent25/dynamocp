@@ -7,7 +7,7 @@ interface InputSourceArg {
 
     void load(JsonElement jsonElement);
 
-    String sourceArg();
+    String address();
 
     void tearDown();
 }

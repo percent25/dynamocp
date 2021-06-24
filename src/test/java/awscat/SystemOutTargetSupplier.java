@@ -22,7 +22,7 @@ public class SystemOutTargetSupplier implements Supplier<OutputTargetArg> {
       }
 
       @Override
-      public String targetArg() {
+      public String address() {
         return "-";
       }
 

@@ -39,7 +39,7 @@ public class AwsKinesisTargetSupplier implements Supplier<OutputTargetArg> {
       }
 
       @Override
-      public String targetArg() {
+      public String address() {
         return String.format("kinesis:%s", streamName);
       }
 

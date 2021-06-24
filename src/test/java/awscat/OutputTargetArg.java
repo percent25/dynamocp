@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 interface OutputTargetArg {
     void setUp();
 
-    String targetArg();
+    String address();
 
     JsonElement verify();
 

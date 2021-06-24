@@ -45,8 +45,8 @@ public class MatrixIT {
             try {
 
               JsonElement[] targetJsonElement = new JsonElement[1];
-              String sourceAddress = AwsBuilder.renderAddress(eachSource.sourceArg());
-              String targetAddress = AwsBuilder.renderAddress(eachTarget.targetArg());
+              String sourceAddress = AwsBuilder.renderAddress(eachSource.address());
+              String targetAddress = AwsBuilder.renderAddress(eachTarget.address());
 
               try {
 

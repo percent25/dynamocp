@@ -53,7 +53,7 @@ public class AwsDynamoTargetSupplier implements Supplier<OutputTargetArg> {
       }
 
       @Override
-      public String targetArg() {
+      public String address() {
         return String.format("dynamo:%s,limit=1", tableName);
       }
 
@@ -84,7 +84,7 @@ public class AwsDynamoTargetSupplier implements Supplier<OutputTargetArg> {
     OutputTargetArg target = new AwsDynamoTargetSupplier().get();
     target.setUp();
     try {
-      System.out.println(target.targetArg());
+      System.out.println(target.address());
       // verify
     } finally {
       target.tearDown();
