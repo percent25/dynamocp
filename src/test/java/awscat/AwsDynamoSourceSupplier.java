@@ -27,7 +27,7 @@ public class AwsDynamoSourceSupplier implements Supplier<SourceArg> {
 
       @Override
       public void setUp() {
-        client = AwsBuilder.create(DynamoDbClient.builder());
+        client = AwsBuilder.build(DynamoDbClient.builder());
 
         KeySchemaElement keySchemaElement = KeySchemaElement.builder() //
             .keyType(KeyType.HASH) //

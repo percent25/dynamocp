@@ -27,7 +27,7 @@ public class AwsQueueTargetSupplier implements Supplier<TargetArg> {
       @Override
       public void setUp() {
 
-        client = AwsBuilder.create(SqsClient.builder());
+        client = AwsBuilder.build(SqsClient.builder());
 
         String queueName = UUID.randomUUID().toString();
 

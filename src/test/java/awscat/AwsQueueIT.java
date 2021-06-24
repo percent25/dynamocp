@@ -31,7 +31,7 @@ public class AwsQueueIT {
 
   @BeforeAll
   public static void newClient() {
-    client = AwsBuilder.create(SqsClient.builder());
+    client = AwsBuilder.build(SqsClient.builder());
   }
 
   // beforeEach

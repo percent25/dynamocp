@@ -17,14 +17,14 @@ import software.amazon.awssdk.regions.Region;
 
 public class AwsBuilder {
   /**
-   * create
+   * build
    * 
    * @param <B>
    * @param <C>
    * @param builder
    * @return
    */
-  public static <B extends AwsClientBuilder<B, C>, C> C create(B builder) {
+  public static <B extends AwsClientBuilder<B, C>, C> C build(B builder) {
     Environment env = new StandardEnvironment();
     String awsEndpoint = env.getProperty("aws.endpoint");
     if (StringUtils.hasText(awsEndpoint)) {

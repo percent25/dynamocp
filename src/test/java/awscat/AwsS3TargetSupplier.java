@@ -39,7 +39,7 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
       @Override
       public void setUp() {
 
-        client = AwsBuilder.create(S3Client.builder());
+        client = AwsBuilder.build(S3Client.builder());
 
         bucket = UUID.randomUUID().toString();
 

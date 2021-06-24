@@ -26,7 +26,7 @@ public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
       @Override
       public void setUp() {
 
-        client = AwsBuilder.create(KinesisClient.builder());
+        client = AwsBuilder.build(KinesisClient.builder());
 
         streamName = UUID.randomUUID().toString();
 
