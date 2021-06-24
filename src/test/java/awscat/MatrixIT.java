@@ -13,14 +13,14 @@ import com.google.gson.JsonStreamParser;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
-interface SourceArg {
+interface InputSourceArg {
   void setUp();
   void load(JsonElement jsonElement);
   String sourceArg();
   void tearDown();
 }
 
-interface TargetArg {
+interface OutputTargetArg {
   void setUp();
   String targetArg();
   JsonElement verify();
@@ -34,12 +34,12 @@ public class MatrixIT {
 
     final JsonElement sourceJsonElement = jsonElement("{id:{s:abc123}}");
 
-    Set<Supplier<SourceArg>> sources = Sets.newHashSet();
+    Set<Supplier<InputSourceArg>> sources = Sets.newHashSet();
     sources.add(new AwsDynamoSourceSupplier());
     sources.add(new AwsQueueSourceSupplier());
     sources.add(new SystemInSourceSupplier());
 
-    Set<Supplier<TargetArg>> targets = Sets.newHashSet();
+    Set<Supplier<OutputTargetArg>> targets = Sets.newHashSet();
     targets.add(new AwsDynamoTargetSupplier());
     targets.add(new AwsKinesisTargetSupplier());
     targets.add(new AwsQueueTargetSupplier());
@@ -47,11 +47,11 @@ public class MatrixIT {
     targets.add(new SystemOutTargetSupplier());
 
     SoftAssertions.assertSoftly(softly -> {
-      for (Supplier<SourceArg> eachSourceProvider : sources) {
-        for (Supplier<TargetArg> eachTargetProvider : targets) {
+      for (Supplier<InputSourceArg> eachSourceProvider : sources) {
+        for (Supplier<OutputTargetArg> eachTargetProvider : targets) {
 
-          SourceArg eachSource = eachSourceProvider.get();
-          TargetArg eachTarget = eachTargetProvider.get();
+          InputSourceArg eachSource = eachSourceProvider.get();
+          OutputTargetArg eachTarget = eachTargetProvider.get();
 
           eachSource.setUp();
           try {

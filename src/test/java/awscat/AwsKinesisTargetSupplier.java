@@ -13,11 +13,11 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.kinesis.*;
 import software.amazon.awssdk.services.kinesis.model.*;
 
-public class AwsKinesisTargetSupplier implements Supplier<TargetArg> {
+public class AwsKinesisTargetSupplier implements Supplier<OutputTargetArg> {
 
   @Override
-  public TargetArg get() {
-    return new TargetArg() {
+  public OutputTargetArg get() {
+    return new OutputTargetArg() {
 
       private KinesisClient client;
 

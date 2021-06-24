@@ -24,11 +24,11 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
-public class AwsS3TargetSupplier implements Supplier<TargetArg> {
+public class AwsS3TargetSupplier implements Supplier<OutputTargetArg> {
 
   @Override
-  public TargetArg get() {
-    return new TargetArg() {
+  public OutputTargetArg get() {
+    return new OutputTargetArg() {
 
       // beforeAll
       S3Client client;
@@ -97,7 +97,7 @@ public class AwsS3TargetSupplier implements Supplier<TargetArg> {
   }
 
   public static void main(String... args) throws Exception {
-    TargetArg target = new AwsS3TargetSupplier().get();
+    OutputTargetArg target = new AwsS3TargetSupplier().get();
     target.setUp();
     System.out.println(target.targetArg());
     target.tearDown();

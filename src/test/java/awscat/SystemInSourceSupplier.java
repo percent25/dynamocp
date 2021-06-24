@@ -6,10 +6,10 @@ import java.util.function.Supplier;
 
 import com.google.gson.JsonElement;
 
-public class SystemInSourceSupplier implements Supplier<SourceArg> {
+public class SystemInSourceSupplier implements Supplier<InputSourceArg> {
   @Override
-  public SourceArg get() {
-    return new SourceArg() {
+  public InputSourceArg get() {
+    return new InputSourceArg() {
 
       private InputStream stdin;
 

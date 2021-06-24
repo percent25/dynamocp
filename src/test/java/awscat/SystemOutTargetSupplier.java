@@ -7,10 +7,10 @@ import java.util.function.Supplier;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonStreamParser;
 
-public class SystemOutTargetSupplier implements Supplier<TargetArg> {
+public class SystemOutTargetSupplier implements Supplier<OutputTargetArg> {
   @Override
-  public TargetArg get() {
-    return new TargetArg() {
+  public OutputTargetArg get() {
+    return new OutputTargetArg() {
 
       private PrintStream stdout;
       private final ByteArrayOutputStream baos = new ByteArrayOutputStream();

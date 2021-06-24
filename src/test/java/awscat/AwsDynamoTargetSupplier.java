@@ -16,11 +16,11 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.*;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
-public class AwsDynamoTargetSupplier implements Supplier<TargetArg> {
+public class AwsDynamoTargetSupplier implements Supplier<OutputTargetArg> {
 
   @Override
-  public TargetArg get() {
-    return new TargetArg() {
+  public OutputTargetArg get() {
+    return new OutputTargetArg() {
 
       private DynamoDbClient client;
       private final String tableName = UUID.randomUUID().toString();
@@ -81,7 +81,7 @@ public class AwsDynamoTargetSupplier implements Supplier<TargetArg> {
   }
 
   public static void main(String... args) throws Exception {
-    TargetArg target = new AwsDynamoTargetSupplier().get();
+    OutputTargetArg target = new AwsDynamoTargetSupplier().get();
     target.setUp();
     try {
       System.out.println(target.targetArg());
