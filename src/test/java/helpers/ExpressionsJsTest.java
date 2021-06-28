@@ -41,8 +41,8 @@ public class ExpressionsJsTest {
   @Test
   public void boolTest() {
 
-    assertThat(bool(json("{id:{s:1}}"), "e.id.s==1")).isEqualTo(true);
-    assertThat(bool(json("{id:{s:1}}"), "e.id.s==2")).isEqualTo(false);
+    assertThat(filter("{id:{s:1}}", "e.id.s==1")).isEqualTo(true);
+    assertThat(filter("{id:{s:1}}", "e.id.s==2")).isEqualTo(false);
 
     // System.out.println(parser.parseExpression("e.id?.s?.length").getValue(context));
     // System.out.println(parser.parseExpression("e.id?.s?.length>0").getValue(context));
@@ -61,23 +61,27 @@ public class ExpressionsJsTest {
   public void safeNavigationTest() {
 
     assertThrows(Exception.class, ()->{
-      bool(json("null"), "e.id.s==1");
+      filter("null", "e.id.s==1"); // bad style
     });
 
     assertThrows(Exception.class, ()->{
-      bool(json("null"), "e.id?.s==1");
+      filter("null", "e.id?.s==1"); // bad style
     });
 
-    assertThat(bool(json("null"), "e?.id.s==1")).isEqualTo(false);
+    assertThat(filter("null", "e?.id.s==1")).isEqualTo(false); // bad style
 
-    // assertThat(bool(json("null"), "e?.id?.s==1")).isEqualTo(false);
     assertThrows(Exception.class, ()->{
-      bool(json("{}"), "e?.id.s==1");
+      filter("{}", "e?.id.s==1"); // bad style
     });
-    assertThat(bool(json("{}"), "e?.id?.s==1")).isEqualTo(false);
 
-    assertThat(bool(json("{id:{}}"), "e?.id?.s==1")).isEqualTo(false);
-    assertThat(bool(json("{id:{s:1}}"), "e?.id?.s==1")).isEqualTo(true);
+    assertThat(filter("null", "e?.id?.s==1")).isEqualTo(false); // good style
+    assertThat(filter("false", "e?.id?.s==1")).isEqualTo(false); // good style
+    assertThat(filter("0", "e?.id?.s==1")).isEqualTo(false); // good style
+    assertThat(filter("true", "e?.id?.s==1")).isEqualTo(false); // good style
+    assertThat(filter("1", "e?.id?.s==1")).isEqualTo(false); // good style
+    assertThat(filter("{}", "e?.id?.s==1")).isEqualTo(false); // good style
+    assertThat(filter("{id:{}}", "e?.id?.s==1")).isEqualTo(false); // good style
+    assertThat(filter("{id:{s:1}}", "e?.id?.s==1")).isEqualTo(true); // good style
 
   }
 
@@ -89,27 +93,27 @@ public class ExpressionsJsTest {
     // e = new Expressions(e).apply("e.id=222");
     // value = new Expressions(e).value("e?.id?.s?.length()>0");
         
-    assertThat(output(json("{}"), "e")).isEqualTo(json("{}")); // identity
+    assertThat(output("{}", "e")).isEqualTo(jsonElement("{}")); // identity
 
     // unconditional transform
-    assertThat(output(json("null"), "e='abc'")).isEqualTo(json("'abc'"));
-    assertThat(output(json("null"), "e='abc'").getAsString()).isEqualTo("abc");
+    assertThat(output("null", "e='abc'")).isEqualTo(jsonElement("'abc'"));
+    assertThat(output("null", "e='abc'").getAsString()).isEqualTo("abc");
 
-    assertThat(output(json("{}"), "e=1")).isEqualTo(json("1"));
-    assertThat(output(json("{}"), "e=1").getAsInt()).isEqualTo(1);
-    assertThat(output(json("{}"), "e=1.2")).isEqualTo(json("1.2"));
-    assertThat(output(json("{}"), "e=1.2").getAsDouble()).isEqualTo(1.2);
+    assertThat(output("{}", "e=1")).isEqualTo(jsonElement("1"));
+    assertThat(output("{}", "e=1").getAsInt()).isEqualTo(1);
+    assertThat(output("{}", "e=1.2")).isEqualTo(jsonElement("1.2"));
+    assertThat(output("{}", "e=1.2").getAsDouble()).isEqualTo(1.2);
 
-    assertThat(output(json("{}"), "e=now()").getAsString()).isEqualTo(now);
-    assertThat(output(json("{}"), "e=uuid()").getAsString()).hasSize(36);
+    assertThat(output("{}", "e=now()").getAsString()).isEqualTo(now);
+    assertThat(output("{}", "e=uuid()").getAsString()).hasSize(36);
 
     // assertThat(eval(e, "e=randomString(24)").getAsString()).hasSize(32);
 
-    assertThat(output(json("{}"), "e=[1,2,3]")).isEqualTo(json("[1,2,3]"));
+    assertThat(output("{}", "e=[1,2,3]")).isEqualTo(jsonElement("[1,2,3]"));
 
-    assertThat(output(json("{}"), "e.id={}")).isEqualTo(json("{id:{}}"));
-    assertThat(output(json("{}"), "e.id={s:'foo'}")).isEqualTo(json("{id:{s:'foo'}}"));
-    assertThat(output(json("{}"), "e.id={s:'bar'}")).isEqualTo(json("{id:{s:'bar'}}"));
+    assertThat(output("{}", "e.id={}")).isEqualTo(jsonElement("{id:{}}"));
+    assertThat(output("{}", "e.id={s:'foo'}")).isEqualTo(jsonElement("{id:{s:'foo'}}"));
+    assertThat(output("{}", "e.id={s:'bar'}")).isEqualTo(jsonElement("{id:{s:'bar'}}"));
 
   }
 
@@ -127,11 +131,11 @@ public class ExpressionsJsTest {
       for (Entry<String, String> entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
         String fmt = entry.getKey();
         String str = entry.getValue();
-        assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s", e).isEqualTo(true);
+        assertThat(filter(String.format(fmt, e), str)).as("jsonElement=%s", e).isEqualTo(true);
       }
     }
 
-    assertThat(bool(json("[1]"), "e")).isEqualTo(true); //###TODO put this in someTruthy ?
+    assertThat(filter("[1]", "e")).isEqualTo(true); //###TODO put this in someTruthy ?
 
   }
 
@@ -148,7 +152,7 @@ public class ExpressionsJsTest {
       for (Entry<String, String> entry : ImmutableMap.of("%s", "e", "[%s]", "e[0]", "{e:%s}", "e.e").entrySet()) {
         String fmt = entry.getKey();
         String str = entry.getValue();
-        assertThat(bool(json(String.format(fmt, e)), str)).as("jsonElement=%s fmt=%s str=%s", e, fmt, str).isEqualTo(false);
+        assertThat(filter(String.format(fmt, e), str)).as("jsonElement=%s fmt=%s str=%s", e, fmt, str).isEqualTo(false);
       }
     }
 
@@ -157,25 +161,25 @@ public class ExpressionsJsTest {
   @Test
   public void nullToBoolTest() {
 
-    assertThat(bool(json("{}"), "e?.test")).isEqualTo(false);
-    assertThat(bool(json("{test:'true'}"), "e?.test")).isEqualTo(true);
+    assertThat(filter("{}", "e?.test")).isEqualTo(false);
+    assertThat(filter("{test:'true'}", "e?.test")).isEqualTo(true);
 
     // assertThat(bool(json("{test:'false'}"), "e?.test")).isEqualTo(false);
 
-    assertThat(bool(json("{test:''}"), "e?.test")).isEqualTo(false);
+    assertThat(filter("{test:''}", "e?.test")).isEqualTo(false);
 
-    assertThat(bool(json("{test:'yeah'}"), "e?.test")).isEqualTo(true);
-    assertThat(bool(json("{test:'yeah'}"), "e?.test!=null")).isEqualTo(true);
+    assertThat(filter("{test:'yeah'}", "e?.test")).isEqualTo(true);
+    assertThat(filter("{test:'yeah'}", "e?.test!=null")).isEqualTo(true);
 
   }
 
   @Test
   public void testTest() {
 
-    assertThat(bool(json("{}"), "e.test")).isEqualTo(false);
+    assertThat(filter("{}", "e.test")).isEqualTo(false);
 
     for (String e : allFalsey)
-      assertThat(bool(json(String.format("{test:%s}", e)), "e.test")).isEqualTo(false);
+      assertThat(filter(String.format("{test:%s}", e), "e.test")).isEqualTo(false);
 
     // assertThat(bool(json("{test:null}"), "e.test")).isEqualTo(false);
     // assertThat(bool(json("{test:0}"), "e.test")).isEqualTo(false);
@@ -184,8 +188,8 @@ public class ExpressionsJsTest {
     // assertThat(bool(json("{test:'0'}"), "e.test")).isEqualTo(false);
     // assertThat(bool(json("{test:'false'}"), "e.test")).isEqualTo(false);
 
-    assertThat(bool(json("{test:'true'}"), "e.test")).isEqualTo(true);
-    assertThat(bool(json("{test:'testing123'}"), "e.test")).isEqualTo(true);
+    assertThat(filter("{test:'true'}", "e.test")).isEqualTo(true);
+    assertThat(filter("{test:'testing123'}", "e.test")).isEqualTo(true);
 
   }
 
@@ -198,32 +202,32 @@ public class ExpressionsJsTest {
     // hmm..
     // assertThat(output(json("'abc'"), "e?.version = (e?.version?:0) + 1")).isEqualTo(json("'abc'"));
 
-    assertThat(output(json("{}"), "e.version = e.version??0 + 1")).isEqualTo(json("{version:1}")); // spel equivalent is a syntax error
-    assertThat(output(json("{}"), "e.version = (e.version??0) + 1")).isEqualTo(json("{version:1}"));
-    assertThat(output(json("{version:1}"), "e.version = e.version + 1")).isEqualTo(json("{version:2}"));
+    assertThat(output("{}", "e.version = e.version??0 + 1")).isEqualTo(jsonElement("{version:1}")); // spel equivalent is a syntax error
+    assertThat(output("{}", "e.version = (e.version??0) + 1")).isEqualTo(jsonElement("{version:1}"));
+    assertThat(output("{version:1}", "e.version = e.version + 1")).isEqualTo(jsonElement("{version:2}"));
 
   }
 
   @Test
   public void randomStringTest() {
     for (int i = 0; i < 10; ++i)
-      System.out.println("e="+output(json("null"), "e=randomString(4)"));
+      System.out.println("e="+output("null", "e=randomString(4)"));
   }
 
   // aka filters
-  private boolean bool(JsonElement input, String expressionString) {
-    js.e(input);
+  private boolean filter(String input, String expressionString) {
+    js.e(jsonElement(input));
     return js.eval(expressionString);
   }
   
   // aka transforms
-  private JsonElement output(JsonElement input, String expressionString) {
-    js.e(input);
+  private JsonElement output(String input, String expressionString) {
+    js.e(jsonElement(input));
     js.eval(expressionString);
     return js.e();
   }
 
-  private JsonElement json(String json) {
+  private JsonElement jsonElement(String json) {
     return new JsonStreamParser(json).next();
   }
   
