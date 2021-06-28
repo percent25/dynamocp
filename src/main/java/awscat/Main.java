@@ -131,6 +131,9 @@ public class Main implements ApplicationRunner {
 
     stderr("awscat.jar", projectVersion, options);
 
+    LogHelper.debug = options.debug || options.trace;
+    LogHelper.trace = options.trace;
+
     boolean help = false;
     if (options.help)
     	help = true;

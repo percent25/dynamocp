@@ -181,7 +181,7 @@ public class AwsQueueReceiver {
             };
           }, ()->{ // finally
             // if (!receiveMessageWork.success || receiveMessageWork.in.get()>0)
-              debug(receiveMessageWork);
+              debug("finally", receiveMessageWork);
             doReceiveMessage(i);
           });
         } // isRunning
@@ -197,8 +197,7 @@ public class AwsQueueReceiver {
   }
 
   private void debug(Object... args) {
-    // new LogHelper(this).debug(args);
-    System.out.println(this.getClass().getSimpleName()+Lists.newArrayList(args));
+    new LogHelper(this).debug(args);
   }
 
   public static void main(String... args) throws Exception {
