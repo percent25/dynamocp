@@ -31,7 +31,7 @@ objects: spel {:} is immutable!! wtf?
 OPEN
 ======================================================================
 
- - need to wait for graceful shutdown in receivers, e.g., AwsQueueReceiver and AwsKinesisReceiver
+ - need to wait for graceful shutdown in receivers, AwsKinesisReceiver
 
  - call it 'address'
 
@@ -411,4 +411,6 @@ independent aws profiles for source and target
             if (!exclusiveStartKeys.get(segment).isEmpty()) //###TODO check for null here?
               doSegment(segment);
           });
+
+ - need to wait for graceful shutdown in receivers, AwsQueueReceiver
 
