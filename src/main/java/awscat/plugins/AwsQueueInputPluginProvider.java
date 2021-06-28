@@ -25,7 +25,6 @@ class AwsQueueInputPlugin implements InputPlugin {
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  private final VoidFuture lf = new VoidFuture();
   private final AtomicInteger count = new AtomicInteger();
 
   public AwsQueueInputPlugin(AwsQueueReceiver receiver, int limit) {
@@ -43,13 +42,8 @@ class AwsQueueInputPlugin implements InputPlugin {
             });
             return listener.apply(list);
           }, () -> {
-            if (count.get() == limit) {
-              try {
-                receiver.close();
-              } finally {
-                lf.setVoid();
-              }
-            }
+            if (count.get() == limit)
+              receiver.closeNonBlocking();
           });
         }
       };
@@ -67,8 +61,7 @@ class AwsQueueInputPlugin implements InputPlugin {
 
   @Override
   public ListenableFuture<?> run(int mtu) throws Exception {
-    receiver.start();
-    return lf;
+    return receiver.start();
   }
 
   private void debug(Object... args) {

@@ -42,7 +42,7 @@ class AwsNotification {
 class ReceiveMessageWork {
   public final String queueUrl;
   public boolean success;
-  public String failureMessage;
+  public String failureMessage; // iff !success
   public final AtomicInteger in = new AtomicInteger();
   public final AtomicInteger inErr = new AtomicInteger();
   public final AtomicInteger out = new AtomicInteger();
@@ -101,10 +101,10 @@ public class AwsQueueReceiver {
   /**
    * start
    */
-  public void start() {
+  public ListenableFuture<?> start() {
     debug("start", queueUrl, concurrency);
     running = true;
-    new FutureRunner() {
+    return new FutureRunner() {
       {
         for (int i = 0; i < concurrency; ++i)
           doReceiveMessage(i);
@@ -158,7 +158,7 @@ public class AwsQueueReceiver {
                       }
                     }
                     return Futures.allAsList(futures);
-                  }, asdf->{
+                  }, result->{
                     receiveMessageWork.success = true;
                   }, e->{
                     receiveMessageWork.failureMessage = "" + e;
@@ -192,18 +192,13 @@ public class AwsQueueReceiver {
   /**
    * close
    */
-  public void close() {
-    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
-    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
-    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
+  public void closeNonBlocking() {
     running = false;
-    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
-    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
-    //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
   }
 
   private void debug(Object... args) {
-    new LogHelper(this).debug(args);
+    // new LogHelper(this).debug(args);
+    System.out.println(this.getClass().getSimpleName()+Lists.newArrayList(args));
   }
 
   public static void main(String... args) throws Exception {
@@ -222,9 +217,10 @@ public class AwsQueueReceiver {
       return Futures.immediateVoidFuture();
     });
 
-    receiver.start();
+    ListenableFuture<?> lf = receiver.start();
     Thread.sleep(20000);
-    receiver.close(); // stop receiver
+    receiver.closeNonBlocking(); // stop receiver
+    lf.get();
 
   }
 
