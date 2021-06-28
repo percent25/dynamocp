@@ -56,7 +56,7 @@ public class DynamoHelper {
 
       // numbers
       if (attributeValue.n() != null)
-        size += 18;
+        size += 19 + 1;
 
       // binary
       // TODO
