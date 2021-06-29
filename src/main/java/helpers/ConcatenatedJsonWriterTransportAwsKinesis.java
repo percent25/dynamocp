@@ -35,7 +35,7 @@ public class ConcatenatedJsonWriterTransportAwsKinesis implements ConcatenatedJs
 
     @Override
     public int mtu() {
-        return 1024 * 1024;
+        return 1024 * 1024; // https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html
     }
 
     @Override
