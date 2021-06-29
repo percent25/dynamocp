@@ -37,13 +37,19 @@ class AwsQueueInputPlugin implements InputPlugin {
         {
           run(() -> {
             count.updateAndGet(count -> {
-              list = Lists.newArrayList(Iterators.limit(new JsonStreamParser(message), limit - count));
+              Iterator<JsonElement> iter = new JsonStreamParser(message);
+              if (limit > 0) {
+                iter = Iterators.limit(new JsonStreamParser(message), limit - count);
+              }
+              list = Lists.newArrayList(iter);
               return count + list.size();
             });
             return listener.apply(list);
           }, () -> {
-            if (count.get() == limit)
-              receiver.closeNonBlocking();
+            if (limit > 0) {
+              if (count.get() == limit)
+                receiver.closeNonBlocking();
+            }
           });
         }
       };
