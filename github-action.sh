@@ -1,11 +1,7 @@
 #!/bin/sh -ex
 
-#echo ${GITHUB_RUN_ID?}
-#echo ${GITHUB_SHA?}
-
+# https://maven.apache.org/maven-ci-friendly.html
 REVISION=$(date +%Y.%m).${GITHUB_RUN_ID?}
-
-# ./build.sh ${REVISION?}
 
 ./mvnw verify -B -Drevision=${REVISION?} -Plocalstack
 
@@ -17,14 +13,6 @@ setuptools.setup(name="awscat", version="${REVISION?}", scripts=["awscat.jar"])
 EOF
 
 zip awscat.zip awscat.jar setup.py
-
-# TODO
-# TODO
-# TODO
-# exit 0
-# TODO
-# TODO
-# TODO
 
 response_code=$(curl -sv -o output -w "%{response_code}" -H"Authorization: Token ${GITHUB_TOKEN?}" https://api.github.com/repos/percent25/awscat/releases -d @-) << EOF
 {
