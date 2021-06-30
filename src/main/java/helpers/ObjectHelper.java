@@ -14,7 +14,7 @@ import com.google.gson.JsonElement;
 
 public class ObjectHelper {
 
-  // general
+  // to plain-old-java-object
   public static Object toObject(JsonElement jsonElement) {
     if (jsonElement.isJsonArray()) {
       List<Object> list = new ArrayList<>();
