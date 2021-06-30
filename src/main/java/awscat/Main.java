@@ -92,14 +92,14 @@ public class Main implements ApplicationRunner {
   // lazy
   private String failuresFileName;
   private PrintStream failuresPrintStream;
-  private final Supplier<PrintStream> failures = Suppliers.memoize(()->{
+  private final Supplier<PrintStream> failuresPrintStreamSupplier = Suppliers.memoize(()->{
     try {
       String now = CharMatcher.anyOf("1234567890").retainFrom(Instant.now().toString().substring(0, 20));
       String randomString = Hashing.sha256().hashInt(new SecureRandom().nextInt()).toString().substring(0, 7);
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
-      return failuresPrintStream = new PrintStream(new File(failuresFileName = String.format("failures-%s-%s.json", now, randomString)));
+      return failuresPrintStream = new PrintStream(failuresFileName = String.format("failures-%s-%s.json", now, randomString));
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
       //###TODO BUFFEREDOUTPUTSTREAM HERE??
@@ -221,7 +221,7 @@ public class Main implements ApplicationRunner {
                     stderr(e);
                     e.printStackTrace();
                     failure.incrementAndGet();
-                    failures.get().println(jsonElement); // pre-transform
+                    failuresPrintStreamSupplier.get().println(jsonElement); // pre-transform
                   }, () -> {
                     rate.add(1);
                   });
