@@ -42,7 +42,7 @@ public class DynamoReader {
    * @param totalSegments
    * @param readLimiter
    */
-  public DynamoReader(DynamoDbAsyncClient client, String tableName, int totalSegments, AbstractThrottle readLimiter) throws Exception {
+  public DynamoReader(DynamoDbAsyncClient client, String tableName, int totalSegments, AbstractThrottle readLimiter) {
     debug("ctor");
 
     this.client = client;
@@ -128,7 +128,7 @@ public class DynamoReader {
 
           if (segment == 0) {
             if (staggeredSegment.get() < totalSegments) {
-              doSegment(staggeredSegment.incrementAndGet());
+              doSegment(staggeredSegment.getAndIncrement()); // post-increment
             }
           }
 
