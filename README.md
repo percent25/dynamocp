@@ -1,11 +1,11 @@
 ![example workflow](https://github.com/percent25/awscat/actions/workflows/maven.yml/badge.svg)
 
-# install
+# Install
 
 <pre>
 pip3 install https://github.com/percent25/awscat/releases/latest/download/awscat.zip
 </pre>
 
-# document
+# Document
 
 https://github.com/percent25/awscat/wiki
