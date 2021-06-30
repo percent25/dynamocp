@@ -55,11 +55,11 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
     }
   }
 
-  private String file;
+  private String filename;
   private SystemOutOptions options;
 
   public String toString() {
-    return MoreObjects.toStringHelper(this).add("file", file).add("options", options).toString();
+    return MoreObjects.toStringHelper(this).add("filename", filename).add("options", options).toString();
   }
 
   @Override
@@ -69,14 +69,14 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
 
   @Override
   public boolean canActivate(String arg) {
-    file = Addresses.base(arg);
+    filename = Addresses.base(arg);
     options = Addresses.options(arg, SystemOutOptions.class);
     return true;
   }
 
   @Override
   public Supplier<OutputPlugin> activate(String arg) throws Exception {
-    PrintStream out = "-".equals(file) ? stdout : new PrintStream(new BufferedOutputStream(new FileOutputStream(file, options.append)));
+    PrintStream out = "-".equals(filename) ? stdout : new PrintStream(new BufferedOutputStream(new FileOutputStream(filename, options.append)));
     return ()->new SystemOutPlugin(out);
   }
 

@@ -28,7 +28,7 @@ class SystemInPlugin implements InputPlugin {
   @VisibleForTesting
   public static InputStream stdin = System.in;
 
-  private final String file;
+  private final String filename;
   private final int concurrency;
   private final boolean cycle;
   private final int limit;
@@ -37,10 +37,10 @@ class SystemInPlugin implements InputPlugin {
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  public SystemInPlugin(String file, int concurrency, boolean cycle, int limit) {
-    debug("ctor", file, concurrency, cycle, limit);
+  public SystemInPlugin(String filename, int concurrency, boolean cycle, int limit) {
+    debug("ctor", filename, concurrency, cycle, limit);
 
-    this.file = file;
+    this.filename = filename;
     this.concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
     this.cycle = cycle;
     this.limit = limit;
@@ -54,7 +54,7 @@ class SystemInPlugin implements InputPlugin {
   public String toString() {
     return MoreObjects.toStringHelper(this)
         //
-        .add("file", file).add("concurrency", concurrency).add("cycle", cycle).add("limit", limit).toString();
+        .add("filename", filename).add("concurrency", concurrency).add("cycle", cycle).add("limit", limit).toString();
   }
 
   @Override
@@ -72,7 +72,7 @@ class SystemInPlugin implements InputPlugin {
       List<JsonElement> partition = new ArrayList<>();
       {
         do {
-          final BufferedReader br = new BufferedReader(new InputStreamReader("-".equals(file) ? stdin : new FileInputStream(file)));
+          final BufferedReader br = new BufferedReader(new InputStreamReader("-".equals(filename) ? stdin : new FileInputStream(filename)));
           try {
             JsonStreamParser parser = new JsonStreamParser(br);
             while (parser.hasNext()) {
@@ -127,9 +127,9 @@ public class SystemInPluginProvider extends AbstractInputPluginProvider {
 
   @Override
   public InputPlugin activate(String arg) throws Exception {
-    String file = Addresses.base(arg);
+    String filename = Addresses.base(arg);
     SystemInOptions options = Addresses.options(arg, SystemInOptions.class);
-    return new SystemInPlugin(file, options.c, options.cycle, options.limit);
+    return new SystemInPlugin(filename, options.c, options.cycle, options.limit);
   }
 
   private void debug(Object... args) {
