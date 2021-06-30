@@ -36,21 +36,21 @@ public class AwsKinesisOutputPluginProvider implements OutputPluginProvider {
     // }
 
     @Override
-    public boolean canActivate(String arg) {
+    public boolean canActivate(String address) {
         // streamArn = Args.base(arg);
-        options = Addresses.options(arg, Options.class);
+        options = Addresses.options(address, Options.class);
 
-        return Addresses.base(arg).startsWith("kinesis:");
+        return Addresses.base(address).startsWith("kinesis:");
 
         // "StreamARN": "arn:aws:kinesis:us-east-1:000000000000:stream/MyStream",
         // return streamArn.matches("arn:(.+):kinesis:(.+):(\\d{12}):stream/(.+)");
     }
 
     @Override
-    public Supplier<OutputPlugin> activate(String arg) throws Exception {
+    public Supplier<OutputPlugin> activate(String address) throws Exception {
         KinesisAsyncClient client = AwsHelper.create(KinesisAsyncClient.builder(), options);
 
-        String streamName = Addresses.base(arg).split(":")[1];
+        String streamName = Addresses.base(address).split(":")[1];
 
         // sqs transport is thread-safe
         ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsKinesis(client, streamName);

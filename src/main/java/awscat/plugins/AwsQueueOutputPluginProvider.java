@@ -40,9 +40,9 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
 
   // https://docs.aws.amazon.com/general/latest/gr/sqs-service.html
   @Override
-  public boolean canActivate(String arg) {
-    queueUrl = Addresses.base(arg);
-    options = Addresses.options(arg, Options.class);
+  public boolean canActivate(String address) {
+    queueUrl = Addresses.base(address);
+    options = Addresses.options(address, Options.class);
     if ("sqs".equals(queueUrl.split(":")[0]))
       return true;
     if (queueUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
@@ -55,7 +55,7 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public Supplier<OutputPlugin> activate(String arg) throws Exception {
+  public Supplier<OutputPlugin> activate(String address) throws Exception {
     SqsAsyncClient sqsClient = AwsHelper.create(SqsAsyncClient.builder(), options);
 
     // is it a queue arn? e.g., arn:aws:sqs:us-east-1:000000000000:MyQueue

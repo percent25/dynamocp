@@ -103,9 +103,9 @@ public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
 
   // https://docs.aws.amazon.com/general/latest/gr/sqs-service.html
   @Override
-  public boolean canActivate(String arg) {
-    queueUrl = Addresses.base(arg);
-    options = Addresses.options(arg, AwsQueueInputPluginOptions.class);
+  public boolean canActivate(String address) {
+    queueUrl = Addresses.base(address);
+    options = Addresses.options(address, AwsQueueInputPluginOptions.class);
     if ("sqs".equals(queueUrl.split(":")[0]))
       return true;
     if (queueUrl.matches("arn:(.+):sqs:(.+):(\\d{12}):(.+)"))
@@ -118,7 +118,7 @@ public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
   }
 
   @Override
-  public InputPlugin activate(String arg) throws Exception {
+  public InputPlugin activate(String address) throws Exception {
     int c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
     SqsAsyncClient sqsClient = AwsHelper.create(SqsAsyncClient.builder(), options);
 

@@ -37,14 +37,14 @@ public class AwsTopicOutputPluginProvider implements OutputPluginProvider{
     }
 
     @Override
-    public boolean canActivate(String arg) {
-        topicArn = Addresses.base(arg);
-        options = Addresses.options(arg, Options.class);
+    public boolean canActivate(String address) {
+        topicArn = Addresses.base(address);
+        options = Addresses.options(address, Options.class);
         return topicArn.matches("arn:(.+):sns:(.+):(\\d{12}):(.+)");
     }
 
     @Override
-    public Supplier<OutputPlugin> activate(String arg) throws Exception {
+    public Supplier<OutputPlugin> activate(String address) throws Exception {
         SnsAsyncClient snsClient = AwsHelper.create(SnsAsyncClient.builder(), options);
         // sns transport is thread-safe
         ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsTopic(snsClient, topicArn);

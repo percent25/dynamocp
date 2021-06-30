@@ -68,14 +68,14 @@ public class SystemOutPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public boolean canActivate(String arg) {
-    filename = Addresses.base(arg);
-    options = Addresses.options(arg, SystemOutOptions.class);
+  public boolean canActivate(String address) {
+    filename = Addresses.base(address);
+    options = Addresses.options(address, SystemOutOptions.class);
     return true;
   }
 
   @Override
-  public Supplier<OutputPlugin> activate(String arg) throws Exception {
+  public Supplier<OutputPlugin> activate(String address) throws Exception {
     PrintStream out = "-".equals(filename) ? stdout : new PrintStream(new BufferedOutputStream(new FileOutputStream(filename, options.append)));
     return ()->new SystemOutPlugin(out);
   }

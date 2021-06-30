@@ -33,7 +33,7 @@ class SystemInPlugin implements InputPlugin {
   private final boolean cycle;
   private final int limit;
 
-  private final Executor executor;
+  private final ThreadPoolExecutor executor;
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
@@ -45,10 +45,9 @@ class SystemInPlugin implements InputPlugin {
     this.cycle = cycle;
     this.limit = limit;
 
-    ThreadPoolExecutor executor = new ThreadPoolExecutor(
+    executor = new ThreadPoolExecutor(
       0, this.concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(this.concurrency));
     executor.setRejectedExecutionHandler(new CallerBlocksPolicy());
-    this.executor = executor;
   }
 
   public String toString() {
@@ -121,14 +120,14 @@ public class SystemInPluginProvider extends AbstractInputPluginProvider {
   }
 
   @Override
-  public boolean canActivate(String arg) {
+  public boolean canActivate(String address) {
     return true;
   }
 
   @Override
-  public InputPlugin activate(String arg) throws Exception {
-    String filename = Addresses.base(arg);
-    SystemInOptions options = Addresses.options(arg, SystemInOptions.class);
+  public InputPlugin activate(String address) throws Exception {
+    String filename = Addresses.base(address);
+    SystemInOptions options = Addresses.options(address, SystemInOptions.class);
     return new SystemInPlugin(filename, options.c, options.cycle, options.limit);
   }
 

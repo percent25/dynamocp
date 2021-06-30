@@ -30,14 +30,14 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public boolean canActivate(String arg) {
-    return "s3".equals(arg.split(":")[0]);
+  public boolean canActivate(String address) {
+    return "s3".equals(address.split(":")[0]);
   }
 
   @Override
-  public Supplier<OutputPlugin> activate(String arg) throws Exception {
+  public Supplier<OutputPlugin> activate(String address) throws Exception {
 
-    URI uri = URI.create(Addresses.base(arg));
+    URI uri = URI.create(Addresses.base(address));
     String bucket = uri.getHost();
     String exportPrefix = uri.getPath();
     // s3://mybucket -> ""
@@ -46,7 +46,7 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
     if (exportPrefix.startsWith("/"))
       exportPrefix = exportPrefix.substring(1);
 
-    Options options = Addresses.options(arg, Options.class);
+    Options options = Addresses.options(address, Options.class);
 
     S3AsyncClient client = AwsHelper.create(S3AsyncClient.builder(), options);
 

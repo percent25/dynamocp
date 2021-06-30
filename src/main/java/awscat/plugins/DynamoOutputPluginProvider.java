@@ -81,14 +81,14 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public boolean canActivate(String arg) {
-    return ImmutableSet.of("dynamo", "dynamodb").contains(arg.split(":")[0]);
+  public boolean canActivate(String address) {
+    return ImmutableSet.of("dynamo", "dynamodb").contains(address.split(":")[0]);
   }
 
   @Override
-  public Supplier<OutputPlugin> activate(String arg) throws Exception {
-    tableName = Addresses.base(arg).split(":")[1];
-    options = Addresses.options(arg, Options.class);
+  public Supplier<OutputPlugin> activate(String address) throws Exception {
+    tableName = Addresses.base(address).split(":")[1];
+    options = Addresses.options(address, Options.class);
 
     DynamoDbAsyncClient client = AwsHelper.create(DynamoDbAsyncClient.builder(), options);
     DynamoDbAsyncClient asyncClient = AwsHelper.create(DynamoDbAsyncClient.builder(), options);
