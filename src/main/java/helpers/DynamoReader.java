@@ -1,6 +1,7 @@
 package helpers;
 
 import java.util.*;
+import java.util.concurrent.atomic.*;
 import java.util.function.*;
 import java.util.function.Function;
 
@@ -31,6 +32,7 @@ public class DynamoReader {
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   private boolean running;
+  private final AtomicInteger staggeredSegment = new AtomicInteger();
 
   /**
    * ctor
@@ -78,14 +80,15 @@ public class DynamoReader {
   }
 
   public ListenableFuture<?> scan(int mtu) throws Exception {
-    debug("read", "mtu", mtu);
+    debug("scan", "mtu", mtu);
 
     running = true;
 
     return new FutureRunner() {
       {
-        for (int segment = 0; segment < totalSegments; ++segment)
-          doSegment(segment);
+        doSegment(0);
+        // for (int segment = 0; segment < totalSegments; ++segment)
+        //   doSegment(segment);
       }
       void doSegment(int segment) {
         
@@ -122,6 +125,12 @@ public class DynamoReader {
 
           return lf(client.scan(scanRequest));
         }, scanResponse -> {
+
+          if (segment == 0) {
+            if (staggeredSegment.get() < totalSegments) {
+              doSegment(staggeredSegment.incrementAndGet());
+            }
+          }
 
           debug("doSegment", segment, scanResponse.count());
 
@@ -160,6 +169,7 @@ public class DynamoReader {
     };
   }
 
+  // non-blocking
   public void stop() {
     debug("stop");
     running = false;
@@ -170,32 +180,31 @@ public class DynamoReader {
   }
 
   public static void main(String... args) throws Exception {
+
+    // LogHelper.debug = true;
+
     DynamoDbAsyncClient client = DynamoDbAsyncClient.builder() //
         // .httpClient(AwsCrtAsyncHttpClient.create()) //
         // .endpointOverride(URI.create("http://localhost:4566")) //
         // .region(Region.US_EAST_1) //
-        // .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test",
-        // "test"))) //
-        // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
+        // .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
         .build();
 
-    // public DynamoReader(DynamoDbAsyncClient client, String tableName,
-    // Iterable<String> keySchema, int totalSegments, AbstractThrottle readLimiter,
-    // int limit) {
+    // AbstractThrottle readLimiter = permits->Futures.immediateVoidFuture();
+    DynamoReader dynamoReader = new DynamoReader(client, "OnDemand", 16, permits->Futures.immediateVoidFuture());
 
-      AbstractThrottle readLimiter = permits->Futures.immediateVoidFuture();
-
-    DynamoReader dynamoReader = new DynamoReader(client, "OnDemand", 4, readLimiter);
     dynamoReader.setListener(jsonElements->{
-      for (JsonElement jsonElement : jsonElements)
-        System.out.println(jsonElement);
+      System.out.println(Iterables.size(jsonElements));
+      // for (JsonElement jsonElement : jsonElements)
+      //   System.out.println(jsonElement);
       return Futures.immediateVoidFuture();
     });
-    dynamoReader.scan(-1);
-
+    
+    ListenableFuture<?> lf = dynamoReader.scan(-1);
     Thread.sleep(10_000);
-
     dynamoReader.stop();
+    lf.get();
+
   }
 
 }
