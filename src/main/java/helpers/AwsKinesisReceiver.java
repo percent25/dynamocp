@@ -212,6 +212,7 @@ public class AwsKinesisReceiver {
         .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
         .build();
 
+    // aws kinesis create-stream --stream-name asdf --shard-count 1
     AwsKinesisReceiver receiver = new AwsKinesisReceiver(client, "asdf");
     receiver.setListener(bytes -> {
       System.out.println(bytes);
