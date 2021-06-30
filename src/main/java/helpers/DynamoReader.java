@@ -86,7 +86,7 @@ public class DynamoReader {
 
     return new FutureRunner() {
       {
-        doSegment(0); // stagger
+        doSegment(staggeredSegment.getAndIncrement()); // stagger
       }
       void doSegment(int segment) {
         if (running) {
@@ -192,14 +192,14 @@ public class DynamoReader {
     DynamoReader dynamoReader = new DynamoReader(client, "OnDemand", 16, permits->Futures.immediateVoidFuture());
 
     dynamoReader.setListener(jsonElements->{
-      System.out.println(Iterables.size(jsonElements));
+      System.out.println("size="+Iterables.size(jsonElements));
       // for (JsonElement jsonElement : jsonElements)
       //   System.out.println(jsonElement);
       return Futures.immediateVoidFuture();
     });
     
     ListenableFuture<?> lf = dynamoReader.scan(-1);
-    Thread.sleep(10_000);
+    Thread.sleep(25_000);
     dynamoReader.stop();
     lf.get();
 
