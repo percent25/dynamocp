@@ -86,85 +86,83 @@ public class DynamoReader {
 
     return new FutureRunner() {
       {
-        doSegment(0);
-        // for (int segment = 0; segment < totalSegments; ++segment)
-        //   doSegment(segment);
+        doSegment(0); // stagger
       }
       void doSegment(int segment) {
-        
-        debug("doSegment", segment);
+        if (running) {
+          debug("doSegment", segment);
 
-        run(() -> {
-  
-          // pre-throttle
-          // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb
-          //###TODO make async
-          //###TODO make async
-          //###TODO make async
-          readLimiter.asyncAcquire(128).get(); //###TODO
-          //###TODO make async
-          //###TODO make async
-          //###TODO make async
+          run(() -> {
+    
+            // pre-throttle
+            // https://aws.amazon.com/blogs/developer/rate-limited-scans-in-amazon-dynamodb
+            //###TODO make async
+            //###TODO make async
+            //###TODO make async
+            readLimiter.asyncAcquire(128).get(); //###TODO
+            //###TODO make async
+            //###TODO make async
+            //###TODO make async
 
-          // STEP 1 Do the scan
-          ScanRequest scanRequest = ScanRequest.builder()
-              //
-              .tableName(tableName)
-              //
-              .exclusiveStartKey(exclusiveStartKeys.get(segment))
-              //
-              // .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
-              //
-              .segment(segment)
-              //
-              .totalSegments(totalSegments)
-              //
-              .build();
+            // STEP 1 Do the scan
+            ScanRequest scanRequest = ScanRequest.builder()
+                //
+                .tableName(tableName)
+                //
+                .exclusiveStartKey(exclusiveStartKeys.get(segment))
+                //
+                // .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+                //
+                .segment(segment)
+                //
+                .totalSegments(totalSegments)
+                //
+                .build();
 
-          debug("doSegment", segment, scanRequest);
+            debug("doSegment", segment, scanRequest);
 
-          return lf(client.scan(scanRequest));
-        }, scanResponse -> {
+            return lf(client.scan(scanRequest));
+          }, scanResponse -> {
 
-          if (segment == 0) {
-            if (staggeredSegment.get() < totalSegments) {
-              doSegment(staggeredSegment.getAndIncrement()); // post-increment
+            if (segment == 0) {
+              if (staggeredSegment.get() < totalSegments) {
+                doSegment(staggeredSegment.getAndIncrement()); // post-increment
+              }
             }
-          }
 
-          debug("doSegment", segment, scanResponse.count());
+            debug("doSegment", segment, scanResponse.count());
 
-          exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
+            exclusiveStartKeys.set(segment, scanResponse.lastEvaluatedKey());
 
-          // STEP 2 Process the scan
-          List<ListenableFuture<?>> futures = new ArrayList<>();
+            // STEP 2 Process the scan
+            List<ListenableFuture<?>> futures = new ArrayList<>();
 
-          List<JsonElement> jsonElements = new ArrayList<>();
-          for (Map<String, AttributeValue> item : scanResponse.items())
-            jsonElements.add(DynamoHelper.parse(item));
-          if (jsonElements.size()>0) {
-            for (List<JsonElement> partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
-              run(()->{
-                ListenableFuture<?> lf = listener.apply(partition);
-                futures.add(lf);
-                return lf;
-              });
-            }  
-          }
+            List<JsonElement> jsonElements = new ArrayList<>();
+            for (Map<String, AttributeValue> item : scanResponse.items())
+              jsonElements.add(DynamoHelper.parse(item));
+            if (jsonElements.size()>0) {
+              for (List<JsonElement> partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
+                run(()->{
+                  ListenableFuture<?> lf = listener.apply(partition);
+                  futures.add(lf);
+                  return lf;
+                });
+              }  
+            }
 
-          run(()->{
-            return Futures.allAsList(futures);
-          }, result->{ // if success then continue
-            if (!exclusiveStartKeys.get(segment).isEmpty()) //###TODO check for null here?
-              doSegment(segment);
+            run(()->{
+              return Futures.allAsList(futures);
+            }, result->{ // if success then continue
+              if (!exclusiveStartKeys.get(segment).isEmpty()) //###TODO check for null here?
+                doSegment(segment);
+            });
+
+          }, e->{
+            debug("doSegment", segment, e);
+            e.printStackTrace();
+            throw new RuntimeException(e);
           });
-
-        }, e->{
-          debug("doSegment", segment, e);
-          e.printStackTrace();
-          throw new RuntimeException(e);
-        });
-
+        } // if (running)
       }
     };
   }
@@ -181,7 +179,7 @@ public class DynamoReader {
 
   public static void main(String... args) throws Exception {
 
-    // LogHelper.debug = true;
+    LogHelper.debug = true;
 
     DynamoDbAsyncClient client = DynamoDbAsyncClient.builder() //
         // .httpClient(AwsCrtAsyncHttpClient.create()) //
