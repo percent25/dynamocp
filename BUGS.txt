@@ -31,22 +31,11 @@ objects: spel {:} is immutable!! wtf?
 OPEN
 ======================================================================
 
- - need to wait for graceful shutdown in receivers, AwsKinesisReceiver
-
- - call it 'address'
-
- SYNOPSIS
-       socat [options] <address> <address>
-       socat -V
-       socat -h[h[h]] | -?[?[?]]
+ - need to wait for graceful shutdown in receivers: AwsKinesisReceiver
 
 
-
- - fix aws queue input plugin's limit issue
 
  - generic plugin <Options> 
-
- - sqs output plugin
 
  - kinesis plugins
 
@@ -413,4 +402,14 @@ independent aws profiles for source and target
           });
 
  - need to wait for graceful shutdown in receivers, AwsQueueReceiver
+
+ - sqs output plugin
+
+ - fix aws queue input plugin's limit issue
+
+ - call it 'address'
+ SYNOPSIS
+       socat [options] <address> <address>
+       socat -V
+       socat -h[h[h]] | -?[?[?]]
 
