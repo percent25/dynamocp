@@ -7,7 +7,7 @@ REVISION=$(date +%Y.%m).${GITHUB_RUN_ID?}
 
 # ./build.sh ${REVISION?}
 
-./mvnw package -B -Drevision=${REVISION?} -Plocalstack
+./mvnw verify -B -Drevision=${REVISION?} -Plocalstack
 
 ln -fs target/awscat-${REVISION?}.jar awscat.jar
 
