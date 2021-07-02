@@ -36,12 +36,12 @@ public class AwsBuilder {
     return builder.build();
   }
   /**
-   * renderAddress
+   * re-render address
    * 
    * @param address
    * @return
    */
-  public static String renderAddress(String address) {
+  public static String rerenderAddress(String address) {
     String base = Addresses.base(address);
     Map<String, String> options = Addresses.options(address, new TypeToken<Map<String, String>>(){}.getType());
 

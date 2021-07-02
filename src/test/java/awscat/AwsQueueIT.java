@@ -92,7 +92,7 @@ public class AwsQueueIT {
               // log(sendMessageResponse);
 
         SystemInPlugin.stdin = new ByteArrayInputStream(json.toString().getBytes());
-        String targetAddress = AwsBuilder.renderAddress(queueArn);
+        String targetAddress = AwsBuilder.rerenderAddress(queueArn);
         Main.main("-", targetAddress);
 
         //###TODO aws queue receiver "limit" is broken
@@ -104,7 +104,7 @@ public class AwsQueueIT {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         SystemOutPluginProvider.stdout = new PrintStream(baos);
         
-        String sourceAddress = AwsBuilder.renderAddress(String.format("%s,limit=1", queueArn));
+        String sourceAddress = AwsBuilder.rerenderAddress(String.format("%s,limit=1", queueArn));
         Main.main(sourceAddress, "-");
 
         assertThat(json(baos.toString())).isEqualTo(json);
@@ -128,7 +128,7 @@ public class AwsQueueIT {
     }
 
     // receive
-    String sourceArg = AwsBuilder.renderAddress(String.format("%s,limit=%s", queueArn, limit));
+    String sourceArg = AwsBuilder.rerenderAddress(String.format("%s,limit=%s", queueArn, limit));
     Main.main(sourceArg);
   }
 
