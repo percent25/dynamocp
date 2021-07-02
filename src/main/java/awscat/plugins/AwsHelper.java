@@ -21,7 +21,7 @@ class AwsOptions {
 public class AwsHelper {
 
   /**
-   * create
+   * build
    * 
    * <p>
    * configure aws endpoint and aws profile
@@ -32,7 +32,7 @@ public class AwsHelper {
    * @param options
    * @return
    */
-  public static <B extends AwsClientBuilder<B, C> & AwsAsyncClientBuilder<B, C>, C> C create(B builder, Object options) {
+  public static <B extends AwsClientBuilder<B, C> & AwsAsyncClientBuilder<B, C>, C> C build(B builder, Object options) {
     // builder = builder.httpClient(AwsCrtAsyncHttpClient.create());
     AwsOptions awsOptions = new Gson().fromJson(new Gson().toJson(options), AwsOptions.class);
     if (StringUtils.hasText(awsOptions.endpoint)) {
