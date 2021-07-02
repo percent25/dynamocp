@@ -86,7 +86,7 @@ class AwsQueueInputPluginOptions extends AwsOptions {
 }
 
 @Service
-public class AwsQueueInputPluginProvider extends AbstractInputPluginProvider {
+public class AwsQueueInputPluginProvider extends AbstractPluginProvider implements InputPluginProvider {
 
   private String queueUrl;
   private AwsQueueInputPluginOptions options;

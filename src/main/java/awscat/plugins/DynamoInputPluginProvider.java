@@ -56,7 +56,7 @@ class DynamoInputPlugin implements InputPlugin {
 }
 
 @Service
-public class DynamoInputPluginProvider extends AbstractInputPluginProvider {
+public class DynamoInputPluginProvider extends AbstractPluginProvider implements InputPluginProvider {
 
   class Options extends AwsOptions{
     public int c; // concurrency, aka totalSegments

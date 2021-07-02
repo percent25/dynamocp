@@ -106,7 +106,7 @@ class SystemInPlugin implements InputPlugin {
 }
 
 // @Service
-public class SystemInPluginProvider extends AbstractInputPluginProvider {
+public class SystemInPluginProvider extends AbstractPluginProvider implements InputPluginProvider {
 
   // in.txt,c=1
   class SystemInOptions {

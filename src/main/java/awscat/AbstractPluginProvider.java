@@ -2,12 +2,12 @@ package awscat;
 
 import java.lang.reflect.Field;
 
-public abstract class AbstractInputPluginProvider implements InputPluginProvider {
+public abstract class AbstractPluginProvider {
 
   private final String base;
   private final Class<?> classOfOptions;
 
-  public AbstractInputPluginProvider(String base, Class<?> classOfOptions) {
+  public AbstractPluginProvider(String base, Class<?> classOfOptions) {
     this.base = base;
     this.classOfOptions = classOfOptions;
   }
