@@ -35,8 +35,6 @@ OPEN
 
 
 
- - generic plugin <Options> 
-
  - kinesis plugins
 
  - uuid source.. i.e, stream of uuid json strings
@@ -412,4 +410,6 @@ independent aws profiles for source and target
        socat [options] <address> <address>
        socat -V
        socat -h[h[h]] | -?[?[?]]
+
+ - generic plugin <Options> 
 
