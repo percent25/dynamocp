@@ -64,10 +64,6 @@ s3 output plugin
 
 
  
-github actions?
-
-
-
 concurrency
  vs
 parallelism
@@ -410,3 +406,5 @@ independent aws profiles for source and target
  - generic plugin <Options> 
 
  - dynamo input plugin: limit is not what is intuitively limit.. it is scan limit, not overall limit
+
+github actions?
