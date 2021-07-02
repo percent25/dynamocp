@@ -31,6 +31,8 @@ objects: spel {:} is immutable!! wtf?
 OPEN
 ======================================================================
 
+ - move "limit" functionality to Main loop ?
+
  - need to wait for graceful shutdown in receivers: AwsKinesisReceiver
 
 
@@ -38,12 +40,6 @@ OPEN
  - kinesis plugins
 
  - uuid source.. i.e, stream of uuid json strings
- 
- 
- 
- - dynamo input plugin: limit is not what is intuitively limit.. it is scan limit, not overall limit
-
-
 
  - SystemInPlugin: can't cycle stdin
 
@@ -413,3 +409,4 @@ independent aws profiles for source and target
 
  - generic plugin <Options> 
 
+ - dynamo input plugin: limit is not what is intuitively limit.. it is scan limit, not overall limit
