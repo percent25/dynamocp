@@ -30,7 +30,7 @@ public class AwsQueueOutputPluginProvider implements OutputPluginProvider {
 
   @Override
   public String help() {
-    return "<queue-arn|queue-url>";
+    return "sqs:<queueName>";
   }
 
   @Override

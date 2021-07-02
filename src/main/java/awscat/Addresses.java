@@ -7,9 +7,9 @@ import com.google.common.base.*;
 import com.google.gson.*;
 
 // arn:aws:dynamo:us-east-1:102938475610:table/MyTable,c=1,delete=true,wcu=5
-public class Addresses { //###TODO RENAME TO Addresses
+public class Addresses {
     /**
-     * parseArg
+     * base
      * 
      * @param address e.g., "dynamo:MyTable,c=1,delete=true,wcu=5"
      * @return e.g., "dynamo:MyTable"

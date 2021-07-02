@@ -92,7 +92,7 @@ public class AwsQueueInputPluginProvider extends AbstractPluginProvider implemen
   private AwsQueueInputPluginOptions options;
 
   public AwsQueueInputPluginProvider() {
-    super("<queue-arn|queue-url>", AwsQueueInputPluginOptions.class);
+    super("sqs:<queueName>", AwsQueueInputPluginOptions.class);
   }
 
   @Override

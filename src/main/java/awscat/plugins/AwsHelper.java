@@ -21,7 +21,7 @@ class AwsOptions {
 public class AwsHelper {
 
   /**
-   * configClient
+   * create
    * 
    * <p>
    * configure aws endpoint and aws profile
