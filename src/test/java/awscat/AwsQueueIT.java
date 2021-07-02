@@ -1,27 +1,16 @@
 package awscat;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.net.URI;
-import java.util.UUID;
+import java.io.*;
+import java.util.*;
 
-import com.google.common.collect.Lists;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonStreamParser;
+import com.google.common.collect.*;
+import com.google.gson.*;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
-import helpers.LogHelper;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.*;
 import software.amazon.awssdk.services.sqs.model.*;
 
 public class AwsQueueIT {
@@ -43,9 +32,9 @@ public class AwsQueueIT {
     String queueName = UUID.randomUUID().toString();
 
     CreateQueueRequest createQueueRequest = CreateQueueRequest.builder().queueName(queueName).build();
-    debug(createQueueRequest);
+    print(createQueueRequest);
     CreateQueueResponse createQueueResponse = client.createQueue(createQueueRequest);
-    debug(createQueueResponse);
+    print(createQueueResponse);
 
     GetQueueUrlRequest getQueueUrlRequest = GetQueueUrlRequest.builder().queueName(queueName).build();
     GetQueueUrlResponse getQueueUrlResponse = client.getQueueUrl(getQueueUrlRequest);
@@ -63,9 +52,9 @@ public class AwsQueueIT {
   @AfterEach
   public void deleteQueue() throws Exception {
     DeleteQueueRequest deleteQueueRequest = DeleteQueueRequest.builder().queueUrl(queueUrl).build();
-    debug(deleteQueueRequest);
+    print(deleteQueueRequest);
     DeleteQueueResponse deleteQueueResponse = client.deleteQueue(deleteQueueRequest);
-    debug(deleteQueueResponse);
+    print(deleteQueueResponse);
   }
 
   /**
@@ -128,13 +117,14 @@ public class AwsQueueIT {
 
   @Test
   public void stressTest() throws Exception {
-    final int limit = 20;
+    final int limit = 200;
 
     // send
     for (int i = 0; i < limit; ++i) {
-      SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(queueUrl).messageBody("{}").build();
+      String message = UUID.randomUUID().toString();
+      SendMessageRequest sendMessageRequest = SendMessageRequest.builder().queueUrl(queueUrl).messageBody(message).build();
       SendMessageResponse sendMessageResponse = client.sendMessage(sendMessageRequest);
-      debug("stressTest", i, sendMessageRequest, sendMessageResponse);
+      print("stressTest", i, sendMessageRequest, sendMessageResponse);
     }
 
     // receive
@@ -146,9 +136,8 @@ public class AwsQueueIT {
     return new JsonStreamParser(json).next();
   }
 
-  private void debug(Object... args) {
-    new LogHelper(this).debug(args);
-    // System.out.println(Lists.newArrayList(args));
+  private void print(Object... args) {
+    System.out.println(Lists.newArrayList(args));
   }
 
 }
