@@ -92,10 +92,10 @@ public class AwsKinesisReceiver {
    * 
    * @see https://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-sdk.html
    */
-  public void start() throws Exception {
+  public ListenableFuture<?> start() throws Exception {
     debug("start", streamName);
     running = true;
-    new FutureRunner() {
+    return new FutureRunner() {
       {
         run(() -> {
           return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
@@ -188,7 +188,7 @@ public class AwsKinesisReceiver {
   /**
    * close
    */
-  public void close() {
+  public void closeNonBlocking() {
     debug("close", streamName);
     //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
     //###TODO WAIT FOR GRACEFUL SHUTDOWN HERE
@@ -218,9 +218,13 @@ public class AwsKinesisReceiver {
       System.out.println(bytes);
       return Futures.immediateVoidFuture();
     });
-    receiver.start();
-    Thread.sleep(10000);
-    receiver.close(); // stop receiver
+    ListenableFuture<?> lf = receiver.start();
+    try {
+      Thread.sleep(10000);
+      receiver.closeNonBlocking(); // stop receiver
+    } finally {
+      lf.get();
+    }
 
   }
 
