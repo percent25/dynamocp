@@ -63,11 +63,11 @@ class SystemInPlugin implements InputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> run(int mtu) throws Exception {
-    debug("read", "mtu", mtu);
+  public ListenableFuture<?> run(int mtuHint) throws Exception {
+    debug("read", "mtuHint", mtuHint);
     return new FutureRunner() {
       int count;
-      int effectiveMtu = mtu > 0 ? mtu : 40000;
+      int effectiveMtu = mtuHint > 0 ? mtuHint : 40000;
       List<JsonElement> partition = new ArrayList<>();
       {
         do {

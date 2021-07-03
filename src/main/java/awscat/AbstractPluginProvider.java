@@ -2,6 +2,8 @@ package awscat;
 
 import java.lang.reflect.Field;
 
+import org.springframework.util.*;
+
 public abstract class AbstractPluginProvider {
 
   private final String base;
@@ -10,6 +12,10 @@ public abstract class AbstractPluginProvider {
   public AbstractPluginProvider(String base, Class<?> classOfOptions) {
     this.base = base;
     this.classOfOptions = classOfOptions;
+  }
+
+  public String name() {
+    return ClassUtils.getShortName(getClass());
   }
 
   public String help() {

@@ -1,7 +1,5 @@
 package awscat;
 
-import org.springframework.util.ClassUtils;
-
 /**
  * InputPluginProvider
  */
@@ -12,9 +10,7 @@ public interface InputPluginProvider {
    * 
    * @return
    */
-  default String name() {
-    return ClassUtils.getShortName(getClass());
-  }
+  String name();
 
   /**
    * help

@@ -79,8 +79,8 @@ public class DynamoReader {
     this.listener = listener;
   }
 
-  public ListenableFuture<?> scan(int mtu) throws Exception {
-    debug("scan", "mtu", mtu);
+  public ListenableFuture<?> scan(int mtuHint) throws Exception {
+    debug("scan", "mtuHint", mtuHint);
 
     running = true;
 
@@ -141,7 +141,7 @@ public class DynamoReader {
             for (Map<String, AttributeValue> item : scanResponse.items())
               jsonElements.add(DynamoHelper.parse(item));
             if (jsonElements.size()>0) {
-              for (List<JsonElement> partition : Lists.partition(jsonElements, mtu>0?mtu:jsonElements.size())) {
+              for (List<JsonElement> partition : Lists.partition(jsonElements, mtuHint>0?mtuHint:jsonElements.size())) {
                 run(()->{
                   ListenableFuture<?> lf = listener.apply(partition);
                   futures.add(lf);

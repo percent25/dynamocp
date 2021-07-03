@@ -66,7 +66,7 @@ class AwsQueueInputPlugin implements InputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> run(int mtu) throws Exception {
+  public ListenableFuture<?> run(int mtuHint) throws Exception {
     return receiver.start();
   }
 

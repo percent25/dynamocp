@@ -44,9 +44,9 @@ class DynamoInputPlugin implements InputPlugin {
   }
 
   @Override
-  public ListenableFuture<?> run(int mtu) throws Exception {
-    debug("run", "mtu", mtu);
-    return dynamoReader.scan(mtu);
+  public ListenableFuture<?> run(int mtuHint) throws Exception {
+    debug("run", "mtuHint", mtuHint);
+    return dynamoReader.scan(mtuHint);
   }
 
   private void debug(Object... args) {

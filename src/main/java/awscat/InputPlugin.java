@@ -9,6 +9,6 @@ public interface InputPlugin {
 
   void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener);
 
-  ListenableFuture<?> run(int mtu) throws Exception;
+  ListenableFuture<?> run(int mtuHint) throws Exception;
 
 }
