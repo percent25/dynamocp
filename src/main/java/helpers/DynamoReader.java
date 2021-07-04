@@ -70,8 +70,6 @@ public class DynamoReader {
         //
         .add("readLimiter", readLimiter)
         //
-        // .add("limit", limit)
-        //
         .toString();
   }
 
@@ -168,7 +166,7 @@ public class DynamoReader {
   }
 
   // non-blocking
-  public void stop() {
+  public void stopNonBlocking() {
     debug("stop");
     running = false;
   }
@@ -188,7 +186,6 @@ public class DynamoReader {
         // .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
         .build();
 
-    // AbstractThrottle readLimiter = permits->Futures.immediateVoidFuture();
     DynamoReader dynamoReader = new DynamoReader(client, "OnDemand", 16, permits->Futures.immediateVoidFuture());
 
     dynamoReader.setListener(jsonElements->{
@@ -200,7 +197,7 @@ public class DynamoReader {
     
     ListenableFuture<?> lf = dynamoReader.scan(-1);
     Thread.sleep(25_000);
-    dynamoReader.stop();
+    dynamoReader.stopNonBlocking();
     lf.get();
 
   }
