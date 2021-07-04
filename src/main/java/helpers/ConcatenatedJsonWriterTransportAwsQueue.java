@@ -36,11 +36,12 @@ public class ConcatenatedJsonWriterTransportAwsQueue implements ConcatenatedJson
     }
 
     @Override
-    public ListenableFuture<?> send(String string) {
-        trace("send", string.length());
+    public ListenableFuture<?> send(byte[] bytes) {
+        trace("send", bytes.length);
+        String messageBody = new String(bytes);
         SendMessageRequest request = SendMessageRequest.builder() //
                 .queueUrl(queueUrl) //
-                .messageBody(string) //
+                .messageBody(messageBody) //
                 .build();
         return CompletableFuturesExtra.toListenableFuture(client.sendMessage(request));
     }

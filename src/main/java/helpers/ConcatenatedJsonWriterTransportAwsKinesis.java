@@ -39,10 +39,10 @@ public class ConcatenatedJsonWriterTransportAwsKinesis implements ConcatenatedJs
     }
 
     @Override
-    public ListenableFuture<?> send(String string) {
-        trace("send", string.length());
+    public ListenableFuture<?> send(byte[] bytes) {
+        trace("send", bytes.length);
         String partitionKey = UUID.randomUUID().toString();
-        SdkBytes data = SdkBytes.fromByteArray(string.getBytes());
+        SdkBytes data = SdkBytes.fromByteArray(bytes);
         PutRecordRequest request = PutRecordRequest.builder() //
                 .streamName(streamName) //
                 .partitionKey(partitionKey) //

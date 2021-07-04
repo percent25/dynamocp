@@ -28,12 +28,12 @@ public class ConcatenatedJsonWriter {
         int mtu();
 
         /**
-         * send message
+         * send bytes
          * 
          * <p>
-         * ConcatenatedJsonWriter shall not ask Transport to send a message bigger than mtu
+         * ConcatenatedJsonWriter shall not ask Transport to send more than mtu bytes
          */
-        ListenableFuture<?> send(String message);
+        ListenableFuture<?> send(byte[] bytes);
     }
 
     private class VoidFuture extends AbstractFuture<Void> {
@@ -122,7 +122,7 @@ public class ConcatenatedJsonWriter {
             {
                 run(() -> {
                     // request
-                    return transport.send(baos.toString());
+                    return transport.send(baos.toByteArray());
                 }, sendResponse -> {
                     // success
                     partition.forEach(lf -> lf.setVoid());

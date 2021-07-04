@@ -39,7 +39,7 @@ public class ConcatenatedJsonWriterTransportAwsS3Export implements ConcatenatedJ
     }
 
     @Override
-    public ListenableFuture<?> send(String message) {
+    public ListenableFuture<?> send(byte[] bytes) {
 
         // export-prefix/AWSDynamoDB/ExportId/manifest-files.json
         // export-prefix/AWSDynamoDB/ExportId/data/bafybeiczss3yxay3o4abnabbb.json.gz
@@ -50,7 +50,7 @@ public class ConcatenatedJsonWriterTransportAwsS3Export implements ConcatenatedJ
             key = String.format("%s/%s", exportPrefix, dataObject());
         // String key = String.format("%s/awscat/%s/%s", exportPrefix, exportId, dataObject());
         PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucket).key(key).build();
-        AsyncRequestBody requestBody = AsyncRequestBody.fromString(message);
+        AsyncRequestBody requestBody = AsyncRequestBody.fromBytes(bytes);
         return CompletableFuturesExtra.toListenableFuture(client.putObject(putObjectRequest, requestBody));
     }
 

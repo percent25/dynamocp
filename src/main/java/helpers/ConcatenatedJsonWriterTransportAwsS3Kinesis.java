@@ -37,10 +37,10 @@ public class ConcatenatedJsonWriterTransportAwsS3Kinesis implements Concatenated
     }
 
     @Override
-    public ListenableFuture<?> send(String message) {
+    public ListenableFuture<?> send(byte[] bytes) {
         String key = key(deliveryStreamName, deliveryStreamVersion);
         PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucket).key(key).build();
-        AsyncRequestBody requestBody = AsyncRequestBody.fromString(message);
+        AsyncRequestBody requestBody = AsyncRequestBody.fromBytes(bytes);
         return CompletableFuturesExtra.toListenableFuture(client.putObject(putObjectRequest, requestBody));
     }
 

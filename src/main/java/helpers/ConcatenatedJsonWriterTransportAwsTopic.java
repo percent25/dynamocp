@@ -36,8 +36,9 @@ public class ConcatenatedJsonWriterTransportAwsTopic implements ConcatenatedJson
     }
 
     @Override
-    public ListenableFuture<?> send(String message) {
-        debug("send", message.length());
+    public ListenableFuture<?> send(byte[] bytes) {
+        debug("send", bytes.length);
+        String message = new String(bytes);
         PublishRequest publishRequest = PublishRequest.builder().topicArn(topicArn).message(message).build();
         return CompletableFuturesExtra.toListenableFuture(client.publish(publishRequest));
     }
