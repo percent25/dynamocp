@@ -56,7 +56,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
     public int c;
     // write capacity units
     public int wcu;
-    // issue deleteItem (vs putItem)
+    // putItem vs deleteItem
     public boolean delete;
     public String toString() {
       return new Gson().toJson(this);
@@ -91,9 +91,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
     options = Addresses.options(address, Options.class);
 
     DynamoDbAsyncClient client = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
-    DynamoDbAsyncClient asyncClient = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
-
-    Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
+    Supplier<DescribeTableResponse> describeTableResponseSupplier = Suppliers.memoizeWithExpiration(()->{
       try {
         return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
       } catch (Exception e) {
@@ -101,7 +99,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
       }
     }, 25, TimeUnit.SECONDS);
 
-    Iterable<String> keySchema = Lists.transform(describeTable.get().table().keySchema(), e->e.attributeName());      
+    Iterable<String> keySchema = Lists.transform(describeTableResponseSupplier.get().table().keySchema(), e->e.attributeName());      
 
     options.c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
 
@@ -110,12 +108,13 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
     AbstractThrottle writeLimiter = new AbstractThrottleGuava(() -> {
       if (options.wcu > 0)
         return options.wcu;
-      Number provisionedWcu = describeTable.get().table().provisionedThroughput().writeCapacityUnits();
+      Number provisionedWcu = describeTableResponseSupplier.get().table().provisionedThroughput().writeCapacityUnits();
       if (provisionedWcu.longValue() > 0)
         return provisionedWcu;
       return Double.MAX_VALUE; // on-demand/pay-per-request
     });
 
+    DynamoDbAsyncClient asyncClient = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
     return ()->{
       return new DynamoOutputPlugin(asyncClient, tableName, keySchema, sem, writeLimiter, options.delete);
     };

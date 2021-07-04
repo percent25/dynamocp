@@ -90,9 +90,7 @@ public class DynamoInputPluginProvider extends AbstractPluginProvider implements
     options = Addresses.options(address, Options.class);  
 
     DynamoDbAsyncClient client = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
-    DynamoDbAsyncClient asyncClient = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
-
-    Supplier<DescribeTableResponse> describeTable = Suppliers.memoizeWithExpiration(()->{
+    Supplier<DescribeTableResponse> describeTableResponseSupplier = Suppliers.memoizeWithExpiration(()->{
       try {
         return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
       } catch (Exception e) {
@@ -114,12 +112,13 @@ public class DynamoInputPluginProvider extends AbstractPluginProvider implements
     AbstractThrottle readLimiter = new AbstractThrottleGuava(() -> {
       if (options.rcu > 0)
         return options.rcu;
-      Number provisionedRcu = describeTable.get().table().provisionedThroughput().readCapacityUnits();
+      Number provisionedRcu = describeTableResponseSupplier.get().table().provisionedThroughput().readCapacityUnits();
       if (provisionedRcu.longValue() > 0)
         return provisionedRcu;
       return Double.MAX_VALUE; // on-demand/pay-per-request
     });
 
+    DynamoDbAsyncClient asyncClient = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
     return new DynamoInputPlugin(asyncClient, tableName, c, readLimiter, options.limit);
   }
   
