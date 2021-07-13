@@ -1,6 +1,6 @@
 package awscat.plugins;
 
-import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 
@@ -25,7 +25,7 @@ class DynamoOutputPlugin implements OutputPlugin {
 
   private final DynamoWriter writer;
 
-  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore c, AbstractThrottle writeLimiter, boolean delete) {
+  public DynamoOutputPlugin(DynamoDbAsyncClient client, String tableName, List<KeySchemaElement> keySchema, Semaphore c, AbstractThrottle writeLimiter, boolean delete) {
     debug("ctor");
     this.writer = new DynamoWriter(client, tableName, keySchema, c, writeLimiter, delete);
   }
@@ -99,7 +99,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
       }
     }, 25, TimeUnit.SECONDS);
 
-    Iterable<String> keySchema = Lists.transform(describeTableResponseSupplier.get().table().keySchema(), e->e.attributeName());      
+    List<KeySchemaElement> keySchema = describeTableResponseSupplier.get().table().keySchema();
 
     options.c = options.c > 0 ? options.c : Runtime.getRuntime().availableProcessors();
 

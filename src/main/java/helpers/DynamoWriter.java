@@ -1,10 +1,8 @@
 package helpers;
 
 import java.util.*;
-import java.util.Map.*;
 import java.util.concurrent.*;
 
-import com.fasterxml.jackson.databind.*;
 import com.google.common.collect.*;
 import com.google.common.util.concurrent.*;
 import com.google.gson.*;
@@ -32,7 +30,7 @@ public class DynamoWriter {
 
   private final DynamoDbAsyncClient client;
   private final String tableName;
-  private final Iterable<String> keySchema;
+  private final List<String> keySchema;
   private final Semaphore sem;
   private final AbstractThrottle writeLimiter;
   private final boolean delete; // PutItem vs DeleteItem
@@ -59,11 +57,11 @@ public class DynamoWriter {
   // ###TODO
   // ###TODO
 
-  public DynamoWriter(DynamoDbAsyncClient client, String tableName, Iterable<String> keySchema, Semaphore sem, AbstractThrottle writeLimiter, boolean delete) {
+  public DynamoWriter(DynamoDbAsyncClient client, String tableName, List<KeySchemaElement> keySchema, Semaphore sem, AbstractThrottle writeLimiter, boolean delete) {
     debug("ctor", client, tableName, keySchema, writeLimiter, delete);
     this.client = client;
     this.tableName = tableName;
-    this.keySchema = keySchema;
+    this.keySchema = Lists.transform(keySchema, e->e.attributeName());
     this.sem = sem;
     this.writeLimiter = writeLimiter;
     this.delete = delete;
@@ -154,8 +152,11 @@ public class DynamoWriter {
     ListenableFuture<?> lf = new FutureRunner() {
       // VoidFuture throttle = new VoidFuture();
       DoBatchWriteItemWork work = new DoBatchWriteItemWork();
-      BiMap<Map<String, AttributeValue>/*key*/, WriteRequest> writeRequests = HashBiMap.create();
       {
+        BiMap<Map<String, AttributeValue>/*key*/, WriteRequest> writeRequests = HashBiMap.create();
+        //###TODO SCRUTINIZE THIS FOR FAILURE CASES
+        //###TODO SCRUTINIZE THIS FOR FAILURE CASES
+        //###TODO SCRUTINIZE THIS FOR FAILURE CASES
         run(() -> {
 
           //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
@@ -166,7 +167,7 @@ public class DynamoWriter {
           //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
           //###TODO WOULD BE NICE TO HAVE ASYNC SEMAPHORE ACQUIRE
 
-          Map<Map<String, AttributeValue>,Map<String, AttributeValue>> items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
+          Map<Map<String, AttributeValue>/*key*/, Map<String, AttributeValue>/*item*/> items = new LinkedHashMap<Map<String, AttributeValue>/* key */, Map<String, AttributeValue>/* item */>();
           partition.keySet().forEach(key -> {
             PartitionValue partitionValue = Iterables.getLast(partition.get(key)); // last one wins
             items.put(key, partitionValue.item);
@@ -261,6 +262,30 @@ public class DynamoWriter {
 
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
+  }
+
+  public static void main(String... args) throws Exception {
+
+    DynamoDbAsyncClient client = DynamoDbAsyncClient.builder() //
+        // .httpClient(AwsCrtAsyncHttpClient.create()) //
+        // .endpointOverride(URI.create("http://localhost:4566")) //
+        // .region(Region.US_EAST_1) //
+        // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
+        // .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) //
+        .build();
+
+    final String tableName = "OnDemand";
+
+    DescribeTableRequest describeTableRequest = DescribeTableRequest.builder().tableName(tableName).build();
+    DescribeTableResponse describeTableResponse = client.describeTable(describeTableRequest).get();
+    List<KeySchemaElement> keySchema = describeTableResponse.table().keySchema();
+    
+    Semaphore sem = new Semaphore(1);
+
+    DynamoWriter dynamoWriter = new DynamoWriter(client, tableName, keySchema, sem, permits -> Futures.immediateVoidFuture(), false);
+
+    Futures.allAsList(dynamoWriter.write(new JsonStreamParser("{id:{s:1}}").next()), dynamoWriter.flush()).get();
+
   }
 
 }
