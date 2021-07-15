@@ -55,7 +55,7 @@ public class Main implements ApplicationRunner {
     // System.err.println("main"+Arrays.asList(args));
     // args = new String[]{"dynamo:MyTable"};
     // args= new String[]{"dynamo:MyTableOnDemand,rcu=128","dynamo:MyTableOnDemand,delete=true,wcu=5"};
-    System.exit(SpringApplication.exit(SpringApplication.run(Main.class, args)));
+    SpringApplication.run(Main.class, args);
     // System.exit(SpringApplication.exit(SpringApplication.run(Main.class, "arn:aws:sqs:us-east-1:000000000000:MyQueue,endpoint=http://localhost:4566,limit=1")));
   }
 
