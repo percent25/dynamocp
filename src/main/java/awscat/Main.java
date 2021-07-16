@@ -63,24 +63,18 @@ public class Main implements ApplicationRunner {
   private final List<OutputPluginProvider> outputPluginProviders = new ArrayList<>();
 
   AtomicLong in = new AtomicLong(); // pre-filter
-  // AtomicLong out = new AtomicLong(); // post-filter
-  // AtomicLong request = new AtomicLong(); // output plugin
   AtomicLong success = new AtomicLong(); // output plugin
   AtomicLong failure = new AtomicLong(); // output plugin
 
   private final LocalMeter rate = new LocalMeter();
 
   class Working {
-    private final Number in; // filter
-    // private final Number out; // filter
-    // private final Number request;
-    private final Number out;
-    private final Number err;
-    private String rate;
-    private Working(Number in, Number success, Number failure) {
+    final Number in; // pre-filter
+    final Number out;
+    final Number err;
+    String rate;
+    Working(Number in, Number success, Number failure) {
       this.in = in;
-      // this.out = out;
-      // this.request = request;
       this.out = success;
       this.err = failure;
     }
