@@ -50,10 +50,10 @@ public class ConcatenatedJsonWriter {
     private final Transport transport;
 
     // current partition
-    private ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    private ByteArrayOutputStream partitionBytes = new ByteArrayOutputStream();
 
     // partition -> futures
-    private final Multimap<ByteArrayOutputStream, VoidFuture> partitions = LinkedListMultimap.create();
+    private final Multimap<ByteArrayOutputStream, VoidFuture> partitionFutures = LinkedListMultimap.create();
     
     private final List<ListenableFuture<?>> flushFutures = Lists.newArrayList();
 
@@ -85,12 +85,12 @@ public class ConcatenatedJsonWriter {
                     byte[] bytes = render(jsonElement);
                     if (bytes.length > transport.mtu())
                         throw new IllegalArgumentException("jsonElement more than mtu");
-                    if (baos.size() + bytes.length > transport.mtu())
-                        baos = flush(baos, partitions.get(baos));
-                    baos.write(bytes, 0, bytes.length);
+                    if (partitionBytes.size() + bytes.length > transport.mtu())
+                        flush();
+                    partitionBytes.write(bytes, 0, bytes.length);
 
                     VoidFuture lf = new VoidFuture();
-                    partitions.put(baos, lf); // track futures on a per-baos/batch/partition basis
+                    partitionFutures.put(partitionBytes, lf); // track futures on a per-baos/batch/partition basis
                     return lf;
                 });
             }
@@ -107,8 +107,8 @@ public class ConcatenatedJsonWriter {
         return new FutureRunner() {
             {
                 run(() -> {
-                    if (baos.size() > 0)
-                        baos = flush(baos, partitions.get(baos));
+                    if (partitionBytes.size() > 0)
+                        partitionBytes = flush(partitionBytes, partitionFutures.get(partitionBytes));
                     return Futures.successfulAsList(flushFutures);
                 });
             }
@@ -116,19 +116,19 @@ public class ConcatenatedJsonWriter {
     }
 
     // returns new baos
-    private ByteArrayOutputStream flush(ByteArrayOutputStream baos, Iterable<VoidFuture> partition) {
-        debug("flush", baos.size());
+    private ByteArrayOutputStream flush(ByteArrayOutputStream partitionBytes, Iterable<VoidFuture> futures) {
+        debug("flush", partitionBytes.size());
         ListenableFuture<?> lf = new FutureRunner() {
             {
                 run(() -> {
                     // request
-                    return transport.send(baos.toByteArray());
+                    return transport.send(partitionBytes.toByteArray());
                 }, sendResponse -> {
                     // success
-                    partition.forEach(lf -> lf.setVoid());
+                    futures.forEach(lf -> lf.setVoid());
                 }, e -> {
                     // failure
-                    partition.forEach(lf -> lf.setException(e));
+                    futures.forEach(lf -> lf.setException(e));
                 });
             }
         };
