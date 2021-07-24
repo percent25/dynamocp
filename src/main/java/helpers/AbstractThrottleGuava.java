@@ -13,16 +13,6 @@ import io.netty.util.Timer;
 
 public class AbstractThrottleGuava implements AbstractThrottle {
 
-  // private class VoidFuture extends AbstractFuture<Void> {
-  //   public boolean setVoid() {
-  //     return super.set(null);
-  //   }
-
-  //   public boolean setException(Throwable throwable) {
-  //     return super.setException(throwable);
-  //   }
-  // }
-
   private final Supplier<Number> rateProvider;
   private final RateLimiter limiter = RateLimiter.create(5.0);
   private final Timer timer = new HashedWheelTimer();
@@ -30,12 +20,6 @@ public class AbstractThrottleGuava implements AbstractThrottle {
   public AbstractThrottleGuava(Supplier<Number> rateProvider) {
     this.rateProvider = rateProvider;
   }
-
-  // public void acquire(Number permits) {
-  //   limiter.setRate(rateProvider.get().doubleValue());
-  //   if (permits.intValue() > 0)
-  //     limiter.acquire(permits.intValue());
-  // }
 
   public ListenableFuture<?> asyncAcquire(Number permits) {
     limiter.setRate(rateProvider.get().doubleValue());
@@ -58,10 +42,6 @@ public class AbstractThrottleGuava implements AbstractThrottle {
         }
       }
     };
-  }
-
-  public void destroy() {
-    timer.stop();
   }
 
 }
