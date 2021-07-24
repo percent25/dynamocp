@@ -10,7 +10,7 @@ import java.util.Map.*;
 import com.google.common.collect.*;
 import com.google.gson.*;
 
-import awscat.*;
+import percent25.awscat.*;
 
 import org.junit.jupiter.api.*;
 

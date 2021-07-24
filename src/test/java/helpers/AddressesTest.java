@@ -2,7 +2,7 @@ package helpers;
 
 import com.google.gson.*;
 
-import awscat.*;
+import percent25.awscat.*;
 
 import org.junit.jupiter.api.*;
 

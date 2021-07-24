@@ -13,7 +13,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.*;
 import com.google.gson.Gson;
 
-import awscat.plugins.AwsHelper;
+import percent25.awscat.plugins.AwsHelper;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
