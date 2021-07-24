@@ -39,6 +39,7 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
 
     URI uri = URI.create(Addresses.base(address));
     String bucket = uri.getHost();
+
     String exportPrefix = uri.getPath();
     // s3://mybucket -> ""
     // s3://mybucket/ -> ""
@@ -51,9 +52,11 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
     S3AsyncClient client = AwsHelper.build(S3AsyncClient.builder(), options);
 
     // Note- transport is thread safe
-    ConcatenatedJsonWriter.Transport transport = new ConcatenatedJsonWriterTransportAwsS3Export(client, bucket,
-        exportPrefix);
+    ConcatenatedJsonWriter.Transport transport =
+      new ConcatenatedJsonWriterTransportAwsS3Export(client, bucket, exportPrefix);
+    
     // Note- ConcatenatedJsonWriter is not thread safe
+    // therefore return a new instance per supplier invocation
     return () -> {
       return new ConcatenatedJsonWriterOutputPlugin(new ConcatenatedJsonWriter(transport));
     };
