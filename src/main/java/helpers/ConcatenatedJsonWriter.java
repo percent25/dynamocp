@@ -25,7 +25,7 @@ public class ConcatenatedJsonWriter {
         /**
          * maximum transmission unit
          */
-        int mtu();
+        int mtuBytes();
 
         /**
          * send bytes
@@ -83,9 +83,9 @@ public class ConcatenatedJsonWriter {
             {
                 run(() -> {
                     byte[] bytes = render(jsonElement);
-                    if (bytes.length > transport.mtu())
-                        throw new IllegalArgumentException("jsonElement more than mtu");
-                    if (partitionBytes.size() + bytes.length > transport.mtu())
+                    if (bytes.length > transport.mtuBytes())
+                        throw new IllegalArgumentException("jsonElement more than mtu bytes");
+                    if (partitionBytes.size() + bytes.length > transport.mtuBytes())
                         flush();
                     partitionBytes.write(bytes, 0, bytes.length);
 

@@ -31,7 +31,7 @@ public class ConcatenatedJsonWriterTransportAwsTopic implements ConcatenatedJson
     }
 
     @Override
-    public int mtu() {
+    public int mtuBytes() {
         return 256 * 1024; // sns/sqs max msg len
     }
 

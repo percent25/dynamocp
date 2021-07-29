@@ -34,7 +34,7 @@ public class ConcatenatedJsonWriterTransportAwsS3Export implements ConcatenatedJ
     }
 
     @Override
-    public int mtu() {
+    public int mtuBytes() {
         return 128 * 1024 * 1024; // like kinesis firehose
     }
 
