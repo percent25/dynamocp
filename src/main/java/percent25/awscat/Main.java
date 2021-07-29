@@ -236,10 +236,7 @@ public class Main implements ApplicationRunner {
 
     });
 
-    int mtu = outputPluginProvider.mtu();
-    stderr("start", "mtu", mtu);
-    inputPlugin.run(mtu).get();
-    stderr("finish", "mtu", mtu);
+    inputPlugin.run(outputPluginProvider.mtuHint()).get();
 
   }
 

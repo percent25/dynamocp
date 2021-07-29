@@ -42,11 +42,11 @@ public interface OutputPluginProvider {
   Supplier<OutputPlugin> activate(String address) throws Exception;
 
   /**
-   * mtu
+   * mtuHint
    * 
    * @return
    */
-  default int mtu() {
+  default int mtuHint() {
     return -1;
   }
 

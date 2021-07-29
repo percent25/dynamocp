@@ -71,7 +71,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
   }
 
   @Override
-  public int mtu() {
+  public int mtuHint() {
     return 25;
   }
 
