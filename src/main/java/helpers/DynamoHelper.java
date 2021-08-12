@@ -6,12 +6,29 @@ import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.google.gson.*;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+// NULL java null
+// BOOL java boolean
+
+// B byte[]
+// N java.lang.Number
+// S java.lang String
+
+// BS java.util.Set<byte[]> // unique, unordered
+// NS java.util.Set<Number> // unique, unordered
+// SS java.util.Set<String> // unique, unordered
+
+// M map lava.util.Map<String, Object> // unordered
+
+// L list java.util.List<Object> // ordered, duplicates
+
+// https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html
 public class DynamoHelper {
+
+  private static ObjectMapper objectMapper = new ObjectMapper();
 
   // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
   public static int itemSize(Map<String, AttributeValue> item) {
@@ -50,14 +67,13 @@ public class DynamoHelper {
 
   // https://aws.amazon.com/blogs/developer/aws-sdk-for-java-2-0-developer-preview/
   public static JsonElement parse(Map<String, AttributeValue> item) {
-    JsonElement jsonElement = new Gson().toJsonTree(Maps.transformValues(item, value -> {
+    return new Gson().toJsonTree(Maps.transformValues(item, value -> {
       try {
         return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
     }));
-    return jsonElement;
   }
 
   // https://aws.amazon.com/blogs/developer/aws-sdk-for-java-2-0-developer-preview/
@@ -76,6 +92,9 @@ public class DynamoHelper {
     }
   }
 
-  private static ObjectMapper objectMapper = new ObjectMapper();
+  // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html
+  public static void main(String... args) throws Exception {
+    System.out.println(render(new JsonStreamParser("{   id:{s:1}, mylist:{ l: [{s:1},{s:1},{s:1}] }   }").next()));
+  }
 
 }
