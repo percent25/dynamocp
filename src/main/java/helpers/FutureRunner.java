@@ -4,7 +4,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.function.*;
 
-import com.google.common.base.*;
 import com.google.common.util.concurrent.*;
 import com.spotify.futures.*;
 
@@ -115,13 +114,6 @@ public class FutureRunner extends AbstractFuture<Void> {
     }
   }
 
-  // convenience
-  protected <T> ListenableFuture<T> lf(CompletableFuture<T> cf) {
-    return CompletableFuturesExtra.toListenableFuture(cf);
-  }
-
-  // ----------------------------------------------------------------------
-
   private void doCatch(Exception e) {
     firstException.compareAndSet(null, e);
   }
@@ -129,10 +121,17 @@ public class FutureRunner extends AbstractFuture<Void> {
   private void doFinally() {
     if (inFlight.decrementAndGet() == 0) {
       if (firstException.get() == null)
-        set(Defaults.defaultValue(Void.class));
+        set(null);
       else
         setException(firstException.get());
     }
+  }
+
+  // ----------------------------------------------------------------------
+
+  // convenience
+  protected <T> ListenableFuture<T> lf(CompletableFuture<T> cf) {
+    return CompletableFuturesExtra.toListenableFuture(cf);
   }
 
 }
