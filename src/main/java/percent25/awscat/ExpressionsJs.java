@@ -61,7 +61,7 @@ public class ExpressionsJs {
       bindings.putMember(identifier, rootObject.getMember(identifier));
   }
 
-  // get
+  // get current element
   public JsonElement e() {
     Value e = bindings.getMember("e");
     if (e.hasArrayElements())
@@ -69,19 +69,14 @@ public class ExpressionsJs {
     return new Gson().toJsonTree(e.as(Object.class));
   }
 
-  // set
-  public void e(String e) {
-    e(json(e));
-  }
-
-  // set
+  // set current element
   public void e(JsonElement e) {
     bindings.putMember("e", fromJsonElement(e));
   }
 
   // eval
-  public boolean eval(String expressionString) {
-    Value value = context.eval("js", expressionString);
+  public boolean eval(String js) {
+    Value value = context.eval("js", js);
     // coerce to truthy/falsey
     return context.eval("js", "(function(s){return !!s})").execute(value).asBoolean();
   }
