@@ -57,7 +57,7 @@ public class MatrixIT {
 
                 // STEP 2 invoke
                 softly.assertThatCode(() -> {
-                  Main.main(sourceAddress, targetAddress);
+                  Main.main(sourceAddress, targetAddress, "--limit=1");
                 }).as("a=%s b=%s c=%s d=%s", eachSource, sourceAddress, eachTarget, targetAddress).doesNotThrowAnyException();
 
                 // STEP 3 verify the target with the jsonElement
