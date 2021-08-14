@@ -18,6 +18,7 @@ import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.regions.Region;
 
 public class AwsBuilder {
+  private static Environment springEnv = new StandardEnvironment();
   /**
    * build
    * 
@@ -27,8 +28,7 @@ public class AwsBuilder {
    * @return
    */
   public static <B extends AwsClientBuilder<B, C>, C> C build(B builder) {
-    Environment env = new StandardEnvironment();
-    String awsEndpoint = env.getProperty("aws.endpoint");
+    String awsEndpoint = springEnv.getProperty("aws.endpoint");
     if (StringUtils.hasText(awsEndpoint)) {
       builder = builder.endpointOverride(URI.create(awsEndpoint));
       // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
@@ -44,18 +44,20 @@ public class AwsBuilder {
    * @return
    */
   public static String rerenderAddress(String address) {
+
+    // STEP 1 deconstruct
     String base = Addresses.base(address);
     Map<String, String> options = Addresses.options(address, new TypeToken<Map<String, String>>(){}.getType());
 
-    Environment env = new StandardEnvironment();
-    String awsEndpoint = env.getProperty("aws.endpoint");
+    // STEP 2 slipstream aws.endpoint
+    String awsEndpoint = springEnv.getProperty("aws.endpoint");
     if (StringUtils.hasText(awsEndpoint)) {
       options.put("endpoint", awsEndpoint);
     }
 
+    // STEP 3 reconstruct
     if (options.size()==0)
       return base;
-
     String stringOptions = Joiner.on(",").withKeyValueSeparator("=").join(options);
     return String.format("%s,%s", base, stringOptions);
   }

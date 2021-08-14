@@ -23,7 +23,7 @@ public class AwsQueueIT {
   static SqsClient client;
 
   @BeforeAll
-  public static void newClient() {
+  public static void createClient() {
     client = AwsBuilder.build(SqsClient.builder());
   }
 

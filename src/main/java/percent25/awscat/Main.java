@@ -66,13 +66,13 @@ public class Main implements ApplicationRunner {
   AtomicLong success = new AtomicLong(); // output plugin
   AtomicLong failure = new AtomicLong(); // output plugin
 
-  private final LocalMeter rate = new LocalMeter();
+  private final LocalMeter rateOut = new LocalMeter();
 
   class Working {
     final Number in; // pre-filter
     final Number out;
     final Number err;
-    String rate;
+    String rateOut;
     Working(Number in, Number success, Number failure) {
       this.in = in;
       this.out = success;
@@ -198,8 +198,8 @@ public class Main implements ApplicationRunner {
         Working work = new Working(in, success, failure);
         {
           run(()->{
+            ExpressionsJs expressionsJs = new ExpressionsJs(); // throws
             OutputPlugin outputPlugin = outputPluginSupplier.get(); // throws
-            ExpressionsJs expressions = new ExpressionsJs(); // throws
             for (JsonElement jsonElement : jsonElements) {
 
 
@@ -207,41 +207,44 @@ public class Main implements ApplicationRunner {
               //###TODO "in" is wrong here
               //###TODO "in" is wrong here
               //###TODO "in" is wrong here
-              if (in.getAndIncrement() < effectiveLimit) { //###TODO "in" is wrong here
-              //###TODO "in" is wrong here
-              //###TODO "in" is wrong here
-              //###TODO "in" is wrong here
+              long preCount = in.getAndIncrement();
+              if (preCount < effectiveLimit) {
+                //###TODO "in" is wrong here
+                //###TODO "in" is wrong here
+                //###TODO "in" is wrong here
 
 
 
                 run(() -> {
                   boolean filter = true;
-                  expressions.e(jsonElement); //###TODO .deepCopy
+                  expressionsJs.e(jsonElement); //###TODO .deepCopy
                   for (String js : options.js)
-                    filter = filter && expressions.eval(js);
+                    filter = filter && expressionsJs.eval(js);
                   if (filter) {
                     run(() -> {
-                      return outputPlugin.write(expressions.e());
+                      return outputPlugin.write(expressionsJs.e());
                     }, result -> {
                       success.incrementAndGet();
                     }, e -> {
-                      stderr(e);
-                      e.printStackTrace();
                       failure.incrementAndGet();
+                      stderr(e);
                       failuresPrintStreamSupplier.get().println(jsonElement); // pre-transform
                     }, () -> {
-                      rate.add(1);
+                      rateOut.add(1);
                     });
                   }
                   return Futures.immediateVoidFuture();
                 });
-              } else {
+              }
+
+              if (preCount + 1 == effectiveLimit) {
+                stderr("CLOSING");
                 inputPlugin.closeNonBlocking();
               }
             }
             return outputPlugin.flush();
           }, ()->{
-            work.rate = rate.toString();
+            work.rateOut = rateOut.toString();
             stderr(work);
             //###TODO flush failuresPrintStream here??
             //###TODO flush failuresPrintStream here??

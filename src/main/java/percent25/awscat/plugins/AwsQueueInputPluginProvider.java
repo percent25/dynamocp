@@ -39,11 +39,13 @@ class AwsQueueInputPlugin implements InputPlugin {
 
   @Override
   public ListenableFuture<?> run(int mtuHint) throws Exception {
+    debug("run", mtuHint);
     return receiver.start();
   }
 
   @Override
   public void closeNonBlocking() {
+    debug("closeNonBlocking");
     receiver.closeNonBlocking();
   }
 
