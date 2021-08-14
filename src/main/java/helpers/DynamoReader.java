@@ -29,10 +29,8 @@ public class DynamoReader {
   //### TODO THIS DOES NOT NEED TO BE A MEMBER VARIABLE
   //### TODO THIS DOES NOT NEED TO BE A MEMBER VARIABLE
 
-  private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
-
   private boolean running;
-  private final AtomicInteger staggeredSegment = new AtomicInteger();
+  private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
   /**
    * ctor
@@ -84,7 +82,8 @@ public class DynamoReader {
 
     return new FutureRunner() {
       {
-        doSegment(staggeredSegment.getAndIncrement()); // stagger
+        for (int i = 0; i < totalSegments; ++i)
+          doSegment(i);
       }
       void doSegment(int segment) {
         if (running) {
@@ -121,12 +120,6 @@ public class DynamoReader {
 
             return lf(client.scan(scanRequest));
           }, scanResponse -> {
-
-            if (segment == 0) {
-              if (staggeredSegment.get() < totalSegments) {
-                doSegment(staggeredSegment.getAndIncrement()); // post-increment
-              }
-            }
 
             debug("doSegment", segment, scanResponse.count());
 
@@ -166,8 +159,8 @@ public class DynamoReader {
   }
 
   // non-blocking
-  public void stopNonBlocking() {
-    debug("stop");
+  public void closeNonBlocking() {
+    debug("closeNonBlocking");
     running = false;
   }
 
@@ -197,7 +190,7 @@ public class DynamoReader {
     
     ListenableFuture<?> lf = dynamoReader.scan(-1);
     Thread.sleep(25_000);
-    dynamoReader.stopNonBlocking();
+    dynamoReader.closeNonBlocking();
     lf.get();
 
   }

@@ -190,6 +190,8 @@ public class Main implements ApplicationRunner {
     // main loop
     // ----------------------------------------------------------------------
 
+    long effectiveLimit = options.limit > 0 ? options.limit : Long.MAX_VALUE;
+
     inputPlugin.setListener(jsonElements->{
       debug("listener", Iterables.size(jsonElements));
       return new FutureRunner() {
@@ -199,29 +201,43 @@ public class Main implements ApplicationRunner {
             OutputPlugin outputPlugin = outputPluginSupplier.get(); // throws
             ExpressionsJs expressions = new ExpressionsJs(); // throws
             for (JsonElement jsonElement : jsonElements) {
-              run(() -> {
-                in.incrementAndGet();
 
-                boolean filter = true;
-                expressions.e(jsonElement); //###TODO .deepCopy
-                for (String js : options.js)
-                  filter = filter && expressions.eval(js);
-                if (filter) {
-                  run(() -> {
-                    return outputPlugin.write(expressions.e());
-                  }, result -> {
-                    success.incrementAndGet();
-                  }, e -> {
-                    stderr(e);
-                    e.printStackTrace();
-                    failure.incrementAndGet();
-                    failuresPrintStreamSupplier.get().println(jsonElement); // pre-transform
-                  }, () -> {
-                    rate.add(1);
-                  });
-                }
-                return Futures.immediateVoidFuture();
-              });
+
+
+              //###TODO "in" is wrong here
+              //###TODO "in" is wrong here
+              //###TODO "in" is wrong here
+              if (in.getAndIncrement() < effectiveLimit) { //###TODO "in" is wrong here
+              //###TODO "in" is wrong here
+              //###TODO "in" is wrong here
+              //###TODO "in" is wrong here
+
+
+
+                run(() -> {
+                  boolean filter = true;
+                  expressions.e(jsonElement); //###TODO .deepCopy
+                  for (String js : options.js)
+                    filter = filter && expressions.eval(js);
+                  if (filter) {
+                    run(() -> {
+                      return outputPlugin.write(expressions.e());
+                    }, result -> {
+                      success.incrementAndGet();
+                    }, e -> {
+                      stderr(e);
+                      e.printStackTrace();
+                      failure.incrementAndGet();
+                      failuresPrintStreamSupplier.get().println(jsonElement); // pre-transform
+                    }, () -> {
+                      rate.add(1);
+                    });
+                  }
+                  return Futures.immediateVoidFuture();
+                });
+              } else {
+                inputPlugin.closeNonBlocking();
+              }
             }
             return outputPlugin.flush();
           }, ()->{

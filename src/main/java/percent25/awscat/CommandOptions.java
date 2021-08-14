@@ -6,6 +6,7 @@ import java.util.List;
 import com.google.gson.Gson;
 
 public class CommandOptions {
+  public int limit;
   public boolean help;
   public boolean version;
   public boolean debug;

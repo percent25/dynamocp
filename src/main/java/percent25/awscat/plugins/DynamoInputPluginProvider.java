@@ -19,7 +19,6 @@ import software.amazon.awssdk.services.dynamodb.model.*;
 
 class DynamoInputPlugin implements InputPlugin {
 
-  private final int limit;
   private final DynamoReader dynamoReader;
 
   /**
@@ -29,11 +28,9 @@ class DynamoInputPlugin implements InputPlugin {
    * @param tableName
    * @param totalSegments
    * @param readLimiter
-   * @param limit
    */
-  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int totalSegments, AbstractThrottle readLimiter, int limit) {
+  public DynamoInputPlugin(DynamoDbAsyncClient client, String tableName, int totalSegments, AbstractThrottle readLimiter) {
     debug("ctor");
-    this.limit = limit;
     dynamoReader = new DynamoReader(client, tableName, totalSegments, readLimiter);
   }
 
@@ -48,6 +45,11 @@ class DynamoInputPlugin implements InputPlugin {
     return dynamoReader.scan(mtuHint);
   }
 
+  @Override
+  public void closeNonBlocking() {
+    dynamoReader.closeNonBlocking();
+  }
+
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
   }
@@ -60,7 +62,6 @@ public class DynamoInputPluginProvider extends AbstractPluginProvider implements
   class Options extends AwsOptions{
     public int c; // concurrency, aka totalSegments
     public int rcu;
-    public int limit; // scan request limit
     public String toString() {
       return new Gson().toJson(this);
     }
@@ -118,7 +119,7 @@ public class DynamoInputPluginProvider extends AbstractPluginProvider implements
     });
 
     DynamoDbAsyncClient asyncClient = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
-    return new DynamoInputPlugin(asyncClient, tableName, c, readLimiter, options.limit);
+    return new DynamoInputPlugin(asyncClient, tableName, c, readLimiter);
   }
   
   private void debug(Object... args) {

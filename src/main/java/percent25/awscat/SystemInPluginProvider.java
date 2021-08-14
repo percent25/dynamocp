@@ -1,27 +1,16 @@
 package percent25.awscat;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.atomic.*;
 import java.util.function.Function;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonStreamParser;
+import com.google.common.annotations.*;
+import com.google.common.base.*;
+import com.google.common.util.concurrent.*;
+import com.google.gson.*;
 
-import helpers.FutureRunner;
-import helpers.LogHelper;
-import helpers.CallerBlocksPolicy;
+import helpers.*;
 
 class SystemInPlugin implements InputPlugin {
 
@@ -29,31 +18,19 @@ class SystemInPlugin implements InputPlugin {
   public static InputStream stdin = System.in;
 
   private final String filename;
-  private final int concurrency;
   private final boolean cycle;
-  private final int limit;
-
-  private final ThreadPoolExecutor executor;
 
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  public SystemInPlugin(String filename, int concurrency, boolean cycle, int limit) {
-    debug("ctor", filename, concurrency, cycle, limit);
-
+  public SystemInPlugin(String filename, boolean cycle) {
+    debug("ctor", filename, cycle);
     this.filename = filename;
-    this.concurrency = concurrency > 0 ? concurrency : Runtime.getRuntime().availableProcessors();
     this.cycle = cycle;
-    this.limit = limit;
-
-    executor = new ThreadPoolExecutor(
-      0, this.concurrency, 60L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<Runnable>(this.concurrency));
-    executor.setRejectedExecutionHandler(new CallerBlocksPolicy());
   }
 
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        //
-        .add("filename", filename).add("concurrency", concurrency).add("cycle", cycle).add("limit", limit).toString();
+    return MoreObjects.toStringHelper(this) //
+        .add("filename", filename).add("cycle", cycle).toString();
   }
 
   @Override
@@ -62,42 +39,43 @@ class SystemInPlugin implements InputPlugin {
     this.listener = listener;
   }
 
+  private boolean running;
+
   @Override
   public ListenableFuture<?> run(int mtuHint) throws Exception {
     debug("read", "mtuHint", mtuHint);
+    running = true;
     return new FutureRunner() {
-      int count;
-      int effectiveMtu = mtuHint > 0 ? mtuHint : 40000;
-      List<JsonElement> partition = new ArrayList<>();
+      final int effectiveMtuHint = mtuHint > 0 ? mtuHint : 1000;
+      final AtomicReference<List<JsonElement>> partition = new AtomicReference<>(new ArrayList<>());
       {
         do {
           final BufferedReader br = new BufferedReader(new InputStreamReader("-".equals(filename) ? stdin : new FileInputStream(filename)));
           try {
             JsonStreamParser parser = new JsonStreamParser(br);
             while (parser.hasNext()) {
-              ++count;
-              partition.add(parser.next());
-              if (!parser.hasNext() || partition.size() == effectiveMtu || count == limit) {
+              partition.get().add(parser.next());
+              if (!parser.hasNext() || partition.get().size() == effectiveMtuHint) {
                 run(() -> {
-                  List<JsonElement> copyOfPartition = partition;
-                  // var copyOfPartition = ImmutableList.copyOf(partition);
-                  partition = new ArrayList<>();
-                  return Futures.submitAsync(()->{
-                    return listener.apply(copyOfPartition);
-                  }, executor);
+                  return listener.apply(partition.getAndSet(new ArrayList<>()));
                 });
               }
-              if (count == limit)
+              if (!running)
                 break;
             }
           } finally {
             br.close();
           }
-          if (count == limit)
+          if (!running)
             break;
         } while (cycle);
       }
     };
+  }
+
+  @Override
+  public void closeNonBlocking() {
+    running = false;
   }
 
   private void debug(Object... args) {
@@ -110,9 +88,7 @@ public class SystemInPluginProvider extends AbstractPluginProvider implements In
 
   // in.txt,c=1
   class SystemInOptions {
-    public int c;
     public boolean cycle;
-    public int limit;
   }
 
   public SystemInPluginProvider() {
@@ -128,7 +104,7 @@ public class SystemInPluginProvider extends AbstractPluginProvider implements In
   public InputPlugin activate(String address) throws Exception {
     String filename = Addresses.base(address);
     SystemInOptions options = Addresses.options(address, SystemInOptions.class);
-    return new SystemInPlugin(filename, options.c, options.cycle, options.limit);
+    return new SystemInPlugin(filename, options.cycle);
   }
 
   private void debug(Object... args) {

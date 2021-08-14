@@ -11,7 +11,7 @@ public interface InputPlugin {
   ListenableFuture<?> run(int mtuHint) throws Exception;
 
   // close
-  // void closeNonBlocking();
+  void closeNonBlocking();
 
   void setListener(Function<Iterable<JsonElement>, ListenableFuture<?>> listener);
 

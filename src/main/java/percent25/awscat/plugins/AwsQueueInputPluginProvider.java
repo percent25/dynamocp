@@ -1,7 +1,5 @@
 package percent25.awscat.plugins;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
 import java.util.function.Function;
 
 import com.google.common.base.*;
@@ -20,38 +18,13 @@ import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
 class AwsQueueInputPlugin implements InputPlugin {
 
   private final AwsQueueReceiver receiver;
-  // private final int limit;
-
   private Function<Iterable<JsonElement>, ListenableFuture<?>> listener;
 
-  private final AtomicInteger count = new AtomicInteger();
-
-  public AwsQueueInputPlugin(AwsQueueReceiver receiver, int limit) {
+  public AwsQueueInputPlugin(AwsQueueReceiver receiver) {
     debug("ctor");
     this.receiver = receiver;
-    // this.limit = limit;
     receiver.setListener(message -> {
-      return new FutureRunner() {
-        List<JsonElement> list;
-        {
-          run(() -> {
-            count.updateAndGet(count -> {
-              Iterator<JsonElement> iter = new JsonStreamParser(message);
-              if (limit > 0) {
-                iter = Iterators.limit(new JsonStreamParser(message), limit - count);
-              }
-              list = Lists.newArrayList(iter);
-              return count + list.size();
-            });
-            return listener.apply(list);
-          }, () -> {
-            if (limit > 0) {
-              if (count.get() == limit)
-                receiver.closeNonBlocking();
-            }
-          });
-        }
-      };
+      return listener.apply(Lists.newArrayList(new JsonStreamParser(message)));
     });
   }
 
@@ -69,6 +42,11 @@ class AwsQueueInputPlugin implements InputPlugin {
     return receiver.start();
   }
 
+  @Override
+  public void closeNonBlocking() {
+    receiver.closeNonBlocking();
+  }
+
   private void debug(Object... args) {
     new LogHelper(this).debug(args);
   }
@@ -77,8 +55,6 @@ class AwsQueueInputPlugin implements InputPlugin {
 
 class AwsQueueInputPluginOptions extends AwsOptions {
   public int c;
-  public int limit;
-
   public String toString() {
     return new Gson().toJson(this);
   }
@@ -136,7 +112,7 @@ public class AwsQueueInputPluginProvider extends AbstractPluginProvider implemen
       queueUrl = getQueueUrlResponse.queueUrl();
     }
 
-    return new AwsQueueInputPlugin(new AwsQueueReceiver(sqsClient, queueUrl, c), options.limit);
+    return new AwsQueueInputPlugin(new AwsQueueReceiver(sqsClient, queueUrl, c));
   }
 
 }
