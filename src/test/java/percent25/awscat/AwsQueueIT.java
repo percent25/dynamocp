@@ -108,8 +108,8 @@ public class AwsQueueIT {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         SystemOutPluginProvider.stdout = new PrintStream(baos);
         
-        String sourceAddress = AwsBuilder.rerenderAddress(String.format("%s,limit=1", queueArn));
-        Main.main(sourceAddress, "-");
+        String sourceAddress = AwsBuilder.rerenderAddress(queueArn);
+        Main.main(sourceAddress, "-", "--limit=1");
 
         assertThat(json(baos.toString())).isEqualTo(json);
 
@@ -132,8 +132,8 @@ public class AwsQueueIT {
     }
 
     // receive
-    String sourceArg = AwsBuilder.rerenderAddress(String.format("%s,limit=%s", queueArn, limit));
-    Main.main(sourceArg);
+    String sourceArg = AwsBuilder.rerenderAddress(queueArn);
+    Main.main(sourceArg, String.format("--limit=%s", limit));
   }
 
   private JsonElement json(String json) {

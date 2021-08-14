@@ -68,7 +68,7 @@ public class AwsQueueSourceSupplier implements Supplier<InputSource> {
 
       @Override
       public String address() {
-        return String.format("%s,limit=1", queueArn);
+        return String.format("%s", queueArn);
       }
 
       @Override

@@ -22,7 +22,7 @@ public interface InputPluginProvider {
   /**
    * canActivate
    * 
-   * @param address e.g., "dynamo:MyTable,limit=1000"
+   * @param address e.g., "dynamo:MyTable,c=1"
    * @return
    */
   boolean canActivate(String address);
@@ -30,7 +30,7 @@ public interface InputPluginProvider {
   /**
    * activate
    * 
-   * @param address e.g., "dynamo:MyTable,limit=1000"
+   * @param address e.g., "dynamo:MyTable,c=1"
    * @return
    * @throws Exception
    */

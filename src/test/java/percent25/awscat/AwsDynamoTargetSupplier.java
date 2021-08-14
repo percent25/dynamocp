@@ -54,7 +54,7 @@ public class AwsDynamoTargetSupplier implements Supplier<OutputTarget> {
 
       @Override
       public String address() {
-        return String.format("dynamo:%s,limit=1", tableName);
+        return String.format("dynamo:%s", tableName);
       }
 
       @Override

@@ -36,7 +36,7 @@ public class InOutRunner {
           String sourceAddress = AwsBuilder.rerenderAddress(source.address());
           String targetAddress = AwsBuilder.rerenderAddress(target.address());
           assertThatCode(() -> {
-            Main.main(sourceAddress, targetAddress);
+            Main.main(sourceAddress, targetAddress, "--limit=1");
           }).doesNotThrowAnyException();
           // verify
           receivedJsonElement[0] = target.verify();
