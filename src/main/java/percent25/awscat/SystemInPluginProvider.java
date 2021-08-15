@@ -86,7 +86,7 @@ class SystemInPlugin implements InputPlugin {
 // @Service
 public class SystemInPluginProvider extends AbstractPluginProvider implements InputPluginProvider {
 
-  // in.txt,c=1
+  // e.g., in.json,cycle
   class SystemInOptions {
     public boolean cycle;
   }
