@@ -31,7 +31,23 @@ objects: spel {:} is immutable!! wtf?
 OPEN
 ======================================================================
 
- - move "limit" functionality to Main loop ?
+ - speedup awsqueuereceiver.closeNonBlocking.. cancel 25s long poll request?
+
+ 
+
+[INFO] Running percent25.awscat.AwsQueueIT
+[CreateQueueRequest(QueueName=c1869058-35ac-4295-bc70-c1f34cac552b)]
+[CreateQueueResponse(QueueUrl=http://localhost:49153/000000000000/c1869058-35ac-4295-bc70-c1f34cac552b)]
+awscat.jar 2021.08.1130726076 {"limit":0,"help":false,"version":false,"debug":false,"trace":false,"js":[]}
+inputPlugin SystemInPluginProvider percent25.awscat.SystemInPluginProvider@3c25cfe1
+outputPlugin AwsQueueOutputPluginProvider AwsQueueOutputPluginProvider{queueUrl=arn:aws:sqs:us-east-1:000000000000:c1869058-35ac-4295-bc70-c1f34cac552b}
+Working{"in":1,"out":1,"err":0,"rate":"0/0/0 0/0/0"}
+awscat.jar 2021.08.1130726076 {"limit":0,"help":false,"version":false,"debug":false,"trace":false,"js":[]}
+inputPlugin AwsQueueInputPluginProvider AwsQueueInputPluginProvider{queueUrl=arn:aws:sqs:us-east-1:000000000000:c1869058-35ac-4295-bc70-c1f34cac552b, options={"c":0,"endpoint":"http://localhost:49153"}}
+outputPlugin SystemOutPluginProvider SystemOutPluginProvider{filename=-, options={"append":false}}
+Working{"in":1,"out":1,"err":0,"rate":"0/0/0 0/0/0"}
+
+
 
  - need to wait for graceful shutdown in receivers: AwsKinesisReceiver
 
@@ -408,3 +424,7 @@ independent aws profiles for source and target
  - dynamo input plugin: limit is not what is intuitively limit.. it is scan limit, not overall limit
 
 github actions?
+
+ - move "limit" functionality to Main loop ?
+
+ - RETHINK AwsBuilder.rerenderAddress
