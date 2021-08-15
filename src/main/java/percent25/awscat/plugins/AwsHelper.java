@@ -4,6 +4,7 @@ import java.net.*;
 
 import com.google.gson.*;
 
+import org.springframework.core.env.*;
 import org.springframework.util.*;
 
 import software.amazon.awssdk.auth.credentials.*;
@@ -20,6 +21,8 @@ class AwsOptions {
 
 public class AwsHelper {
 
+  private static Environment springEnv = new StandardEnvironment();
+
   /**
    * build
    * 
@@ -33,10 +36,15 @@ public class AwsHelper {
    * @return
    */
   public static <B extends AwsClientBuilder<B, C> & AwsAsyncClientBuilder<B, C>, C> C build(B builder, Object options) {
-    // builder = builder.httpClient(AwsCrtAsyncHttpClient.create());
+    String awsEndpoint = springEnv.getProperty("aws.endpoint");
+
     AwsOptions awsOptions = new Gson().fromJson(new Gson().toJson(options), AwsOptions.class);
     if (StringUtils.hasText(awsOptions.endpoint)) {
-      builder = builder.endpointOverride(URI.create(awsOptions.endpoint));
+      awsEndpoint = awsOptions.endpoint;
+    }
+
+    if (StringUtils.hasText(awsEndpoint)) {
+      builder = builder.endpointOverride(URI.create(awsEndpoint));
       //###TODO ugly
       //###TODO ugly
       //###TODO ugly

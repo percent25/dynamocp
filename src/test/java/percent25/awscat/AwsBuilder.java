@@ -37,28 +37,4 @@ public class AwsBuilder {
     }
     return builder.build();
   }
-  /**
-   * re-render address
-   * 
-   * @param address
-   * @return
-   */
-  public static String rerenderAddress(String address) {
-
-    // STEP 1 deconstruct
-    String base = Addresses.base(address);
-    Map<String, String> options = Addresses.options(address, new TypeToken<Map<String, String>>(){}.getType());
-
-    // STEP 2 slipstream aws.endpoint
-    String awsEndpoint = springEnv.getProperty("aws.endpoint");
-    if (StringUtils.hasText(awsEndpoint)) {
-      options.put("endpoint", awsEndpoint);
-    }
-
-    // STEP 3 reconstruct
-    if (options.size()==0)
-      return base;
-    String stringOptions = Joiner.on(",").withKeyValueSeparator("=").join(options);
-    return String.format("%s,%s", base, stringOptions);
-  }
 }

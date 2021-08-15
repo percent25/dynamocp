@@ -28,8 +28,8 @@ public class AwsS3IT {
           // load
           source.load(jsonElement);
           // invoke
-          String sourceAddress = AwsBuilder.rerenderAddress(source.address());
-          String targetAddress = AwsBuilder.rerenderAddress(target.address());
+          String sourceAddress = source.address();
+          String targetAddress = target.address();
           assertThatCode(()->{
             Main.main(sourceAddress, targetAddress);
           }).doesNotThrowAnyException();
