@@ -165,11 +165,6 @@ public class Main implements ApplicationRunner {
       return;
     }
 
-    //###TODO probably eradicate this
-    if (args.getNonOptionArgs().size() == 0) //###TODO probably eradicate this
-      throw new Exception("missing source!");
-    //###TODO probably eradicate this
-
     // input plugin
     String source = "-";
     if (args.getNonOptionArgs().size()>0)
