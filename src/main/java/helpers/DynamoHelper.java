@@ -67,24 +67,28 @@ public class DynamoHelper {
 
   // https://aws.amazon.com/blogs/developer/aws-sdk-for-java-2-0-developer-preview/
   public static JsonElement parse(Map<String, AttributeValue> item) {
-    return new Gson().toJsonTree(Maps.transformValues(item, value -> {
-      try {
-        return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }));
+    try {
+      return new Gson().fromJson(objectMapper.writeValueAsString(AttributeValue.builder().m(item)), JsonElement.class);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    // return new Gson().toJsonTree(Maps.transformValues(item, value -> {
+    //   try {
+    //     return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
+    //   } catch (Exception e) {
+    //     throw new RuntimeException(e);
+    //   }
+    // }));
   }
 
   // https://aws.amazon.com/blogs/developer/aws-sdk-for-java-2-0-developer-preview/
-  public static Map<String, AttributeValue> render(JsonElement jsonElement) {
+  public static Map<String, AttributeValue> render(JsonElement dynamoJson) {
     try {
       Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
-      for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet()) {
+      for (Entry<String, JsonElement> entry : dynamoJson.getAsJsonObject().entrySet()) {
         String key = entry.getKey();
         JsonElement value = entry.getValue();
-        AttributeValue attributeValue = objectMapper.readValue(value.toString(), AttributeValue.serializableBuilderClass()).build();
-        item.put(key, attributeValue);
+        item.put(key, objectMapper.readValue(value.toString(), AttributeValue.serializableBuilderClass()).build());
       }
       return item;
     } catch (Exception e) {
