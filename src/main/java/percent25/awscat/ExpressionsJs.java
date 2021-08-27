@@ -85,26 +85,26 @@ public class ExpressionsJs {
   private Object fromJsonElement(JsonElement jsonElement) {
 
     if (jsonElement.isJsonArray()) {
-      JsonArray values = jsonElement.getAsJsonArray();
       return new ProxyArray() {
+        JsonArray array = jsonElement.getAsJsonArray();
         @Override
         public Object get(long index) {
             checkIndex(index);
-            return fromJsonElement(values.get((int) index));
+            return fromJsonElement(array.get((int) index));
         }
         @Override
         public void set(long index, Value value) {
             checkIndex(index);
-            values.set((int) index, new Gson().toJsonTree(value.as(Object.class)));
+            array.set((int) index, new Gson().toJsonTree(value.as(Object.class)));
         }
         @Override
         public boolean remove(long index) {
             checkIndex(index);
-            return values.remove((int) index) != null;
+            return array.remove((int) index) != null;
         }
         @Override
         public long getSize() {
-          return values.size();
+          return array.size();
         }
         private void checkIndex(long index) {
             if (index < 0 || index > Integer.MAX_VALUE) {
@@ -115,18 +115,18 @@ public class ExpressionsJs {
     }
 
     if (jsonElement.isJsonObject()) {
-      JsonObject values = jsonElement.getAsJsonObject();
       return new ProxyObject() {
+        JsonObject object = jsonElement.getAsJsonObject();
 
         @Override
         public Object getMember(String key) {
-          return fromJsonElement(values.get(key));
+          return fromJsonElement(object.get(key));
         }
 
         @Override
         public Object getMemberKeys() {
             return new ProxyArray() {
-                private final Object[] keys = values.keySet().toArray();
+                private final Object[] keys = object.keySet().toArray();
 
                 @Override
                 public Object get(long index) {
@@ -150,17 +150,17 @@ public class ExpressionsJs {
 
         @Override
         public boolean hasMember(String key) {
-            return values.has(key);
+            return object.has(key);
         }
 
         @Override
         public void putMember(String key, Value value) {
-            values.add(key, new Gson().toJsonTree(value.as(Object.class)));
+            object.add(key, new Gson().toJsonTree(value.as(Object.class)));
         }
 
         @Override
         public boolean removeMember(String key) {
-          return values.remove(key) != null;
+          return object.remove(key) != null;
         }
       };
     }
@@ -168,14 +168,14 @@ public class ExpressionsJs {
     if (jsonElement.isJsonPrimitive()) {
       if (jsonElement.getAsJsonPrimitive().isNumber()) {
         try {
-          return Value.asValue(NumberFormat.getInstance().parse(jsonElement.getAsString()));
+          return NumberFormat.getInstance().parse(jsonElement.getAsString());
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
       }
     }
 
-    return Value.asValue(new Gson().fromJson(jsonElement, Object.class));
+    return new Gson().fromJson(jsonElement, Object.class);
   }
 
   static JsonElement json(String json) {
