@@ -17,10 +17,10 @@ public class ObjectHelper {
   // to plain-old-java-object
   public static Object toObject(JsonElement jsonElement) {
     if (jsonElement.isJsonArray()) {
-      List<Object> list = new ArrayList<>();
+      List<Object> array = new ArrayList<>();
       for (JsonElement element : jsonElement.getAsJsonArray())
-        list.add(toObject(element));
-      return list;
+        array.add(toObject(element));
+      return array;
     }
     if (jsonElement.isJsonObject()) {
       Map<String, Object> object = new LinkedHashMap<>();
@@ -29,6 +29,7 @@ public class ObjectHelper {
       return object;
     }
     Object object = new Gson().fromJson(jsonElement, Object.class);
+    //###
     if (jsonElement.isJsonPrimitive()) {
       if (jsonElement.getAsJsonPrimitive().isNumber()) {
         try {
@@ -38,6 +39,7 @@ public class ObjectHelper {
         }
       }
     }
+    //###
     return object;
   }
 
