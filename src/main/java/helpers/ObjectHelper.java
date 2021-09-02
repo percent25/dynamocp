@@ -1,7 +1,5 @@
 package helpers;
 
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,28 +17,23 @@ public class ObjectHelper {
     if (jsonElement.isJsonArray()) {
       List<Object> array = new ArrayList<>();
       for (JsonElement element : jsonElement.getAsJsonArray())
-        array.add(toObject(element));
+        array.add(toObject(element)); // recurse
       return array;
     }
     if (jsonElement.isJsonObject()) {
       Map<String, Object> object = new LinkedHashMap<>();
       for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet())
-        object.put(entry.getKey(), toObject(entry.getValue()));
+        object.put(entry.getKey(), toObject(entry.getValue())); // recurse
       return object;
     }
-    Object object = new Gson().fromJson(jsonElement, Object.class);
     //###
+    // https://github.com/IBM/java-sdk-core/blob/main/src/main/java/com/ibm/cloud/sdk/core/util/MapValueObjectTypeAdapter.java
     if (jsonElement.isJsonPrimitive()) {
-      if (jsonElement.getAsJsonPrimitive().isNumber()) {
-        try {
-          object = NumberFormat.getInstance().parse(jsonElement.getAsString());
-        } catch (ParseException e) {
-          throw new RuntimeException(e);
-        }
-      }
+      if (jsonElement.getAsJsonPrimitive().isNumber())
+        return jsonElement.getAsNumber();
     }
     //###
-    return object;
+    return new Gson().fromJson(jsonElement, Object.class);
   }
 
   public static void main(String... args) {
