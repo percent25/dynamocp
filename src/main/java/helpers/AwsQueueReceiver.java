@@ -165,17 +165,18 @@ public class AwsQueueReceiver {
                   });
                 }, e -> { // receiveMessage
                   receiveMessageWork.failureMessage = "receiveMessage:" + e;
-                  run(() -> {
-                    // backoff/retry
-                    // ###TODO USE HashedWheelTimer
-                    // ###TODO USE HashedWheelTimer
-                    // ###TODO USE HashedWheelTimer
-                    return Futures.scheduleAsync(() -> Futures.immediateVoidFuture(), Duration.ofSeconds(25),
-                        executorService);
-                    // ###TODO USE HashedWheelTimer
-                    // ###TODO USE HashedWheelTimer
-                    // ###TODO USE HashedWheelTimer
-                  });
+                  if (running) {
+                    run(() -> {
+                      // backoff/retry
+                      // ###TODO USE HashedWheelTimer
+                      // ###TODO USE HashedWheelTimer
+                      // ###TODO USE HashedWheelTimer
+                      return Futures.scheduleAsync(() -> Futures.immediateVoidFuture(), Duration.ofSeconds(25), executorService);
+                      // ###TODO USE HashedWheelTimer
+                      // ###TODO USE HashedWheelTimer
+                      // ###TODO USE HashedWheelTimer
+                    });
+                  }
                 });
               }
             };
@@ -202,6 +203,8 @@ public class AwsQueueReceiver {
 
   public static void main(String... args) throws Exception {
 
+    LogHelper.debug = true;
+
     SqsAsyncClient client = SqsAsyncClient.builder() //
         // .httpClient(AwsCrtAsyncHttpClient.create()) //
         .endpointOverride(URI.create("http://localhost:4566")) //
@@ -216,8 +219,11 @@ public class AwsQueueReceiver {
       return Futures.immediateVoidFuture();
     });
 
+    System.out.println("start");
     ListenableFuture<?> lf = receiver.start();
-    Thread.sleep(20000);
+    System.out.println("sleep");
+    Thread.sleep(2000);
+    System.out.println("close");
     receiver.closeNonBlocking(); // stop receiver
     lf.get();
 
