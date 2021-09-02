@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
 
-import com.google.common.base.Defaults;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
@@ -38,7 +37,7 @@ public class ConcatenatedJsonWriter {
 
     private class VoidFuture extends AbstractFuture<Void> {
         public boolean setVoid() {
-            return super.set(Defaults.defaultValue(Void.class));
+            return super.set(null);
         }
 
         public boolean setException(Throwable throwable) {
