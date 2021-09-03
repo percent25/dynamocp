@@ -89,7 +89,7 @@ public class DynamoInputPluginProvider extends AbstractPluginProvider implements
     tableName = Addresses.base(address).split(":")[1];  
     options = Addresses.options(address, Options.class);  
 
-    DynamoDbAsyncClient client = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
+    DynamoDbAsyncClient client = AwsHelper.buildAsync(DynamoDbAsyncClient.builder(), options);
     Supplier<DescribeTableResponse> describeTableResponseSupplier = Suppliers.memoizeWithExpiration(()->{
       try {
         return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
@@ -118,7 +118,7 @@ public class DynamoInputPluginProvider extends AbstractPluginProvider implements
       return Double.MAX_VALUE; // on-demand/pay-per-request
     });
 
-    DynamoDbAsyncClient asyncClient = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
+    DynamoDbAsyncClient asyncClient = AwsHelper.buildAsync(DynamoDbAsyncClient.builder(), options);
     return new DynamoInputPlugin(asyncClient, tableName, c, readLimiter);
   }
   

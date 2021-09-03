@@ -48,7 +48,7 @@ public class AwsKinesisOutputPluginProvider implements OutputPluginProvider {
 
     @Override
     public Supplier<OutputPlugin> activate(String address) throws Exception {
-        KinesisAsyncClient client = AwsHelper.build(KinesisAsyncClient.builder(), options);
+        KinesisAsyncClient client = AwsHelper.buildAsync(KinesisAsyncClient.builder(), options);
 
         String streamName = Addresses.base(address).split(":")[1];
 

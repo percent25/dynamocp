@@ -89,7 +89,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
     tableName = Addresses.base(address).split(":")[1];
     options = Addresses.options(address, Options.class);
 
-    DynamoDbAsyncClient client = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
+    DynamoDbAsyncClient client = AwsHelper.buildAsync(DynamoDbAsyncClient.builder(), options);
     Supplier<DescribeTableResponse> describeTableResponseSupplier = Suppliers.memoizeWithExpiration(()->{
       try {
         return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
@@ -113,7 +113,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
       return Double.MAX_VALUE; // on-demand/pay-per-request
     });
 
-    DynamoDbAsyncClient asyncClient = AwsHelper.build(DynamoDbAsyncClient.builder(), options);
+    DynamoDbAsyncClient asyncClient = AwsHelper.buildAsync(DynamoDbAsyncClient.builder(), options);
     return ()->{
       return new DynamoOutputPlugin(asyncClient, tableName, keySchema, sem, writeLimiter, options.delete);
     };

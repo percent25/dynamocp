@@ -49,7 +49,7 @@ public class S3OutputPluginProvider implements OutputPluginProvider {
 
     Options options = Addresses.options(address, Options.class);
 
-    S3AsyncClient client = AwsHelper.build(S3AsyncClient.builder(), options);
+    S3AsyncClient client = AwsHelper.buildAsync(S3AsyncClient.builder(), options);
 
     // Note- transport is thread safe
     ConcatenatedJsonWriter.Transport transport =
