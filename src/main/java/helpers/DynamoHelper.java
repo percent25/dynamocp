@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
@@ -72,18 +73,18 @@ public class DynamoHelper {
   // aka toDynamoDbJson
   // https://aws.amazon.com/blogs/developer/aws-sdk-for-java-2-0-developer-preview/
   public static JsonElement parse(Map<String, AttributeValue> item) {
-    try {
-      return new Gson().fromJson(objectMapper.writeValueAsString(AttributeValue.builder().m(item)), JsonElement.class);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-    // return new Gson().toJsonTree(Maps.transformValues(item, value -> {
-    //   try {
-    //     return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
-    //   } catch (Exception e) {
-    //     throw new RuntimeException(e);
-    //   }
-    // }));
+    // try {
+    //   return new Gson().fromJson(objectMapper.writeValueAsString(AttributeValue.builder().m(item)), JsonElement.class);
+    // } catch (Exception e) {
+    //   throw new RuntimeException(e);
+    // }
+    return new Gson().toJsonTree(Maps.transformValues(item, value -> {
+      try {
+        return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }));
   }
 
   // aka fromDynamoDbJson
