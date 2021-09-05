@@ -10,7 +10,6 @@ import com.google.common.util.concurrent.*;
 import com.google.gson.*;
 
 import org.springframework.stereotype.Service;
-import org.springframework.util.*;
 
 import helpers.*;
 import percent25.awscat.*;
@@ -51,12 +50,16 @@ class DynamoOutputPlugin implements OutputPlugin {
 public class DynamoOutputPluginProvider implements OutputPluginProvider {
 
   class Options extends AwsOptions {
+    
     // concurrency
     public int c;
+    
     // write capacity units
     public int wcu;
+    
     // putItem vs deleteItem
     public boolean delete;
+    
     public String toString() {
       return new Gson().toJson(this);
     }
@@ -89,13 +92,9 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
     tableName = Addresses.base(address).split(":")[1];
     options = Addresses.options(address, Options.class);
 
-    DynamoDbAsyncClient client = AwsHelper.buildAsync(DynamoDbAsyncClient.builder(), options);
+    DynamoDbClient client = AwsHelper.build(DynamoDbClient.builder(), options);
     Supplier<DescribeTableResponse> describeTableResponseSupplier = Suppliers.memoizeWithExpiration(()->{
-      try {
-        return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+      return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build());
     }, 25, TimeUnit.SECONDS);
 
     List<KeySchemaElement> keySchema = describeTableResponseSupplier.get().table().keySchema();
@@ -114,6 +113,7 @@ public class DynamoOutputPluginProvider implements OutputPluginProvider {
     });
 
     DynamoDbAsyncClient asyncClient = AwsHelper.buildAsync(DynamoDbAsyncClient.builder(), options);
+    
     return ()->{
       return new DynamoOutputPlugin(asyncClient, tableName, keySchema, sem, writeLimiter, options.delete);
     };

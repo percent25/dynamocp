@@ -1,6 +1,5 @@
 package percent25.awscat.plugins;
 
-import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -89,13 +88,9 @@ public class DynamoInputPluginProvider extends AbstractPluginProvider implements
     tableName = Addresses.base(address).split(":")[1];  
     options = Addresses.options(address, Options.class);  
 
-    DynamoDbAsyncClient client = AwsHelper.buildAsync(DynamoDbAsyncClient.builder(), options);
+    DynamoDbClient client = AwsHelper.build(DynamoDbClient.builder(), options);
     Supplier<DescribeTableResponse> describeTableResponseSupplier = Suppliers.memoizeWithExpiration(()->{
-      try {
-        return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build()).get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+      return client.describeTable(DescribeTableRequest.builder().tableName(tableName).build());
     }, 25, TimeUnit.SECONDS);
     
     // Iterable<String> keySchema = Lists.transform(describeTable.get().table().keySchema(), e->e.attributeName());      
