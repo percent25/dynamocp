@@ -1,8 +1,6 @@
 package helpers;
 
 import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -10,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonStreamParser;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -73,11 +70,6 @@ public class DynamoHelper {
   // aka toDynamoDbJson
   // https://aws.amazon.com/blogs/developer/aws-sdk-for-java-2-0-developer-preview/
   public static JsonElement parse(Map<String, AttributeValue> item) {
-    // try {
-    //   return new Gson().fromJson(objectMapper.writeValueAsString(AttributeValue.builder().m(item)), JsonElement.class);
-    // } catch (Exception e) {
-    //   throw new RuntimeException(e);
-    // }
     return new Gson().toJsonTree(Maps.transformValues(item, value -> {
       try {
         return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
@@ -103,42 +95,57 @@ public class DynamoHelper {
     }
   }
 
-  //###TODO experimental
-  public static AttributeValue inferValue(JsonElement value) {
-    // Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
-    // for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet())
-    {
-      // String key = entry.getKey();
-      // JsonElement value = entry.getValue();
-      if (value.isJsonPrimitive()) {
-        JsonPrimitive jsonPrimitive = value.getAsJsonPrimitive();
-        if (jsonPrimitive.isBoolean())
-          return AttributeValue.builder().bool(jsonPrimitive.getAsBoolean()).build();
-        if (jsonPrimitive.isNumber())
-          return AttributeValue.builder().n(jsonPrimitive.getAsString()).build();
-        if (jsonPrimitive.isString())
-          return AttributeValue.builder().s(jsonPrimitive.getAsString()).build();
-      }
-      if (value.isJsonArray()) {
-        List<AttributeValue> l = new ArrayList<>();
-        for (JsonElement e : value.getAsJsonArray())
-          l.add(inferValue(e));
-        return AttributeValue.builder().l(l).build();
-      }
-      if (value.isJsonObject()) {
-        Map<String, AttributeValue> m = new LinkedHashMap<>();
-        for (Entry<String, JsonElement> e : value.getAsJsonObject().entrySet())
-          m.put(e.getKey(), inferValue(e.getValue()));
-        return AttributeValue.builder().m(m).build();
-      }
-    }
-    // return item;
-    throw new RuntimeException(value.toString());
-  }
+  // //###TODO experimental
+  // public static AttributeValue inferValue(JsonElement value) {
+  //   // Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
+  //   // for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet())
+  //   {
+  //     // String key = entry.getKey();
+  //     // JsonElement value = entry.getValue();
+  //     if (value.isJsonPrimitive()) {
+  //       JsonPrimitive jsonPrimitive = value.getAsJsonPrimitive();
+  //       if (jsonPrimitive.isBoolean())
+  //         return AttributeValue.builder().bool(jsonPrimitive.getAsBoolean()).build();
+  //       if (jsonPrimitive.isNumber())
+  //         return AttributeValue.builder().n(jsonPrimitive.getAsString()).build();
+  //       if (jsonPrimitive.isString())
+  //         return AttributeValue.builder().s(jsonPrimitive.getAsString()).build();
+  //     }
+  //     if (value.isJsonArray()) {
+  //       List<AttributeValue> l = new ArrayList<>();
+  //       for (JsonElement e : value.getAsJsonArray())
+  //         l.add(inferValue(e));
+  //       return AttributeValue.builder().l(l).build();
+  //     }
+  //     if (value.isJsonObject()) {
+  //       Map<String, AttributeValue> m = new LinkedHashMap<>();
+  //       for (Entry<String, JsonElement> e : value.getAsJsonObject().entrySet())
+  //         m.put(e.getKey(), inferValue(e.getValue()));
+  //       return AttributeValue.builder().m(m).build();
+  //     }
+  //   }
+  //   // return item;
+  //   throw new RuntimeException(value.toString());
+  // }
 
   // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html
   public static void main(String... args) throws Exception {
-    System.out.println(render(new JsonStreamParser("{   id:{s:1}, mylist:{ l: [{s:1},{s:1},{s:1}] }   }").next()));
+    new Object() {
+      {
+        parseRender(new JsonStreamParser("{}").next());
+        parseRender(new JsonStreamParser("{id:{s:foo}}").next());
+        System.out.println(parse(Maps.newHashMap()));
+        System.out.println(render(new JsonStreamParser("{   id:{s:1}, mylist:{ l: [{s:1},{s:1},{s:1}] }   }").next()));
+      }
+
+      void parseRender(JsonElement dynamoDbJson) throws Exception {
+        System.out.println(dynamoDbJson);
+        JsonElement got = parse(render(dynamoDbJson));
+        if (!dynamoDbJson.equals(got)) {
+          throw new Exception("" + dynamoDbJson + got);
+        }
+      }
+    };
   }
 
 }
