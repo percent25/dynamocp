@@ -1,7 +1,7 @@
 #!/bin/sh -ex
 
 # https://maven.apache.org/maven-ci-friendly.html
-REVISION=$(date +%Y.%m).${GITHUB_RUN_ID?}
+REVISION=$(date +%Y.%m).${${GITHUB_SHA?}:0:7}
 
 ./mvnw verify -B -Drevision=${REVISION?} -Plocalstack
 
