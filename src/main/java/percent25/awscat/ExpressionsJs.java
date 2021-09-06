@@ -40,6 +40,8 @@ public class ExpressionsJs {
       String randomString = BaseEncoding.base64Url().encode(bytes).substring(0);
       return randomString.substring(0, Math.min(len, randomString.length()));
     }
+    // toDynamoDbJson
+    // fromDynamoDbJson
     public String toString() {
       return new Gson().toJson(this);
     }
