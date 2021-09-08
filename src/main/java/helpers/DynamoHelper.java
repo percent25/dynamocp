@@ -1,14 +1,11 @@
 package helpers;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonStreamParser;
+import com.google.gson.*;
 
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -95,47 +92,61 @@ public class DynamoHelper {
     }
   }
 
-  // //###TODO experimental
-  // public static AttributeValue inferValue(JsonElement value) {
-  //   // Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
-  //   // for (Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet())
-  //   {
-  //     // String key = entry.getKey();
-  //     // JsonElement value = entry.getValue();
-  //     if (value.isJsonPrimitive()) {
-  //       JsonPrimitive jsonPrimitive = value.getAsJsonPrimitive();
-  //       if (jsonPrimitive.isBoolean())
-  //         return AttributeValue.builder().bool(jsonPrimitive.getAsBoolean()).build();
-  //       if (jsonPrimitive.isNumber())
-  //         return AttributeValue.builder().n(jsonPrimitive.getAsString()).build();
-  //       if (jsonPrimitive.isString())
-  //         return AttributeValue.builder().s(jsonPrimitive.getAsString()).build();
-  //     }
-  //     if (value.isJsonArray()) {
-  //       List<AttributeValue> l = new ArrayList<>();
-  //       for (JsonElement e : value.getAsJsonArray())
-  //         l.add(inferValue(e));
-  //       return AttributeValue.builder().l(l).build();
-  //     }
-  //     if (value.isJsonObject()) {
-  //       Map<String, AttributeValue> m = new LinkedHashMap<>();
-  //       for (Entry<String, JsonElement> e : value.getAsJsonObject().entrySet())
-  //         m.put(e.getKey(), inferValue(e.getValue()));
-  //       return AttributeValue.builder().m(m).build();
-  //     }
-  //   }
-  //   // return item;
-  //   throw new RuntimeException(value.toString());
-  // }
+  public static AttributeValue inferValue(JsonElement value) {
+    if (value.isJsonArray()) {
+      List<AttributeValue> l = new ArrayList<>();
+      for (JsonElement e : value.getAsJsonArray())
+        l.add(inferValue(e));
+      return AttributeValue.builder().l(l).build();
+    }
+    if (value.isJsonObject()) {
+      Map<String, AttributeValue> m = new LinkedHashMap<>();
+      for (Entry<String, JsonElement> e : value.getAsJsonObject().entrySet())
+        m.put(e.getKey(), inferValue(e.getValue()));
+      return AttributeValue.builder().m(m).build();
+    }
+    if (value.isJsonPrimitive()) {
+      JsonPrimitive jsonPrimitive = value.getAsJsonPrimitive();
+      if (jsonPrimitive.isBoolean())
+        return AttributeValue.builder().bool(jsonPrimitive.getAsBoolean()).build();
+      if (jsonPrimitive.isNumber())
+        return AttributeValue.builder().n(jsonPrimitive.getAsString()).build();
+      if (jsonPrimitive.isString())
+        return AttributeValue.builder().s(jsonPrimitive.getAsString()).build();
+    }
+    throw new RuntimeException(value.toString());
+  }
+
+  public static JsonElement inferDynamoDbJson(JsonElement jsonElement) {
+    Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
+    for (Map.Entry<String, JsonElement> entry : jsonElement.getAsJsonObject().entrySet()) {
+      String key = entry.getKey();
+      JsonElement value = entry.getValue();
+      item.put(key, inferValue(value));
+    }
+    return parse(item);
+  }
 
   // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_AttributeValue.html
   public static void main(String... args) throws Exception {
     new Object() {
       {
-        parseRender(new JsonStreamParser("{}").next());
-        parseRender(new JsonStreamParser("{id:{s:foo}}").next());
-        System.out.println(parse(Maps.newHashMap()));
-        System.out.println(render(new JsonStreamParser("{   id:{s:1}, mylist:{ l: [{s:1},{s:1},{s:1}] }   }").next()));
+        // parseRender(new JsonStreamParser("{}").next());
+        // parseRender(new JsonStreamParser("{id:{s:foo}}").next());
+        // System.out.println(parse(Maps.newHashMap()));
+        // System.out.println(render(new JsonStreamParser("{   id:{s:1}, mylist:{ l: [{s:1},{s:1},{s:1}] }   }").next()));
+
+        inferTest("{}");
+
+        inferTest("{a:true}");
+        inferTest("{a:1}");
+        inferTest("{a:b}");
+
+        inferTest("{a:[true, false]}");
+        inferTest("{a:[1,2]}");
+        inferTest("{a:[b,c]}");
+
+        inferTest("{a:{b:1,c:2}}");
       }
 
       void parseRender(JsonElement dynamoDbJson) throws Exception {
@@ -144,6 +155,11 @@ public class DynamoHelper {
         if (!dynamoDbJson.equals(got)) {
           throw new Exception("" + dynamoDbJson + got);
         }
+      }
+      void inferTest(String json) {
+        JsonElement jsonElement = new JsonStreamParser(json).next();
+        JsonElement dynamoDbJson = inferDynamoDbJson(jsonElement);
+        System.out.println(""+jsonElement+dynamoDbJson);
       }
     };
   }
