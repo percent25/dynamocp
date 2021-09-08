@@ -91,12 +91,12 @@ public class ExpressionsJs {
 
   }
 
-  // @see ProxyObject.fromMap
   private Object fromJsonElement(JsonElement jsonElement) {
 
+    // @see ProxyArray.fromArray
     if (jsonElement.isJsonArray()) {
+      JsonArray array = jsonElement.getAsJsonArray();
       return new ProxyArray() {
-        JsonArray array = jsonElement.getAsJsonArray();
         @Override
         public Object get(long index) {
             return fromJsonElement(array.get((int) index));
@@ -122,10 +122,10 @@ public class ExpressionsJs {
       };
     }
 
+    // @see ProxyObject.fromMap
     if (jsonElement.isJsonObject()) {
+      JsonObject object = jsonElement.getAsJsonObject();
       return new ProxyObject() {
-        JsonObject object = jsonElement.getAsJsonObject();
-
         @Override
         public Object getMember(String key) {
           return fromJsonElement(object.get(key));
