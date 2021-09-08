@@ -99,12 +99,10 @@ public class ExpressionsJs {
         JsonArray array = jsonElement.getAsJsonArray();
         @Override
         public Object get(long index) {
-            checkIndex(index);
             return fromJsonElement(array.get((int) index));
         }
         @Override
         public void set(long index, Value value) {
-            checkIndex(index);
             //###TODO use toJsonElement here??
             //###TODO use toJsonElement here??
             //###TODO use toJsonElement here??
@@ -115,17 +113,11 @@ public class ExpressionsJs {
           }
         @Override
         public boolean remove(long index) {
-            checkIndex(index);
             return array.remove((int) index) != null;
         }
         @Override
         public long getSize() {
           return array.size();
-        }
-        private void checkIndex(long index) {
-            if (index < 0 || index > Integer.MAX_VALUE) {
-                throw new ArrayIndexOutOfBoundsException();
-            }
         }
       };
     }
