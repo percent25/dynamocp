@@ -11,6 +11,8 @@ import com.google.gson.*;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.*;
 
+import helpers.DynamoHelper;
+
 public class ExpressionsJs {
 
   public class RootObject {
@@ -18,11 +20,9 @@ public class ExpressionsJs {
     public RootObject(String now) {
       this.now = now;
     }
-    // @HostAccess.Export
     public String now() {
       return now;
     }
-    // @HostAccess.Export
     public String uuid() {
       return UUID.randomUUID().toString();
     }
@@ -39,6 +39,11 @@ public class ExpressionsJs {
       new SecureRandom().nextBytes(bytes);
       String randomString = BaseEncoding.base64Url().encode(bytes).substring(0);
       return randomString.substring(0, Math.min(len, randomString.length()));
+    }
+    public Object inferDynamoDbJson(Object jsonObject) {
+      JsonElement jsonElement = toJsonElement(jsonObject);
+      JsonElement dynamoDbJson = DynamoHelper.inferDynamoDbJson(jsonElement);
+      return fromJsonElement(dynamoDbJson);
     }
     public String toString() {
       return new Gson().toJson(this);
@@ -63,10 +68,7 @@ public class ExpressionsJs {
 
   // get current element
   public JsonElement e() {
-    Value e = bindings.getMember("e");
-    if (e.hasArrayElements())
-      return new Gson().toJsonTree(e.as(new TypeLiteral<List<Object>>(){}));
-    return new Gson().toJsonTree(e.as(Object.class));
+    return toJsonElement(bindings.getMember("e"));
   }
 
   // set current element
@@ -79,6 +81,14 @@ public class ExpressionsJs {
     Value value = context.eval("js", js);
     // coerce to truthy/falsey
     return context.eval("js", "(function(s){return !!s})").execute(value).asBoolean();
+  }
+
+  private JsonElement toJsonElement(Object object) {
+    Value value = Value.asValue(object);
+    if (value.hasArrayElements())
+      return new Gson().toJsonTree(value.as(new TypeLiteral<List<Object>>(){}));
+    return new Gson().toJsonTree(value.as(Object.class));
+
   }
 
   // @see ProxyObject.fromMap
@@ -95,8 +105,14 @@ public class ExpressionsJs {
         @Override
         public void set(long index, Value value) {
             checkIndex(index);
+            //###TODO use toJsonElement here??
+            //###TODO use toJsonElement here??
+            //###TODO use toJsonElement here??
             array.set((int) index, new Gson().toJsonTree(value.as(Object.class)));
-        }
+            //###TODO use toJsonElement here??
+            //###TODO use toJsonElement here??
+            //###TODO use toJsonElement here??
+          }
         @Override
         public boolean remove(long index) {
             checkIndex(index);
@@ -155,8 +171,14 @@ public class ExpressionsJs {
 
         @Override
         public void putMember(String key, Value value) {
+            //###TODO use toJsonElement here??
+            //###TODO use toJsonElement here??
+            //###TODO use toJsonElement here??
             object.add(key, new Gson().toJsonTree(value.as(Object.class)));
-        }
+            //###TODO use toJsonElement here??
+            //###TODO use toJsonElement here??
+            //###TODO use toJsonElement here??
+          }
 
         @Override
         public boolean removeMember(String key) {
@@ -178,9 +200,9 @@ public class ExpressionsJs {
     return new Gson().fromJson(jsonElement, Object.class);
   }
 
-  static JsonElement json(String json) {
-    return new JsonStreamParser(json).next();
-  }
+  // static JsonElement json(String json) {
+  //   return new JsonStreamParser(json).next();
+  // }
 
   // private void debug(Object... args) {
   //   new LogHelper(this).debug(args);
@@ -190,7 +212,7 @@ public class ExpressionsJs {
 
     ExpressionsJs js = new ExpressionsJs();
 
-    js.e(json("{}"));
+    js.e(new JsonStreamParser("{}").next());
     
     System.out.println("eval="+js.eval("e.a=1"));
     System.out.println("eval="+js.eval("e.b=4/3")); // 1.3333333333333333
