@@ -46,7 +46,7 @@ class SystemInPlugin implements InputPlugin {
     debug("read", "mtuHint", mtuHint);
     running = true;
     return new FutureRunner() {
-      final int effectiveMtuHint = mtuHint > 0 ? mtuHint : 1000;
+      final int effectiveMtu = mtuHint > 0 ? mtuHint : 1000;
       final AtomicReference<List<JsonElement>> partition = new AtomicReference<>(new ArrayList<>());
       {
         do {
@@ -55,7 +55,7 @@ class SystemInPlugin implements InputPlugin {
             JsonStreamParser parser = new JsonStreamParser(br);
             while (parser.hasNext()) {
               partition.get().add(parser.next());
-              if (!parser.hasNext() || partition.get().size() == effectiveMtuHint) {
+              if (!parser.hasNext() || partition.get().size() == effectiveMtu) {
                 run(() -> {
                   return listener.apply(partition.getAndSet(new ArrayList<>()));
                 });
