@@ -111,9 +111,24 @@ public class Main implements ApplicationRunner {
     debug("ctor");
     this.projectVersion = projectVersion;
     this.inputPluginProviders.addAll(inputPluginProviders);
+    
+    //###TODO NOT NEEDED
+    //###TODO NOT NEEDED
+    //###TODO NOT NEEDED
     this.inputPluginProviders.add(new SystemInPluginProvider()); // ensure last
+    //###TODO NOT NEEDED
+    //###TODO NOT NEEDED
+    //###TODO NOT NEEDED
+
     this.outputPluginProviders.addAll(outputPluginProviders);
+
+    //###TODO NOT NEEDED
+    //###TODO NOT NEEDED
+    //###TODO NOT NEEDED
     this.outputPluginProviders.add(new SystemOutPluginProvider()); // ensure last
+    //###TODO NOT NEEDED
+    //###TODO NOT NEEDED
+    //###TODO NOT NEEDED
   }
 
   /**
@@ -221,8 +236,8 @@ public class Main implements ApplicationRunner {
                     }, result -> {
                       success.incrementAndGet();
                     }, e -> {
-                      failure.incrementAndGet();
                       stderr(e);
+                      failure.incrementAndGet();
                       failuresPrintStreamSupplier.get().println(jsonElement); // pre-transform
                     }, () -> {
                       rateOut.add(1);
