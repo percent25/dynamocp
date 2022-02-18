@@ -138,9 +138,10 @@ public class AwsQueueReceiver {
                           run(() -> {
                             String body = message.body();
                             try {
+                              // is the string message boxed in a aws notification?
                               AwsNotification notification = new Gson().fromJson(body, AwsNotification.class);
                               if (notification.isNotificationType())
-                                body = notification.Message;
+                                body = notification.Message; // yes.. unbox the string message
                             } catch (Exception e) {
                               // do nothing
                             }
