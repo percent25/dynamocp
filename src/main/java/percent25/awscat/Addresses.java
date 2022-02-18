@@ -34,11 +34,11 @@ public class Addresses {
         Iterator<String> iter = Splitter.on(",").trimResults().split(address).iterator();
         iter.next(); // skip address base
         while (iter.hasNext()) {
-            Iterator<String> keyValue = Splitter.on("=").trimResults().split(iter.next()).iterator();
-            String key = keyValue.next();
+            Iterator<String> keyAndValue = Splitter.on("=").trimResults().split(iter.next()).iterator();
+            String key = keyAndValue.next();
             String value = "true";
-            if (keyValue.hasNext())
-                value = keyValue.next();
+            if (keyAndValue.hasNext())
+                value = keyAndValue.next();
             options.put(key, value);
         }
         return new Gson().fromJson(new Gson().toJson(options), typeOfT);
