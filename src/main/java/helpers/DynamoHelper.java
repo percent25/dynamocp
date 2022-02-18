@@ -66,7 +66,7 @@ public class DynamoHelper {
 
   // aka toDynamoDbJson
   // https://aws.amazon.com/blogs/developer/aws-sdk-for-java-2-0-developer-preview/
-  public static JsonElement parse(Map<String, AttributeValue> item) {
+  public static JsonElement parse(Map<String, AttributeValue> item) { //###TODO RENAME TO RENDER
     return new Gson().toJsonTree(Maps.transformValues(item, value -> {
       try {
         return new Gson().fromJson(objectMapper.writeValueAsString(value.toBuilder()), JsonElement.class);
@@ -78,7 +78,7 @@ public class DynamoHelper {
 
   // aka fromDynamoDbJson
   // https://aws.amazon.com/blogs/developer/aws-sdk-for-java-2-0-developer-preview/
-  public static Map<String, AttributeValue> render(JsonElement dynamoDbJson) {
+  public static Map<String, AttributeValue> render(JsonElement dynamoDbJson) { //###TODO RENAME TO PARSE
     try {
       Map<String, AttributeValue> item = new LinkedHashMap<String, AttributeValue>();
       for (Entry<String, JsonElement> entry : dynamoDbJson.getAsJsonObject().entrySet()) {
@@ -131,11 +131,6 @@ public class DynamoHelper {
   public static void main(String... args) throws Exception {
     new Object() {
       {
-        // parseRender(new JsonStreamParser("{}").next());
-        // parseRender(new JsonStreamParser("{id:{s:foo}}").next());
-        // System.out.println(parse(Maps.newHashMap()));
-        // System.out.println(render(new JsonStreamParser("{   id:{s:1}, mylist:{ l: [{s:1},{s:1},{s:1}] }   }").next()));
-
         inferTest("{}");
 
         inferTest("{a:true}");
@@ -147,19 +142,24 @@ public class DynamoHelper {
         inferTest("{a:[b,c]}");
 
         inferTest("{a:{b:1,c:2}}");
+
+        // parseRender(new JsonStreamParser("{}").next());
+        // parseRender(new JsonStreamParser("{id:{s:foo}}").next());
+        // System.out.println(parse(Maps.newHashMap()));
+        // System.out.println(render(new JsonStreamParser("{   id:{s:1}, mylist:{ l: [{s:1},{s:1},{s:1}] }   }").next()));
       }
 
+      void inferTest(String json) {
+        JsonElement jsonElement = new JsonStreamParser(json).next();
+        JsonElement dynamoDbJson = inferDynamoDbJson(jsonElement);
+        System.out.println(""+jsonElement+dynamoDbJson);
+      }
       void parseRender(JsonElement dynamoDbJson) throws Exception {
         System.out.println(dynamoDbJson);
         JsonElement got = parse(render(dynamoDbJson));
         if (!dynamoDbJson.equals(got)) {
           throw new Exception("" + dynamoDbJson + got);
         }
-      }
-      void inferTest(String json) {
-        JsonElement jsonElement = new JsonStreamParser(json).next();
-        JsonElement dynamoDbJson = inferDynamoDbJson(jsonElement);
-        System.out.println(""+jsonElement+dynamoDbJson);
       }
     };
   }
