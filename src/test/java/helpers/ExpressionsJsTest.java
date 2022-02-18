@@ -9,9 +9,13 @@ import java.util.Map.*;
 
 import com.google.common.collect.*;
 import com.google.gson.*;
+import com.google.gson.internal.LazilyParsedNumber;
 
 import percent25.awscat.*;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyArray;
 import org.junit.jupiter.api.*;
 
 // https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions
@@ -229,6 +233,32 @@ public class ExpressionsJsTest {
 
   private JsonElement jsonElement(String json) {
     return new JsonStreamParser(json).next();
+  }
+
+  public static void main(String... args) throws Exception {
+
+      //   // array?
+      //   if (value.hasArrayElements())
+      //   return new Gson().toJsonTree(value.as(new TypeLiteral<List<Object>>(){}));
+      // // object?
+      // if (value.hasMembers())
+      //   return new Gson().toJsonTree(value.as(Object.class));
+      // // primitive?
+      // return new Gson().toJsonTree(value.as(Object.class));
+  
+    Context context = Context.create();
+    Value value = context.asValue(ProxyArray.fromArray(1,2,3));
+    System.out.println(value.hasArrayElements());
+
+    Object valueAsObject = value.as(Object.class);
+    System.out.println("valueAsObject="+valueAsObject.getClass()+valueAsObject);
+    JsonElement jsonElement = new Gson().toJsonTree(valueAsObject);
+    System.out.println("jsonElement="+jsonElement.getClass());
+    System.out.println(jsonElement);
+
+    Value number = context.asValue(1);
+    System.out.println(number.isNumber());
+
   }
   
 }
