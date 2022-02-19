@@ -88,45 +88,49 @@ public class AwsKinesisReceiver {
       
       void doStream() {
         debug("doStream", streamName);
-        run(() -> {
-          return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
-        }, listShardsResponse -> {
-          // if (listShardsResponse.hasShards())
-          {
-            for (Shard shard : listShardsResponse.shards()) {
-              doShard(shard);
+        if (running) {
+          run(() -> {
+            return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
+          }, listShardsResponse -> {
+            // if (listShardsResponse.hasShards())
+            {
+              for (Shard shard : listShardsResponse.shards()) {
+                doShard(shard);
+              }
             }
-          }
-        }, e->{
-          debug(e);
-          try {
-            Thread.sleep(1000); // throttle
-          } catch (InterruptedException ie) {
-          }
-          doStream();
-        });
+          }, e->{
+            debug(e);
+            try {
+              Thread.sleep(1000); // throttle
+            } catch (InterruptedException ie) {
+            }
+            doStream();
+          });
+        }
       }
       
       void doShard(Shard shard) {
         debug("doShard", streamName, shard.shardId());
-        run(() -> {
-          GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
-              .streamName(streamName) //
-              .shardId(shard.shardId()) //
-              .shardIteratorType(ShardIteratorType.LATEST) //
-              .build();
-          return lf(client.getShardIterator(getShardIteratorRequest));
-        }, getShardIteratorResponse -> {
+        if (running) {
+          run(() -> {
+            GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
+                .streamName(streamName) //
+                .shardId(shard.shardId()) //
+                .shardIteratorType(ShardIteratorType.LATEST) //
+                .build();
+            return lf(client.getShardIterator(getShardIteratorRequest));
+          }, getShardIteratorResponse -> {
           // GetRecordsWork getRecordsWork = new GetRecordsWork(streamName);          
           doShardIterator(shard, getShardIteratorResponse.shardIterator());
-        }, e->{
-          debug(e);
-          try {
-            Thread.sleep(1000); // throttle
-          } catch (InterruptedException ie) {
-          }
-          doShard(shard);
-        });
+          }, e->{
+            debug(e);
+            try {
+              Thread.sleep(1000); // throttle
+            } catch (InterruptedException ie) {
+            }
+            doShard(shard);
+          });
+        }
       }
 
       void doShardIterator(Shard shard, String shardIterator) {
