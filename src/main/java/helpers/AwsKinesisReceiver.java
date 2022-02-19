@@ -98,6 +98,11 @@ public class AwsKinesisReceiver {
             }
           }
         }, e->{
+          debug(e);
+          try {
+            Thread.sleep(1000); // throttle
+          } catch (InterruptedException ie) {
+          }
           doStream();
         });
       }
@@ -115,6 +120,11 @@ public class AwsKinesisReceiver {
           // GetRecordsWork getRecordsWork = new GetRecordsWork(streamName);          
           doShardIterator(shard, getShardIteratorResponse.shardIterator());
         }, e->{
+          debug(e);
+          try {
+            Thread.sleep(1000); // throttle
+          } catch (InterruptedException ie) {
+          }
           doShard(shard);
         });
       }
@@ -124,7 +134,7 @@ public class AwsKinesisReceiver {
         if (running) {
           DoShardIteratorWork work = new DoShardIteratorWork(streamName, shard.shardId(), shardIterator);
           run(() -> {
-            Thread.sleep(1000);
+            Thread.sleep(1000); // throttle
             return lf(client.getRecords(GetRecordsRequest.builder().shardIterator(shardIterator).build()));
           }, getRecordsResponse -> {
             List<ListenableFuture<?>> futures = new ArrayList<>();
