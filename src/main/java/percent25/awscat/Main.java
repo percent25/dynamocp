@@ -168,11 +168,11 @@ public class Main implements ApplicationRunner {
       stderr(indentString, "--js");
       stderr(indentString, "--debug"); // this is spring boot's debug
 
-      stderr("source:");
+      stderr("sources:");
       for (InputPluginProvider pluginProvider : inputPluginProviders) {
         stderr(indentString, pluginProvider.help());
       }
-      stderr("target:");
+      stderr("targets:");
       for (OutputPluginProvider pluginProvider : outputPluginProviders) {
         stderr(indentString, pluginProvider.help());
       }
