@@ -1,56 +1,42 @@
 package helpers;
 
-import java.net.URI;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import com.google.common.base.*;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.*;
+import com.google.common.base.MoreObjects;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.Gson;
 
-import percent25.awscat.plugins.AwsHelper;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.kinesis.KinesisAsyncClient;
 import software.amazon.awssdk.services.kinesis.model.GetRecordsRequest;
 import software.amazon.awssdk.services.kinesis.model.GetShardIteratorRequest;
-import software.amazon.awssdk.services.kinesis.model.GetShardIteratorResponse;
 import software.amazon.awssdk.services.kinesis.model.ListShardsRequest;
 import software.amazon.awssdk.services.kinesis.model.Record;
 import software.amazon.awssdk.services.kinesis.model.Shard;
 import software.amazon.awssdk.services.kinesis.model.ShardIteratorType;
 
-// class DoStreamWork {
-//   public final String streamName;
-//   public boolean success;
-//   public String failureMessage;
-//   public DoStreamWork(String streamName) {
-//     this.streamName = streamName;
-//   }
-//   public String toString() {
-//     return getClass().getSimpleName()+new Gson().toJson(this);
-//   }
-// }
-
-class GetRecordsWork { //###TODO RENAME TO HANDLESHARDWORK
+class DoShardIteratorWork {
   public final String streamName;
+  public final String shardId;
+  public final String shardIterator;
   public boolean success;
   public String failureMessage;
   public final AtomicInteger in = new AtomicInteger(); // aka request
   public final AtomicInteger out = new AtomicInteger(); // aka success
   public final AtomicInteger err = new AtomicInteger(); // aka failure
-  public GetRecordsWork(String streamName) {
+  public DoShardIteratorWork(String streamName, String shardId, String shardIterator) {
     this.streamName = streamName;
+    this.shardId = shardId;
+    this.shardIterator = shardIterator;
   }
   public String toString() {
-    return getClass().getSimpleName()+new Gson().toJson(this);
+    return new Gson().toJson(this);
   }
 }
 
@@ -97,88 +83,81 @@ public class AwsKinesisReceiver {
     running = true;
     return new FutureRunner() {
       {
+        doStream();
+      }
+      
+      void doStream() {
+        debug("doStream", streamName);
         run(() -> {
           return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
         }, listShardsResponse -> {
-          if (listShardsResponse.hasShards()) {
+          // if (listShardsResponse.hasShards())
+          {
             for (Shard shard : listShardsResponse.shards()) {
-              run(() -> {
-                GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
-                    .streamName(streamName) //
-                    .shardId(shard.shardId()) //
-                    .shardIteratorType(ShardIteratorType.TRIM_HORIZON) //
-                    .build();
-                return lf(client.getShardIterator(getShardIteratorRequest));
-              }, getShardIteratorResponse -> {
-                doGetRecords(getShardIteratorResponse.shardIterator());
-              });
+              doShard(shard);
             }
           }
+        }, e->{
+          doStream();
+        });
+      }
+      
+      void doShard(Shard shard) {
+        debug("doShard", streamName, shard.shardId());
+        run(() -> {
+          GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
+              .streamName(streamName) //
+              .shardId(shard.shardId()) //
+              .shardIteratorType(ShardIteratorType.LATEST) //
+              .build();
+          return lf(client.getShardIterator(getShardIteratorRequest));
+        }, getShardIteratorResponse -> {
+          // GetRecordsWork getRecordsWork = new GetRecordsWork(streamName);          
+          doShardIterator(shard, getShardIteratorResponse.shardIterator());
+        }, e->{
+          doShard(shard);
         });
       }
 
-      /**
-       * doGetRecords
-       * 
-       * @param shardIterator
-       */
-      void doGetRecords(String shardIterator) {
+      void doShardIterator(Shard shard, String shardIterator) {
+        // debug("doShardIterator", streamName, shard.shardId(), shardIterator);
         if (running) {
-          GetRecordsWork getRecordsWork = new GetRecordsWork(streamName);
+          DoShardIteratorWork work = new DoShardIteratorWork(streamName, shard.shardId(), shardIterator);
           run(() -> {
-
-            // * Each data record can be up to 1 MiB in size, and each shard can read up to 2 MiB per second. You can ensure that
-            // * your calls don't exceed the maximum supported size or throughput by using the <code>Limit</code> parameter to
-            // * specify the maximum number of records that <a>GetRecords</a> can return. Consider your average record size when
-            // * determining this limit. The maximum number of records that can be returned per call is 10,000.
-            // * </p>
-            // * <p>
-            // * The size of the data returned by <a>GetRecords</a> varies depending on the utilization of the shard. The maximum
-            // * size of data that <a>GetRecords</a> can return is 10 MiB. If a call returns this amount of data, subsequent calls
-            // * made within the next 5 seconds throw <code>ProvisionedThroughputExceededException</code>. If there is
-            // * insufficient provisioned throughput on the stream, subsequent calls made within the next 1 second throw
-            // * <code>ProvisionedThroughputExceededException</code>. <a>GetRecords</a> doesn't return any data when it throws an
-            // * exception. For this reason, we recommend that you wait 1 second between calls to <a>GetRecords</a>. However, it's
-            // * possible that the application will get exceptions for longer than 1 second.
-       
+            Thread.sleep(1000);
             return lf(client.getRecords(GetRecordsRequest.builder().shardIterator(shardIterator).build()));
           }, getRecordsResponse -> {
             List<ListenableFuture<?>> futures = new ArrayList<>();
             if (getRecordsResponse.hasRecords()) {
               for (Record record : getRecordsResponse.records()) {
                 run(() -> {
-                  getRecordsWork.in.incrementAndGet();
+                  work.in.incrementAndGet();
                   ListenableFuture<?> lf = listener.apply(record.data());
                   futures.add(lf);
                   return lf;
                 }, lf->{
-                  getRecordsWork.out.incrementAndGet();
+                  work.out.incrementAndGet();
                 }, e->{
-                  getRecordsWork.err.incrementAndGet();
-                  getRecordsWork.failureMessage = "" + e; // this is futile
+                  work.err.incrementAndGet();
+                  work.failureMessage = "" + e; // this is futile
                 });
               }
             }
             run(() -> {
               return Futures.allAsList(futures);
             }, all -> {
-              getRecordsWork.success = true;
+              work.success = true;
             }, e->{
-              getRecordsWork.failureMessage = "" + e;
+              work.failureMessage = "" + e;
             }, ()->{
-              // STEP 1 log work
-              debug(getRecordsWork);
-              // STEP 2 find work to do
+              if (getRecordsResponse.records().size()>0)
+                debug("doShardIterator", work);
               String nextShardIterator = getRecordsResponse.nextShardIterator();
-              if (nextShardIterator != null) {
-                try {
-                  Thread.sleep(1000);
-                } catch (InterruptedException ie) {
-                  ie.printStackTrace();
-                }
-                doGetRecords(nextShardIterator);
-              }
+              if (nextShardIterator != null)
+                doShardIterator(shard, nextShardIterator);
             });
+          }, e->{
+            doShard(shard);
           });
         }
       }
@@ -205,24 +184,31 @@ public class AwsKinesisReceiver {
 
   public static void main(String... args) throws Exception {
 
+    // DefaultAwsRegionProviderChain
+
+    LogHelper.debug=true;
+
     KinesisAsyncClient client = KinesisAsyncClient.builder() //
-        // .httpClient(AwsCrtAsyncHttpClient.create()) //
-        .endpointOverride(URI.create("http://localhost:4566")) //
-        .region(Region.US_EAST_1) //
-        .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
+        // .endpointOverride(URI.create("http://localhost:4566")) //
+        // .region(Region.US_EAST_1) //
+        // .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test"))) // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack
+        .region(Region.US_WEST_2)
+        .credentialsProvider(ProfileCredentialsProvider.create("cirrascale"))
         .build();
 
     // aws kinesis create-stream --stream-name asdf --shard-count 1
-    AwsKinesisReceiver receiver = new AwsKinesisReceiver(client, "asdf");
+    AwsKinesisReceiver receiver = new AwsKinesisReceiver(client, "NetBoxWebHookStack-NetBoxWebHookEventStream92261DC8-9LWDNez8q8xM");
     receiver.setListener(bytes -> {
-      System.out.println(bytes);
+      System.out.println(bytes.asUtf8String());
+      // receiver.closeNonBlocking(); // stop receiver
       return Futures.immediateVoidFuture();
     });
     ListenableFuture<?> lf = receiver.start();
     try {
-      Thread.sleep(10000);
-      receiver.closeNonBlocking(); // stop receiver
+      // Thread.sleep(10000);
+      // receiver.closeNonBlocking(); // stop receiver
     } finally {
+      System.out.println("finally");
       lf.get();
     }
 
