@@ -27,6 +27,12 @@ public class LogHelper {
     this.self = self;
   }
 
+  public String string(Object... args) {
+    List<Object> parts = Lists.newArrayList(args);
+    parts.add(0, String.format("[%s]", self.getClass().getSimpleName()));
+    return Joiner.on(" ").useForNull("null").join(parts);
+  }
+
   // ctl-plane
   public void debug(Object... args) {
     if (debug)
