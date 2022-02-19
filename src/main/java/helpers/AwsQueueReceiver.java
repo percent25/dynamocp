@@ -65,14 +65,6 @@ public class AwsQueueReceiver {
   private boolean running;
   private Function<String, ListenableFuture<?>> listener;
 
-  //###TODO USE HashedWheelTimer
-  //###TODO USE HashedWheelTimer
-  //###TODO USE HashedWheelTimer
-  private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setDaemon(true).build()); // for backoff
-  //###TODO USE HashedWheelTimer
-  //###TODO USE HashedWheelTimer
-  //###TODO USE HashedWheelTimer
-
   /**
    * ctor
    * 
@@ -111,7 +103,7 @@ public class AwsQueueReceiver {
       }
       void doReceiveMessage(int i) {
         if (running) {
-          ReceiveMessageWork receiveMessageWork = new ReceiveMessageWork(queueUrl);
+          ReceiveMessageWork work = new ReceiveMessageWork(queueUrl);
           run(()->{
             return new FutureRunner() {
               {
@@ -124,66 +116,63 @@ public class AwsQueueReceiver {
                   return lf(sqsClient.receiveMessage(receiveMessageRequest));
                 }, receiveMessageResponse -> {
                   run(()->{
-                    List<ListenableFuture<?>> futures = Lists.newArrayList();
-                    if (receiveMessageResponse.hasMessages()) {
-                      for (Message message : receiveMessageResponse.messages()) {
-                        run(() -> {
-                          DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder() //
-                              .queueUrl(queueUrl) //
-                              .receiptHandle(message.receiptHandle()) //
-                              .build();
-                          return lf(sqsClient.deleteMessage(deleteMessageRequest));
-                        }, deleteMessageResponse -> {
-                          receiveMessageWork.in.incrementAndGet();
+                    return new FutureRunner(){{
+                      if (receiveMessageResponse.hasMessages()) {
+                        for (Message message : receiveMessageResponse.messages()) {
                           run(() -> {
-                            String body = message.body();
-                            try {
-                              // is the string message boxed in a aws notification?
-                              AwsNotification notification = new Gson().fromJson(body, AwsNotification.class);
-                              if (notification.isNotificationType())
-                                body = notification.Message; // yes.. unbox the string message
-                            } catch (Exception e) {
-                              // do nothing
-                            }
-                            return listener.apply(body);
-                          }, result -> {
-                            receiveMessageWork.out.incrementAndGet();
-                          }, e -> { // listener
-                            receiveMessageWork.outErr.incrementAndGet();
-                            receiveMessageWork.failureMessage = "" + e;
+                            DeleteMessageRequest deleteMessageRequest = DeleteMessageRequest.builder() //
+                                .queueUrl(queueUrl) //
+                                .receiptHandle(message.receiptHandle()) //
+                                .build();
+                            return lf(sqsClient.deleteMessage(deleteMessageRequest));
+                          }, deleteMessageResponse -> { // deleteMessageSuccess
+                            work.in.incrementAndGet();
+                            run(() -> {
+                              String body = message.body();
+                              try {
+                                // is the string message boxed in a aws notification?
+                                AwsNotification notification = new Gson().fromJson(body, AwsNotification.class);
+                                if (notification.isNotificationType())
+                                  body = notification.Message; // yes.. unbox the string message
+                              } catch (Exception e) {
+                                // do nothing
+                              }
+                              return listener.apply(body);
+                            }, result -> {
+                              work.out.incrementAndGet();
+                            }, e -> { // listener
+                              debug(e);
+                              work.outErr.incrementAndGet();
+                              work.failureMessage = "" + e;
+                            });
+                          }, e -> { // deleteMessageFailure
+                            debug(e);
+                            work.inErr.incrementAndGet();
+                            work.failureMessage = "deleteMessage:" + e;
                           });
-                        }, e -> { // deleteMessage
-                          receiveMessageWork.inErr.incrementAndGet();
-                          receiveMessageWork.failureMessage = "deleteMessage:" + e;
-                        });
+                        }
                       }
-                    }
-                    return Futures.allAsList(futures);
+                    }}.get();
                   }, result->{
-                    receiveMessageWork.success = true;
+                    work.success = true;
                   }, e->{
-                    receiveMessageWork.failureMessage = "" + e;
+                    debug(e);
+                    work.failureMessage = "" + e;
                   });
-                }, e -> { // receiveMessage
-                  receiveMessageWork.failureMessage = "receiveMessage:" + e;
+                }, e -> { // receiveMessageFailure
+                  debug(e);
+                  work.failureMessage = "receiveMessage:" + e;
                   if (running) {
-                    run(() -> {
-                      // backoff/retry
-                      // ###TODO USE HashedWheelTimer
-                      // ###TODO USE HashedWheelTimer
-                      // ###TODO USE HashedWheelTimer
-                      return Futures.scheduleAsync(() -> Futures.immediateVoidFuture(), Duration.ofSeconds(25), executorService);
-                      // ###TODO USE HashedWheelTimer
-                      // ###TODO USE HashedWheelTimer
-                      // ###TODO USE HashedWheelTimer
+                    // backoff/retry
+                    run(()->{
+                      return sleep(20_000);
                     });
                   }
                 });
               }
             }.get();
           }, ()->{ // finally
-            // if (!receiveMessageWork.success || receiveMessageWork.in.get()>0)
-              debug("finally", receiveMessageWork);
+            debug("work", work);
             doReceiveMessage(i);
           });
         } // isRunning
@@ -217,15 +206,16 @@ public class AwsQueueReceiver {
 
     receiver.setListener(s -> {
       System.out.println(s);
+      // receiver.closeNonBlocking();
       return Futures.immediateVoidFuture();
     });
 
     System.out.println("start");
     ListenableFuture<?> lf = receiver.start();
-    System.out.println("sleep");
-    Thread.sleep(2000);
-    System.out.println("close");
-    receiver.closeNonBlocking(); // stop receiver
+    // System.out.println("sleep");
+    // Thread.sleep(2000);
+    // System.out.println("close");
+    // receiver.closeNonBlocking(); // stop receiver
     lf.get();
 
   }
