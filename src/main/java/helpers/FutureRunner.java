@@ -74,7 +74,7 @@ public class FutureRunner extends AbstractFuture<Void> {
    */
   protected <T> void run(AsyncCallable<T> request, Consumer<T> response, Consumer<Exception> perRequestResponseCatch, Runnable perRequestResponseFinally) {
     try {
-      inFlight.incrementAndGet();
+      doTry();
       ListenableFuture<T> lf = request.call(); // throws
       lf.addListener(() -> {
         try {
@@ -112,6 +112,10 @@ public class FutureRunner extends AbstractFuture<Void> {
         }
       }
     }
+  }
+
+  private void doTry() {
+    inFlight.incrementAndGet();
   }
 
   private void doCatch(Exception e) {
