@@ -2,9 +2,9 @@
 
 # Install
 
-<pre>
+```sh
 pip3 install https://github.com/percent25/awscat/releases/latest/download/awscat.zip
-</pre>
+```
 
 # Document
 
