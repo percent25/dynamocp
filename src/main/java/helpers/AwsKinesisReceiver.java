@@ -53,8 +53,6 @@ public class AwsKinesisReceiver {
   private boolean running;
   private Function<SdkBytes, ListenableFuture<?>> listener;
 
-  private final Timer timer = new HashedWheelTimer();
-
   /**
    * ctor
    * 
@@ -87,13 +85,13 @@ public class AwsKinesisReceiver {
   public ListenableFuture<?> start() throws Exception {
     debug("start", streamName);
     running = true;
-    return new FutureRunner() {
+    return new FutureRunner2() {
       {
         doStream();
       }
       
       void doStream() {
-        debug("doStream", streamName);
+        debug("doStream", streamName, running);
         if (running) {
           run(() -> {
             return lf(client.listShards(ListShardsRequest.builder().streamName(streamName).build()));
@@ -106,15 +104,18 @@ public class AwsKinesisReceiver {
             }
           }, e->{
             debug(e);
-            timer.newTimeout(timeout->{
+            // backoff/retry
+            run(()->{
+              return sleep(25000);
+            },timeout->{
               doStream();
-            }, 25, TimeUnit.SECONDS);
+            });
           });
         }
       }
       
       void doShard(Shard shard) {
-        debug("doShard", streamName, shard.shardId());
+        debug("doShard", streamName, shard.shardId(), running);
         if (running) {
           run(() -> {
             GetShardIteratorRequest getShardIteratorRequest = GetShardIteratorRequest.builder() //
@@ -127,58 +128,61 @@ public class AwsKinesisReceiver {
             doShardIterator(shard, getShardIteratorResponse.shardIterator());
           }, e->{
             debug(e);
-            timer.newTimeout(timeout->{
+            // backoff/retry
+            run(()->{
+              return sleep(25000);
+            },timeout->{
               doShard(shard);
-            }, 25, TimeUnit.SECONDS);
+            });
           });
         }
       }
 
       void doShardIterator(Shard shard, String shardIterator) {
-        // debug("doShardIterator", streamName, shard.shardId(), shardIterator);
+        debug("doShardIterator", streamName, shard.shardId(), shardIterator, running);
         if (running) {
           // throttle
-          timer.newTimeout(timeout->{
+          run(() -> {
+            return sleep(1000);
+          }, timeout -> {
             run(() -> {
               return lf(client.getRecords(GetRecordsRequest.builder().shardIterator(shardIterator).build()));
             }, getRecordsResponse -> {
-              List<ListenableFuture<?>> futures = new ArrayList<>();
               DoShardIteratorWork work = new DoShardIteratorWork(streamName, shard.shardId(), shardIterator);
-              if (getRecordsResponse.hasRecords()) {
-                for (Record record : getRecordsResponse.records()) {
-                  run(() -> {
-                    work.in.incrementAndGet();
-                    ListenableFuture<?> lf = listener.apply(record.data());
-                    futures.add(lf);
-                    return lf;
-                  }, lf->{
-                    work.out.incrementAndGet();
-                  }, e->{
-                    work.err.incrementAndGet();
-                    work.failureMessage = "" + e; // this is futile
-                  });
-                }
-              }
-              run(() -> {
-                return Futures.allAsList(futures);
+              run(()->{
+                return new FutureRunner2(){{
+                  if (getRecordsResponse.hasRecords()) {
+                    for (Record record : getRecordsResponse.records()) {
+                      work.in.incrementAndGet();
+                      run(() -> {
+                        return listener.apply(record.data());
+                      }, lf -> {
+                        work.out.incrementAndGet();
+                      }, e -> {
+                        work.err.incrementAndGet();
+                        work.failureMessage = "" + e; // this is futile
+                      });
+                    }
+                  }
+                }}.get();
               }, all -> {
                 work.success = true;
-              }, e->{
+              }, e -> {
                 work.failureMessage = "" + e;
-              }, ()->{
-                if (getRecordsResponse.records().size()>0)
+              }, () -> {
+                if (getRecordsResponse.records().size() > 0)
                   debug("doShardIterator.workt", work);
                 String nextShardIterator = getRecordsResponse.nextShardIterator();
                 if (nextShardIterator != null)
                   doShardIterator(shard, nextShardIterator);
               });
-            }, e->{
+            }, e -> {
               doShard(shard);
             });
-          }, 1, TimeUnit.SECONDS);
+          });
         }
       }
-    };
+    }.get();
   }
 
   /**
