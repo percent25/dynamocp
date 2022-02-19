@@ -1,7 +1,7 @@
 #!/bin/sh -ex
 
 # https://maven.apache.org/maven-ci-friendly.html
-REVISION=$(date +%Y.%m.%d) # e.g., 2021.12.31
+REVISION=$(date +%Y.%m).${GITHUB_RUN_ID?}
 
 AWS_ENDPOINT=http://localhost:4566 ./mvnw verify -B -Drevision=${REVISION?}
 
