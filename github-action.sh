@@ -3,7 +3,7 @@
 # https://maven.apache.org/maven-ci-friendly.html
 REVISION=$(date +%Y.%m).$(echo ${GITHUB_SHA?} | head -c 7) # e.g., 2021.09.da16b76
 
-./mvnw verify -B -Drevision=${REVISION?} -Plocalstack
+AWS_ENDPOINT=http://localhost:4566 ./mvnw verify -B -Drevision=${REVISION?}
 
 ln -fs target/awscat-${REVISION?}.jar awscat.jar
 

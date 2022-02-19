@@ -18,7 +18,6 @@ import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.regions.Region;
 
 public class AwsBuilder {
-  private static Environment springEnv = new StandardEnvironment();
   /**
    * build
    * 
@@ -28,7 +27,7 @@ public class AwsBuilder {
    * @return
    */
   public static <B extends AwsClientBuilder<B, C>, C> C build(B builder) {
-    String awsEndpoint = springEnv.getProperty("aws.endpoint");
+    String awsEndpoint = new StandardEnvironment().getProperty("aws.endpoint");
     if (StringUtils.hasText(awsEndpoint)) {
       builder = builder.endpointOverride(URI.create(awsEndpoint));
       // https://github.com/localstack/localstack/blob/master/README.md#setting-up-local-region-and-credentials-to-run-localstack

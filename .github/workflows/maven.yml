@@ -29,3 +29,7 @@ jobs:
       with:
         name: awscat.zip
         path: awscat.zip
+
+    services:
+      localstack:
+        image: localstack/localstack
