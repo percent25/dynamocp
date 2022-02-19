@@ -155,7 +155,7 @@ public class DynamoReader {
           });
         } // if (running)
       }
-    };
+    }.get();
   }
 
   // non-blocking

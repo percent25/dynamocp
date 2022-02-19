@@ -180,7 +180,7 @@ public class AwsQueueReceiver {
                   }
                 });
               }
-            };
+            }.get();
           }, ()->{ // finally
             // if (!receiveMessageWork.success || receiveMessageWork.in.get()>0)
               debug("finally", receiveMessageWork);
@@ -188,7 +188,7 @@ public class AwsQueueReceiver {
           });
         } // isRunning
       }
-    };
+    }.get();
   }
 
   /**

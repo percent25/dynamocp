@@ -7,16 +7,39 @@ import java.util.function.*;
 import com.google.common.util.concurrent.*;
 import com.spotify.futures.*;
 
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timer;
+
 /**
  * Opinionated robust facade/runner for listenablefuture(s).
  */
-public class FutureRunner extends AbstractFuture<Void> {
+public class FutureRunner {
 
+  private class VoidFuture extends AbstractFuture<Void> {
+    public boolean setVoid() {
+      return super.set(null);
+    }
+    public boolean setException(Throwable throwable) {
+      return super.setException(throwable);
+    }
+  }
+
+  private final VoidFuture vf = new VoidFuture();
   private final AtomicInteger inFlight = new AtomicInteger();
   private final AtomicReference<Exception> firstException = new AtomicReference<>();
 
+  private static final Timer timer = new HashedWheelTimer();
+
+  public FutureRunner() {
+    doTry();
+  }
+
+  public ListenableFuture<?> get() {
+    return doFinally();
+  }
+
   public boolean isRunning() {
-    return !isDone();
+    return !vf.isDone();
   }
 
   /**
@@ -122,16 +145,29 @@ public class FutureRunner extends AbstractFuture<Void> {
     firstException.compareAndSet(null, e);
   }
 
-  private void doFinally() {
+  private ListenableFuture<?> doFinally() {
     if (inFlight.decrementAndGet() == 0) {
       if (firstException.get() == null)
-        set(null);
+        vf.setVoid();
       else
-        setException(firstException.get());
+        vf.setException(firstException.get());
     }
+    return vf;
   }
 
   // ----------------------------------------------------------------------
+
+  // convenience
+  // Thread.sleep(millis);
+  protected ListenableFuture<?> sleep(long millis) {
+    return new AbstractFuture<Void>() {
+      {
+        timer.newTimeout(timer -> {
+          set(null);
+        }, millis, TimeUnit.MILLISECONDS);
+      }
+    };
+  }
 
   // convenience
   protected <T> ListenableFuture<T> lf(CompletableFuture<T> cf) {

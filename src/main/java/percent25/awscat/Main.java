@@ -261,7 +261,7 @@ public class Main implements ApplicationRunner {
             //###TODO flush failuresPrintStream here??
           });
         }
-      };
+      }.get();
 
     });
 

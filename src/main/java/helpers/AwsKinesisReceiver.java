@@ -85,7 +85,7 @@ public class AwsKinesisReceiver {
   public ListenableFuture<?> start() throws Exception {
     debug("start", streamName);
     running = true;
-    return new FutureRunner2() {
+    return new FutureRunner() {
       {
         doStream();
       }
@@ -150,7 +150,7 @@ public class AwsKinesisReceiver {
             }, getRecordsResponse -> {
               DoShardIteratorWork work = new DoShardIteratorWork(streamName, shard.shardId(), shardIterator);
               run(()->{
-                return new FutureRunner2(){{
+                return new FutureRunner(){{
                   if (getRecordsResponse.hasRecords()) {
                     for (Record record : getRecordsResponse.records()) {
                       work.in.incrementAndGet();

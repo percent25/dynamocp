@@ -93,7 +93,7 @@ public class ConcatenatedJsonWriter {
                     return lf;
                 });
             }
-        };
+        }.get();
     }
 
     /**
@@ -111,7 +111,7 @@ public class ConcatenatedJsonWriter {
                     return Futures.successfulAsList(flushFutures);
                 });
             }
-        };
+        }.get();
     }
 
     // returns new baos
@@ -130,7 +130,7 @@ public class ConcatenatedJsonWriter {
                     futures.forEach(lf -> lf.setException(e));
                 });
             }
-        };
+        }.get();
         flushFutures.add(lf);
         return new ByteArrayOutputStream();
     }

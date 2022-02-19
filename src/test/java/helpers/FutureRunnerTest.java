@@ -44,7 +44,7 @@ public class FutureRunnerTest {
             return Futures.immediateVoidFuture();
           });
         }
-      }.get();
+      }.get().get();
     } finally {
       executor.shutdown();
     }
@@ -76,7 +76,7 @@ public class FutureRunnerTest {
             }
           }
         }
-      };
+      }.get();
       lf.addListener(()->{
         System.out.println("[listener] reportedCount:" + reportedCount);
       }, MoreExecutors.directExecutor());
@@ -102,7 +102,7 @@ public class FutureRunnerTest {
             });
           }
         }
-      };
+      }.get();
       lf.get();
       assertThat(reportedCount.get()).isEqualTo(desiredCount);
     // Thread.sleep(3000);
@@ -140,7 +140,7 @@ public class FutureRunnerTest {
             return Futures.immediateVoidFuture();
           });
         }
-      };
+      }.get();
       lf.get();
       // Thread.sleep(3000);
       assertThat(reportedCount.get()).isEqualTo(desiredCount);

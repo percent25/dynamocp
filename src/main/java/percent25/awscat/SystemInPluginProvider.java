@@ -70,7 +70,7 @@ class SystemInPlugin implements InputPlugin {
             break;
         } while (cycle);
       }
-    };
+    }.get();
   }
 
   @Override
