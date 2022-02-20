@@ -30,10 +30,10 @@ class DoShardIteratorWork {
   public final String shardId;
   public final String shardIterator;
   public boolean success;
-  public String failureMessage;
+  public final List<String> failures = new ArrayList<>();
   public final AtomicInteger in = new AtomicInteger(); // aka request
   public final AtomicInteger out = new AtomicInteger(); // aka success
-  public final AtomicInteger err = new AtomicInteger(); // aka failure
+  public final AtomicInteger outErr = new AtomicInteger(); // aka failure
   public DoShardIteratorWork(String streamName, String shardId, String shardIterator) {
     this.streamName = streamName;
     this.shardId = shardId;
@@ -141,8 +141,8 @@ public class AwsKinesisReceiver {
       void doShardIterator(Shard shard, String shardIterator) {
         debug("doShardIterator", streamName, shard.shardId(), shardIterator, running);
         if (running) {
-          // throttle
           run(() -> {
+            // throttle
             return sleep(1000);
           }, timeout -> {
             run(() -> {
@@ -153,8 +153,8 @@ public class AwsKinesisReceiver {
                 return new FutureRunner(){{
                   if (getRecordsResponse.hasRecords()) {
                     for (Record record : getRecordsResponse.records()) {
-                      work.in.incrementAndGet();
                       run(() -> {
+                        work.in.incrementAndGet();
                         return listener.apply(record.data());
                       }, lf -> {
                         work.out.incrementAndGet();
@@ -163,8 +163,8 @@ public class AwsKinesisReceiver {
                         // {"streamName":"NetBoxWebHookStack-NetBoxWebHookEventStream92261DC8-9LWDNez8q8xM","shardId":"shardId-000000000000","shardIterator":"AAAAAAAAAAGn5u2cRxY2GcgHtE/kQWWGmp8TzQn14Jap8Rk9bLME87QZ0Yjz8l1x2RudIjH+UQp+SPmc5in23+HCtQPEIJ/AaLLp1zenGY8Q52toAqhejH/yRk9CJJe8TIYhVeMtlrIVY4x8utYmxBgmC/hvBEdRGr5CUVndSvYiRf8fTbE0HdcWEs58MVftDXceyFoTrKUqOQXzFFArrJnoR4NI14osgE3MFlOSNHu19zKj1TzVCqncZP3L5YomSJk+0WwEeGG14tR0iT55AFOiFJ1WZS5kRP1U6iALYmiMR3XoDSp70g\u003d\u003d","success":true,"failureMessage":"com.google.gson.JsonSyntaxException:
                         // com.google.gson.stream.MalformedJsonException: Unterminated object at line 8
                         // column 101 path $.detail.data.device","in":1,"out":0,"err":1}
-                        work.err.incrementAndGet();
-                        work.failureMessage = "" + e; // this is futile
+                        work.outErr.incrementAndGet();
+                        work.failures.add(""+e);
                       });
                     }
                   }
@@ -176,7 +176,7 @@ public class AwsKinesisReceiver {
                 // {"streamName":"NetBoxWebHookStack-NetBoxWebHookEventStream92261DC8-9LWDNez8q8xM","shardId":"shardId-000000000000","shardIterator":"AAAAAAAAAAGn5u2cRxY2GcgHtE/kQWWGmp8TzQn14Jap8Rk9bLME87QZ0Yjz8l1x2RudIjH+UQp+SPmc5in23+HCtQPEIJ/AaLLp1zenGY8Q52toAqhejH/yRk9CJJe8TIYhVeMtlrIVY4x8utYmxBgmC/hvBEdRGr5CUVndSvYiRf8fTbE0HdcWEs58MVftDXceyFoTrKUqOQXzFFArrJnoR4NI14osgE3MFlOSNHu19zKj1TzVCqncZP3L5YomSJk+0WwEeGG14tR0iT55AFOiFJ1WZS5kRP1U6iALYmiMR3XoDSp70g\u003d\u003d","success":true,"failureMessage":"com.google.gson.JsonSyntaxException:
                 // com.google.gson.stream.MalformedJsonException: Unterminated object at line 8
                 // column 101 path $.detail.data.device","in":1,"out":0,"err":1}
-                work.failureMessage = "" + e;
+                work.failures.add(""+e);
               }, () -> {
                 if (getRecordsResponse.records().size() > 0)
                   debug("doShardIterator.work", work);
