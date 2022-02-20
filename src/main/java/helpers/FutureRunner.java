@@ -60,7 +60,7 @@ public class FutureRunner {
    * @param response
    */
   protected <T> void run(AsyncCallable<T> request, Consumer<T> response) {
-    run(request, response, e -> { throw new RuntimeException(e); });
+    run(request, response, e -> { e.printStackTrace(); throw new RuntimeException(e); });
   }
 
   /**
@@ -71,7 +71,7 @@ public class FutureRunner {
    * @param perRequestResponseFinally
    */
   protected <T> void run(AsyncCallable<T> request, Runnable perRequestResponseFinally) {
-    run(request, unused -> {}, e->{ throw new RuntimeException(e); }, perRequestResponseFinally);
+    run(request, unused -> {}, e->{ e.printStackTrace(); throw new RuntimeException(e); }, perRequestResponseFinally);
   }
 
   /**
