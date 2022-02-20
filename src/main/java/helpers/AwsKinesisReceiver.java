@@ -159,6 +159,10 @@ public class AwsKinesisReceiver {
                       }, lf -> {
                         work.out.incrementAndGet();
                       }, e -> {
+                        // Sun Feb 20 04:42:16 PST 2022 DEBUG [AwsKinesisReceiver] doShardIterator.workt
+                        // {"streamName":"NetBoxWebHookStack-NetBoxWebHookEventStream92261DC8-9LWDNez8q8xM","shardId":"shardId-000000000000","shardIterator":"AAAAAAAAAAGn5u2cRxY2GcgHtE/kQWWGmp8TzQn14Jap8Rk9bLME87QZ0Yjz8l1x2RudIjH+UQp+SPmc5in23+HCtQPEIJ/AaLLp1zenGY8Q52toAqhejH/yRk9CJJe8TIYhVeMtlrIVY4x8utYmxBgmC/hvBEdRGr5CUVndSvYiRf8fTbE0HdcWEs58MVftDXceyFoTrKUqOQXzFFArrJnoR4NI14osgE3MFlOSNHu19zKj1TzVCqncZP3L5YomSJk+0WwEeGG14tR0iT55AFOiFJ1WZS5kRP1U6iALYmiMR3XoDSp70g\u003d\u003d","success":true,"failureMessage":"com.google.gson.JsonSyntaxException:
+                        // com.google.gson.stream.MalformedJsonException: Unterminated object at line 8
+                        // column 101 path $.detail.data.device","in":1,"out":0,"err":1}
                         work.err.incrementAndGet();
                         work.failureMessage = "" + e; // this is futile
                       });
@@ -168,10 +172,14 @@ public class AwsKinesisReceiver {
               }, all -> {
                 work.success = true;
               }, e -> {
+                // Sun Feb 20 04:42:16 PST 2022 DEBUG [AwsKinesisReceiver] doShardIterator.workt
+                // {"streamName":"NetBoxWebHookStack-NetBoxWebHookEventStream92261DC8-9LWDNez8q8xM","shardId":"shardId-000000000000","shardIterator":"AAAAAAAAAAGn5u2cRxY2GcgHtE/kQWWGmp8TzQn14Jap8Rk9bLME87QZ0Yjz8l1x2RudIjH+UQp+SPmc5in23+HCtQPEIJ/AaLLp1zenGY8Q52toAqhejH/yRk9CJJe8TIYhVeMtlrIVY4x8utYmxBgmC/hvBEdRGr5CUVndSvYiRf8fTbE0HdcWEs58MVftDXceyFoTrKUqOQXzFFArrJnoR4NI14osgE3MFlOSNHu19zKj1TzVCqncZP3L5YomSJk+0WwEeGG14tR0iT55AFOiFJ1WZS5kRP1U6iALYmiMR3XoDSp70g\u003d\u003d","success":true,"failureMessage":"com.google.gson.JsonSyntaxException:
+                // com.google.gson.stream.MalformedJsonException: Unterminated object at line 8
+                // column 101 path $.detail.data.device","in":1,"out":0,"err":1}
                 work.failureMessage = "" + e;
               }, () -> {
                 if (getRecordsResponse.records().size() > 0)
-                  debug("doShardIterator.workt", work);
+                  debug("doShardIterator.work", work);
                 String nextShardIterator = getRecordsResponse.nextShardIterator();
                 if (nextShardIterator != null)
                   doShardIterator(shard, nextShardIterator);
